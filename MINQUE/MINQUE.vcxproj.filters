@@ -35,11 +35,13 @@
     <ClCompile Include="MINQUE.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="cuMatrix.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="cuMatrixSample.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="cuMatrix.cpp">
+      <Filter>Source Files</Filter>
+    </CudaCompile>
   </ItemGroup>
 </Project>
