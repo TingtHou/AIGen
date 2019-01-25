@@ -98,10 +98,25 @@ void cuMatrixMult(double* A, double* B, double* C, int m, int n, int s)
 void cuMatrixInv(double *A, double *A_INV, int N)
 {
 	int sizeA = N * N * sizeof(double);
-	cusolverDnHandle_t handle;	cusolverDnCreate(&handle);	double *d_A, *d_B, *d_Work;	int *dLUPivots, *dLUInfo, Lwork;	double *B = (double*)malloc(N*N * sizeof(double));	memset(B, 0, N*N * sizeof(double));	for (int i=0;i<N;i++)
+	cusolverDnHandle_t handle;
+	cusolverDnCreate(&handle);
+	double *d_A, *d_B, *d_Work;
+	int *dLUPivots, *dLUInfo, Lwork;
+	double *B = (double*)malloc(N*N * sizeof(double));
+	memset(B, 0, N*N * sizeof(double));
+	for (int i=0;i<N;i++)
 	{
 		B[(N + 1)*i] = 1;
-	}	cudaMalloc((void **)&d_A, N*N * sizeof(double));	cudaMalloc((void **)&d_B, N*N * sizeof(double));	cudaMalloc((void **)& dLUPivots, N * sizeof(int));	cudaMalloc((void **)& dLUInfo, sizeof(int));	cudaMemcpy(d_A, A, N*N * sizeof(double), cudaMemcpyHostToDevice);	cudaMemcpy(d_B, B, N*N * sizeof(double), cudaMemcpyHostToDevice);	cusolverDnDgetrf_bufferSize(handle, N, N,d_A, N, &Lwork);	cudaMalloc((void **)& d_Work, Lwork * sizeof(double));	cusolverDnDgetrf(handle, N, N, d_A, N, d_Work, dLUPivots, dLUInfo);
+	}
+	cudaMalloc((void **)&d_A, N*N * sizeof(double));
+	cudaMalloc((void **)&d_B, N*N * sizeof(double));
+	cudaMalloc((void **)& dLUPivots, N * sizeof(int));
+	cudaMalloc((void **)& dLUInfo, sizeof(int));
+	cudaMemcpy(d_A, A, N*N * sizeof(double), cudaMemcpyHostToDevice);
+	cudaMemcpy(d_B, B, N*N * sizeof(double), cudaMemcpyHostToDevice);
+	cusolverDnDgetrf_bufferSize(handle, N, N,d_A, N, &Lwork);
+	cudaMalloc((void **)& d_Work, Lwork * sizeof(double));
+	cusolverDnDgetrf(handle, N, N, d_A, N, d_Work, dLUPivots, dLUInfo);
 	cudaDeviceSynchronize();
 	int * test = (int*)malloc(N * sizeof(double));
 	cudaMemcpy(test, dLUPivots, N * sizeof(double), cudaMemcpyDeviceToHost);

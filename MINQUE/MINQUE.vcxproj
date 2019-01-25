@@ -169,13 +169,15 @@
   <ItemGroup>
     <ClInclude Include="cuMatrix.h" />
     <ClInclude Include="cuMatrixSample.h" />
+    <ClInclude Include="minqueKNN.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="cuMatrix.cpp" />
     <ClCompile Include="cuMatrixSample.cpp" />
-    <ClCompile Include="MINQUE.cpp" />
+    <ClCompile Include="Main.cpp" />
+    <ClCompile Include="minqueKNN.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
