@@ -7,7 +7,7 @@
 
 int main()
 {
-	cuMatrixInv_timetest();
+	cuMatrixInv_timetest(5000);
 
 }
 

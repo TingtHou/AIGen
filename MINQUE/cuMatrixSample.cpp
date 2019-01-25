@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "cuMatrixSample.h"
 
-void cuMatrixInv_timetest()
+void cuMatrixInv_timetest(int N)
 {
 	MatrixXd A = MatrixXd::Random(N, N);
 	std::cout << "\\\\\\\\\\\\\\\\\\Calculate Inverse Matrix Using GPU\\\\\\\\\\\\\\\\\\\\\\\\\\\\" << std::endl;
@@ -29,7 +29,7 @@ void cuMatrixInv_timetest()
 	free(p);
 }
 
-void cuMatrixINVTest()
+void cuMatrixINVTest(int N)
 {
 	MatrixXd A = MatrixXd::Random(N, N);
 	std::cout << "\\\\\\\\\\\\\\\\\\Origin Matrix\\\\\\\\\\\\\\\\\\\\\\\\\\\\" << std::endl;
@@ -55,7 +55,7 @@ void cuMatrixINVTest()
 
 }
 
-void cuMatrixMultTest()
+void cuMatrixMultTest(int M,int N,int S)
 {
 	MatrixXd A = MatrixXd::Random(M, N);
 	MatrixXd B = MatrixXd::Random(N, S);
