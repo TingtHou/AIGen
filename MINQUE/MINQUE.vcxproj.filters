@@ -27,18 +27,12 @@
     <ClInclude Include="cuMatrixSample.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="minqueKNN.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="cuMatrixSample.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="minqueKNN.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Main.cpp">
