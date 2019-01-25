@@ -6,7 +6,7 @@
 #include "cuMatrix.h"
 using Eigen::MatrixXd;
 #define M 1
-#define N 1000
+#define N 5000
 #define S 10
 void cuMatrixInv_timetest();
 void cuMatrixINVTest();
