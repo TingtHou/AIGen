@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "MINQUE.h"
-
+#include <iostream>
 MINQUE::MINQUE()
 {
 	_seed = -5251949;
@@ -24,7 +24,7 @@ void MINQUE::push_back_U(const vector< vector<double> > &Ui)
 {
 	long Ui_c = Ui.size();
 	if (Ui_c == 0) throw("Empty Ui! mixed_model::push_back_U");
-	if (Ui[0].size() != _n) throw("The row number of \"Ui\" and \"_n\" mismatch! mixed_model::push_back_U");
+	if (Ui[0].size() != _n) throw("The row number of \"Ui\" and \"_n\" mismatch! MINQUE::push_back_U");
 	_U.insert(_U.end(), Ui.begin(), Ui.end());
 	_Uu_c.insert(_Uu_c.end() - 1, Ui_c);//random pars + Identity Matrix
 	_U_c = _U.size(); // update _U_c
@@ -50,6 +50,7 @@ void MINQUE::push_back_U(const vector< vector<double> > &Ui)
 	_U_p.insert(_U_p.end(), U_p.begin(), U_p.end());
 	_U_r.insert(_U_r.end(), U_r.begin(), U_r.end());
 }
+
 void MINQUE::init_Vi()
 {
 	long i = 0, j = 0;
@@ -111,11 +112,13 @@ void MINQUE::var_est()
 
 	HR_equation();
 
-// 	for (j = 0; j < _r + 1; j++)
-// 	{
+	for (j = 0; j < _r + 1; j++)
+	{
+		std::cout << _var_comp[j] << "\t";
 // 		long seed = -5251949;
 // 		if (_var_comp[j] < 1.0e-08*fabs(_Y[0])) _var_comp[j] = fabs(_Y[0])*0.00001*StatFunc::UniformDev(0.0, 1.0, seed);
-// 	}
+	}
+	std::cout << std::endl;
 }
 
 void MINQUE::HR_equation()

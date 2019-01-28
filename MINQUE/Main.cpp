@@ -3,13 +3,51 @@
 
 #include "pch.h"
 #include <iostream>
-#include "cuMatrixSample.h"
-
+#include "ToolKit.h"
+#include "MINQUE.h"
+#include <string>
+#include <fstream>
 int main()
 {
-	cuMatrixInv_timetest(5000);
-
+	ifstream infile;
+	infile.open("../data/rsp.txt");
+	string str;
+	vector<double> Y;
+	while (getline(infile, str))
+	{
+		Y.push_back(stod(str));
+	}
+	infile.close();
+	int nind = Y.size();
+	double **U = (double **)malloc(nind * sizeof(double*));
+	infile.open("../data/LN1.txt");
+	str="";
+	int id = 0;
+	int ncols=0;
+	while (getline(infile, str))
+	{
+		vector<string> tmp;
+		ToolKit::Stringsplit(str, tmp, "\t");
+		if (!ncols)
+		{
+			ncols = tmp.size();
+		}
+		U[id] = (double *)malloc(ncols* sizeof(double));
+		for (int i=0;i<ncols;i++)
+		{
+			U[id][i] = stod(tmp[i]);
+		}
+		id++;
+	}
+	infile.close();
+	vector<vector<double>> LN1;
+	ToolKit::ArraytoVector(U, nind, ncols, LN1, false);
+	MINQUE varest;
+	varest.import_data(Y);
+	varest.push_back_U(LN1);
+	varest.var_est();
 }
+	
 
 
 // Run program: Ctrl + F5 or Debug > Start Without Debugging menu
