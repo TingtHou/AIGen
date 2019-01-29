@@ -7,8 +7,52 @@
 #include "MINQUE.h"
 #include <string>
 #include <fstream>
+#include <Eigen/Dense>
 int main()
 {
+// 	Eigen::MatrixXd a = Eigen::MatrixXd::Random(5, 5);
+// 	std::cout << "\\\\\\\\\Matrixxd Version\\\\\\\\\\\\\\" << std::endl;
+// 	std::cout << a << std::endl;
+// 	std::cout << "\\\\\\\\\\Vector Version\\\\\\\\\\\\" << std::endl;
+// 	vector<vector<double>> a_inv(5);
+// 	for (int i=0;i<5;i++)
+// 	{
+// 		a_inv[i].resize(5);
+// 		for (int j=0;j<5;j++)
+// 		{
+// 			a_inv[i][j] = a(i, j);
+// 		}
+// 	}
+// 	for (int i = 0; i < 5; i++)
+// 	{
+// 		for (int j = 0; j < 5; j++)
+// 		{
+// 			std::cout << a_inv[i][j] << "\t";
+// 		}
+// 		std::cout << std::endl;
+// 	}
+// 
+// 	MatFunc::LUinversion(a_inv, 1e-20);
+// 	std::cout << "\\\\\\\\\\Inversion Version\\\\\\\\\\\\" << std::endl;
+// 	for (int i = 0; i < 5; i++)
+// 	{
+// 		for (int j = 0; j < 5; j++)
+// 		{
+// 			std::cout << a_inv[i][j] << "\t";
+// 		}
+// 		std::cout << std::endl;
+// 	}
+// 	std::cout << "\\\\\\\\\\Inversion Version\\\\\\\\\\\\" << std::endl;
+// 	Eigen::MatrixXd ainv(5, 5);
+// 	for (int i = 0; i < 5; i++)
+// 	{
+// 		for (int j = 0; j < 5; j++)
+// 		{
+// 			ainv(i, j) = a_inv[i][j];
+// 			
+// 		}
+// 	}
+// 	std::cout << a * ainv << std::endl;
 	ifstream infile;
 	infile.open("../data/rsp.txt");
 	string str;
@@ -19,7 +63,7 @@ int main()
 	}
 	infile.close();
 	int nind = Y.size();
-	double **U = (double **)malloc(nind * sizeof(double*));
+	double **ULN1 = (double **)malloc(nind * sizeof(double*));
 	infile.open("../data/LN1.txt");
 	str="";
 	int id = 0;
@@ -32,20 +76,75 @@ int main()
 		{
 			ncols = tmp.size();
 		}
-		U[id] = (double *)malloc(ncols* sizeof(double));
+		ULN1[id] = (double *)malloc(ncols* sizeof(double));
 		for (int i=0;i<ncols;i++)
 		{
-			U[id][i] = stod(tmp[i]);
+			ULN1[id][i] = stod(tmp[i]);
 		}
 		id++;
 	}
 	infile.close();
 	vector<vector<double>> LN1;
-	ToolKit::ArraytoVector(U, nind, ncols, LN1, false);
+	ToolKit::ArraytoVector(ULN1, nind, ncols, LN1, true);
+	////////////////////////////////
+	double **ULN2 = (double **)malloc(nind * sizeof(double*));
+	infile.open("../data/LN2.txt");
+	str = "";
+	id = 0;
+	ncols = 0;
+	while (getline(infile, str))
+	{
+		vector<string> tmp;
+		ToolKit::Stringsplit(str, tmp, "\t");
+		if (!ncols)
+		{
+			ncols = tmp.size();
+		}
+		ULN2[id] = (double *)malloc(ncols * sizeof(double));
+		for (int i = 0; i < ncols; i++)
+		{
+			ULN2[id][i] = stod(tmp[i]);
+		}
+		id++;
+	}
+	infile.close();
+	vector<vector<double>> LN2;
+	ToolKit::ArraytoVector(ULN2, nind, ncols, LN2, true);
+
+	////////////////////////////
+	double **ULN3 = (double **)malloc(nind * sizeof(double*));
+	infile.open("../data/LN3.txt");
+	str = "";
+	id = 0;
+	ncols = 0;
+	while (getline(infile, str))
+	{
+		vector<string> tmp;
+		ToolKit::Stringsplit(str, tmp, "\t");
+		if (!ncols)
+		{
+			ncols = tmp.size();
+		}
+		ULN3[id] = (double *)malloc(ncols * sizeof(double));
+		for (int i = 0; i < ncols; i++)
+		{
+			ULN3[id][i] = stod(tmp[i]);
+		}
+		id++;
+	}
+	infile.close();
+	vector<vector<double>> LN3;
+	ToolKit::ArraytoVector(ULN3, nind, ncols, LN3, true);
+
+	/////////////////////////////////
+
 	MINQUE varest;
 	varest.import_data(Y);
-	varest.push_back_U(LN1);
-	varest.var_est();
+	varest.push_back_Vi(LN1);
+	varest.push_back_Vi(LN2);
+	varest.push_back_Vi(LN3);
+	std::cout << "starting MINQUE" << std::endl;
+	varest.MIVQUE();
 }
 	
 

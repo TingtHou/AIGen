@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "MatFunc.h"
 
-void MatFunc::LUinversion(std::vector<std::vector<double>>& M, double limit)
+void MatFunc::LUinversion(std::vector<std::vector<double>> &M, double limit)
 {
 	int rows = M.size();
 	int cols = M[0].size();
@@ -15,17 +15,20 @@ void MatFunc::LUinversion(std::vector<std::vector<double>>& M, double limit)
 		}
 	}
 	Eigen::MatrixXd inversion = ori.inverse();
+	M.clear();
+	M.resize(rows);
 	for (int i = 0; i < rows; i++)
 	{
+		M[i].resize(cols);
 		for (int j = 0; j < cols; j++)
 		{
-			if (ori(i, j)<limit)
+			if (abs(ori(i, j))<limit)
 			{
 				M[i][j] = 0;
 			}
 			else
 			{
-				M[i][j]= ori(i, j);
+				M[i][j]= inversion(i, j);
 			} 
 		}
 	}

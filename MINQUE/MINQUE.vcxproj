@@ -171,11 +171,17 @@
     <ClInclude Include="cuMatrixSample.h" />
     <ClInclude Include="MatFunc.h" />
     <ClInclude Include="MINQUE.h" />
+    <ClInclude Include="mixed_model.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+    </ClInclude>
     <ClInclude Include="pch.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="ToolKit.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="mixed_model.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="ToolKit.cpp" />
     <CudaCompile Include="cuMatrix.cpp" />
     <ClCompile Include="cuMatrixSample.cpp" />

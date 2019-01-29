@@ -8,9 +8,10 @@ class MINQUE
 public:
 	MINQUE();
 	void push_back_U(const vector< vector<double> > &Ui);
+	void push_back_Vi(const vector< vector<double> > &Vi);
 	void import_data(const vector<double> &Y);
 	void SetGPU(bool isGPU);
-	void var_est();
+	void MIVQUE();
 	~MINQUE();
 private:
 	void calcu_Q();
@@ -18,6 +19,10 @@ private:
 	void calcu_q(const vector< vector<double> > &Q_Uv, long u);
 	void HR_equation();
 	void init_Vi();
+	void init_Vi(const vector<double> &prior);
+	void Minque_1();
+	void MINQUE_alpha(const vector<double> &prior);
+	void morrision_Vi(const vector<double> &prior);
 	vector<double> _alpha;  // alpha for MINQUE
 	vector< vector<double> > _U; // excluding the last identity matrix
 	vector< vector<double> > _U_v;

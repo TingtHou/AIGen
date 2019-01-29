@@ -8,6 +8,5 @@ public:
 	static void Array2toArrat1(double **a, int n, int m, double *b, bool Colfirst=true);
 	static void Vector2toArray1(vector<vector<double>>& v, double *b, bool Colfirst = true);
 	static void Stringsplit(string &org, vector<string> & splited, string delim);
-
 };
 

@@ -51,6 +51,30 @@ void MINQUE::push_back_U(const vector< vector<double> > &Ui)
 	_U_r.insert(_U_r.end(), U_r.begin(), U_r.end());
 }
 
+void MINQUE::push_back_Vi(const vector<vector<double>>& Vi)
+{
+	double lamda = 1;
+	if (_Vi.size() != _n)
+	{
+		_Vi.clear();
+		_Vi.resize(_n);
+		for (int i = 0; i < _n; i++)
+		{
+			_Vi[i].resize(_n);
+			for (int j = 0; j < _n; j++) 
+				_Vi[i][j] = 0.0;
+		}
+	}
+	for (int i=0;i<_n;i++)
+	{
+		for (int j=0;j<_n;j++)
+		{
+			_Vi[i][j] = lamda * Vi[i][j];
+		}
+	}
+	_r++;
+}
+
 void MINQUE::init_Vi()
 {
 	long i = 0, j = 0;
@@ -73,42 +97,66 @@ void MINQUE::init_Vi()
 	}
 }
 
+void MINQUE::init_Vi(const vector<double>& prior)
+{
+	long i = 0, j = 0;
+
+	if (_Vi.size() != _n)
+	{
+		_Vi.clear();
+		_Vi.resize(_n);
+		for (i = 0; i < _n; i++) _Vi[i].resize(_n);
+		for (i = 0; i < _n; i++) _Vi[i][i] = 1.0 / prior[_r];
+	}
+	else
+	{
+		for (i = 0; i < _n - 1; i++)
+		{
+			_Vi[i][i] = 1.0 / prior[_r];
+			for (j = i + 1; j < _n; j++) _Vi[i][j] = _Vi[j][i] = 0.0;
+		}
+		_Vi[_n - 1][_n - 1] = 1.0 / prior[_r];
+	}
+}
 
 
-void MINQUE::var_est()
+
+void MINQUE::Minque_1()
 {
 	long i = 0, j = 0, k = 0, l = 0, m = 0;
 	double d_buf = 0.0;
 	double lamda = 0.0;
-	vector<double> Viu(_n);
 
-	_alpha.clear();
-	_alpha.resize(_r + 1);
 	for (i = 0; i < _r + 1; i++) _alpha[i] = 1.0;
-
-	init_Vi();
-
-	for (i = 0; i < _r; i++)
+	if (_Vi.size() != _n)
 	{
-		for (j = 0; j < _Uu_c[i]; j++, m++)
-		{
-			for (k = 0; k < _n; k++)
-			{
-				Viu[k] = 0.0;
-				//_U_r number of non-zero element for each random effect
-				//_U_p id of non-zero element for each random effect
-				for (l = 0; l < _U_r[m]; l++) Viu[k] += _Vi[k][_U_p[m][l]] * _U_v[m][l];
-			}
+		vector<double> Viu(_n);
 
-			lamda = 1.0;
-			for (k = 0; k < _U_r[m]; k++) lamda += _U_v[m][k] * Viu[_U_p[m][k]];
-			for (k = 0; k < _n; k++)
+		init_Vi();
+
+		for (i = 0; i < _r; i++)
+		{
+			for (j = 0; j < _Uu_c[i]; j++, m++)
 			{
-				d_buf = Viu[k] / lamda;
-				for (l = k; l < _n; l++) _Vi[l][k] = _Vi[k][l] -= d_buf * Viu[l];
+				for (k = 0; k < _n; k++)
+				{
+					Viu[k] = 0.0;
+					//_U_r number of non-zero element for each random effect
+					//_U_p id of non-zero element for each random effect
+					for (l = 0; l < _U_r[m]; l++) Viu[k] += _Vi[k][_U_p[m][l]] * _U_v[m][l];
+				}
+
+				lamda = 1.0;
+				for (k = 0; k < _U_r[m]; k++) lamda += _U_v[m][k] * Viu[_U_p[m][k]];
+				for (k = 0; k < _n; k++)
+				{
+					d_buf = Viu[k] / lamda;
+					for (l = k; l < _n; l++) _Vi[l][k] = _Vi[k][l] -= d_buf * Viu[l];
+				}
 			}
 		}
 	}
+	
 
 	HR_equation();
 
@@ -119,6 +167,58 @@ void MINQUE::var_est()
 // 		if (_var_comp[j] < 1.0e-08*fabs(_Y[0])) _var_comp[j] = fabs(_Y[0])*0.00001*StatFunc::UniformDev(0.0, 1.0, seed);
 	}
 	std::cout << std::endl;
+}
+
+void MINQUE::MINQUE_alpha(const vector<double>& prior)
+{
+	long j = 0;
+
+	_alpha.clear();
+	_alpha = prior;
+
+	// calculate Vi
+	morrision_Vi(prior);
+
+	HR_equation();
+
+	for (j = 0; j < _r + 1; j++)
+	{
+		std::cout << _var_comp[j] << "\t";
+//		long seed = -5251949;
+//		if (_var_comp[j] < 1.0e-08*fabs(_Y[0])) _var_comp[j] = fabs(_Y[0])*0.00001*StatFunc::UniformDev(0.0, 1.0, seed);
+	}
+}
+
+void MINQUE::morrision_Vi(const vector<double>& prior)
+{
+	long i = 0, j = 0, k = 0, l = 0, m = 0;
+	double d_buf = 0.0;
+	double ut_Vi_u = 0.0;
+	vector<double> Vi_u(_n);
+
+	// initialize Vi matrix
+	init_Vi(prior);
+
+	for (i = 0; i < _r; i++)
+	{
+		for (j = 0; j < _Uu_c[i]; j++, m++)
+		{
+			for (k = 0; k < _n; k++)
+			{
+				Vi_u[k] = 0.0;
+				for (l = 0; l < _U_r[m]; l++) Vi_u[k] += _Vi[k][_U_p[m][l]] * _U_v[m][l];
+			}
+
+			ut_Vi_u = 0.0;
+			for (k = 0; k < _U_r[m]; k++) ut_Vi_u += _U_v[m][k] * Vi_u[_U_p[m][k]];
+			ut_Vi_u = prior[i] / (1.0 + prior[i] * ut_Vi_u);
+			for (k = 0; k < _n; k++)
+			{
+				d_buf = Vi_u[k] * ut_Vi_u;
+				for (l = k; l < _n; l++) _Vi[l][k] = _Vi[k][l] -= d_buf * Vi_u[l];
+			}
+		}
+	}
 }
 
 void MINQUE::HR_equation()
@@ -184,6 +284,14 @@ void MINQUE::HR_equation()
 }
 
 
+
+void MINQUE::MIVQUE()
+{
+	Minque_1();
+	vector<double> var_comp = _var_comp;
+	MINQUE_alpha(var_comp);
+
+}
 
 MINQUE::~MINQUE()
 {
