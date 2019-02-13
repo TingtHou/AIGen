@@ -4,148 +4,225 @@
 #include "pch.h"
 #include <iostream>
 #include "ToolKit.h"
-#include "MINQUE.h"
+#include "minque.h"
 #include <string>
 #include <fstream>
 #include <Eigen/Dense>
+#include <time.h>
+#include "cuToolkit.h"
+#include "cuMINQUE.h"
+#include <iomanip>
+#include <io.h>
+
+
+void MinqueSample(string folder);
+void getFiles(string path, vector<string>& files);
 int main()
 {
-// 	Eigen::MatrixXd a = Eigen::MatrixXd::Random(5, 5);
-// 	std::cout << "\\\\\\\\\Matrixxd Version\\\\\\\\\\\\\\" << std::endl;
-// 	std::cout << a << std::endl;
-// 	std::cout << "\\\\\\\\\\Vector Version\\\\\\\\\\\\" << std::endl;
-// 	vector<vector<double>> a_inv(5);
-// 	for (int i=0;i<5;i++)
-// 	{
-// 		a_inv[i].resize(5);
-// 		for (int j=0;j<5;j++)
-// 		{
-// 			a_inv[i][j] = a(i, j);
-// 		}
-// 	}
-// 	for (int i = 0; i < 5; i++)
-// 	{
-// 		for (int j = 0; j < 5; j++)
-// 		{
-// 			std::cout << a_inv[i][j] << "\t";
-// 		}
-// 		std::cout << std::endl;
-// 	}
-// 
-// 	MatFunc::LUinversion(a_inv, 1e-20);
-// 	std::cout << "\\\\\\\\\\Inversion Version\\\\\\\\\\\\" << std::endl;
-// 	for (int i = 0; i < 5; i++)
-// 	{
-// 		for (int j = 0; j < 5; j++)
-// 		{
-// 			std::cout << a_inv[i][j] << "\t";
-// 		}
-// 		std::cout << std::endl;
-// 	}
-// 	std::cout << "\\\\\\\\\\Inversion Version\\\\\\\\\\\\" << std::endl;
-// 	Eigen::MatrixXd ainv(5, 5);
-// 	for (int i = 0; i < 5; i++)
-// 	{
-// 		for (int j = 0; j < 5; j++)
-// 		{
-// 			ainv(i, j) = a_inv[i][j];
-// 			
-// 		}
-// 	}
-// 	std::cout << a * ainv << std::endl;
-	ifstream infile;
-	infile.open("../data/rsp.txt");
-	string str;
-	vector<double> Y;
-	while (getline(infile, str))
+	vector<string> files;
+	string path = "C:\\Users\\Hou59\\source\\repos\\TingtHou\\Kernel-Based-Neural-Network\\data3";
+	getFiles(path, files);
+	for (int i=0;i<files.size();i++)
 	{
-		Y.push_back(stod(str));
+		MinqueSample(files.at(i));
 	}
-	infile.close();
-	int nind = Y.size();
-	double **ULN1 = (double **)malloc(nind * sizeof(double*));
-	infile.open("../data/LN1.txt");
-	str="";
-	int id = 0;
-	int ncols=0;
-	while (getline(infile, str))
-	{
-		vector<string> tmp;
-		ToolKit::Stringsplit(str, tmp, "\t");
-		if (!ncols)
-		{
-			ncols = tmp.size();
-		}
-		ULN1[id] = (double *)malloc(ncols* sizeof(double));
-		for (int i=0;i<ncols;i++)
-		{
-			ULN1[id][i] = stod(tmp[i]);
-		}
-		id++;
-	}
-	infile.close();
-	vector<vector<double>> LN1;
-	ToolKit::ArraytoVector(ULN1, nind, ncols, LN1, true);
-	////////////////////////////////
-	double **ULN2 = (double **)malloc(nind * sizeof(double*));
-	infile.open("../data/LN2.txt");
-	str = "";
-	id = 0;
-	ncols = 0;
-	while (getline(infile, str))
-	{
-		vector<string> tmp;
-		ToolKit::Stringsplit(str, tmp, "\t");
-		if (!ncols)
-		{
-			ncols = tmp.size();
-		}
-		ULN2[id] = (double *)malloc(ncols * sizeof(double));
-		for (int i = 0; i < ncols; i++)
-		{
-			ULN2[id][i] = stod(tmp[i]);
-		}
-		id++;
-	}
-	infile.close();
-	vector<vector<double>> LN2;
-	ToolKit::ArraytoVector(ULN2, nind, ncols, LN2, true);
-
-	////////////////////////////
-	double **ULN3 = (double **)malloc(nind * sizeof(double*));
-	infile.open("../data/LN3.txt");
-	str = "";
-	id = 0;
-	ncols = 0;
-	while (getline(infile, str))
-	{
-		vector<string> tmp;
-		ToolKit::Stringsplit(str, tmp, "\t");
-		if (!ncols)
-		{
-			ncols = tmp.size();
-		}
-		ULN3[id] = (double *)malloc(ncols * sizeof(double));
-		for (int i = 0; i < ncols; i++)
-		{
-			ULN3[id][i] = stod(tmp[i]);
-		}
-		id++;
-	}
-	infile.close();
-	vector<vector<double>> LN3;
-	ToolKit::ArraytoVector(ULN3, nind, ncols, LN3, true);
-
-	/////////////////////////////////
-
-	MINQUE varest;
-	varest.import_data(Y);
-	varest.push_back_Vi(LN1);
-	varest.push_back_Vi(LN2);
-	varest.push_back_Vi(LN3);
-	std::cout << "starting MINQUE" << std::endl;
-	varest.MIVQUE();
+	
 }
+
+
+void getFiles(string path, vector<string>& files)
+{
+	//文件句柄
+	intptr_t hFile = 0;
+	//文件信息
+	struct _finddata_t fileinfo;
+	string p;
+	if ((hFile = _findfirst(p.assign(path).append("\\*").c_str(), &fileinfo)) != -1)
+	{
+		do
+		{
+			//如果是目录,迭代之
+			//如果不是,加入列表
+			if ((fileinfo.attrib &  _A_SUBDIR))
+			{
+				if (strcmp(fileinfo.name, ".") != 0 && strcmp(fileinfo.name, "..") != 0)
+					files.push_back(p.assign(path).append("\\").append(fileinfo.name));
+			}
+		} while (_findnext(hFile, &fileinfo) == 0);
+		_findclose(hFile);
+	}
+}
+
+
+void MinqueSample(string folder)
+{
+
+	std::string stime;
+	std::stringstream strtime;
+	std::time_t currenttime = std::time(0);
+	char tAll[255];
+	tm Tm;
+	localtime_s(&Tm, &currenttime);
+	std::strftime(tAll, sizeof(tAll), "%Y-%m-%d-%H-%M-%S", &Tm);
+//	std::string folder = "../data2/001.dvp/";
+	std::string Yfile = folder + "\\rsp.txt";
+	std::string L1file = folder + "\\knl/LN1.txt";
+	std::string L2file = folder + "\\knl/LN2.txt";
+	std::string L3file = folder + "\\knl/LN3.txt";
+	std::string logfile = folder + "\\log.txt";
+	ofstream oufile;
+	oufile.open(logfile, ios::out);
+	oufile << tAll << std::endl;
+	oufile.flush();
+	ifstream infile;
+	infile.open(Yfile);
+	string str;
+	std::vector<double> yvector;
+	yvector.clear();
+	clock_t t1 = clock();
+	std::cout << "Reading Phenotype: ";
+	
+	while (getline(infile, str))
+	{
+		yvector.push_back(stod(str));
+	}
+	infile.close();
+	int nind = yvector.size();
+	std::cout << nind<<" Total" << std::endl;
+	Eigen::VectorXd Y(nind);
+	for (int i = 0; i < nind; i++)
+	{
+		Y[i] = yvector[i];
+	}
+	oufile << "Reading Phenotype Elapse Time : " << (clock() - t1) * 1.0 / CLOCKS_PER_SEC * 1000 << " ms" << std::endl;
+/////////////////////////////////////////////////////////////
+	Eigen::MatrixXd LN1(nind, nind);
+	LN1.setZero();
+	infile.open(L1file);
+	str = "";
+	int id = 0;
+	int ncols = 0;
+	std::cout << "Reading LN1 Matrix: ";
+	t1 = clock();
+	while (getline(infile, str))
+	{
+		vector<string> tmp;
+		ToolKit::Stringsplit(str, tmp, "\t");
+		if (!ncols)
+		{
+			ncols = tmp.size();
+		}
+		for (int i = 0; i < ncols; i++)
+		{
+			LN1(id, i) = stod(tmp[i]);
+		}
+		id++;
+		std::cout << fixed << setprecision(2)<< "\r\rReading LN1 Matrix: " << (double)id * 100 / (double)nind << "%";
+	}
+	infile.close();
+	std::cout << std::endl;
+	oufile << "Reading Reading LN1 Matrix Elapse Time : " << (clock() - t1) * 1.0 / CLOCKS_PER_SEC * 1000 << " ms" << std::endl;
+
+	////////////////////////////////////////
+	Eigen::MatrixXd LN2(nind, nind);
+	LN2.setZero();
+	infile.open(L2file);
+	str = "";
+	id = 0;
+	ncols = 0;
+	std::cout << "Reading LN2 Matrix: ";
+	t1 = clock();
+	while (getline(infile, str))
+	{
+		vector<string> tmp;
+		ToolKit::Stringsplit(str, tmp, "\t");
+		if (!ncols)
+		{
+			ncols = tmp.size();
+		}
+		for (int i = 0; i < ncols; i++)
+		{
+			LN2(id, i) = stod(tmp[i]);
+		}
+		id++;
+		std::cout << fixed << setprecision(2) << "\r\rReading LN2 Matrix: " << (double)id * 100 / (double)nind << "%";
+	}
+	infile.close();
+	oufile << "Reading Reading LN2 Matrix Elapse Time : " << (clock() - t1) * 1.0 / CLOCKS_PER_SEC * 1000 << " ms" << std::endl;
+	std::cout << std::endl;
+	/////////////////////////////////////////////////////
+	Eigen::MatrixXd LN3(nind, nind);
+	LN3.setZero();
+	infile.open(L3file);
+	str = "";
+	id = 0;
+	ncols = 0;
+	std::cout << "Reading LN3 Matrix: ";
+	t1 = clock();
+	while (getline(infile, str))
+	{
+		vector<string> tmp;
+		ToolKit::Stringsplit(str, tmp, "\t");
+		if (!ncols)
+		{
+			ncols = tmp.size();
+		}
+		for (int i = 0; i < ncols; i++)
+		{
+			LN3(id, i) = stod(tmp[i]);
+		}
+		id++;
+		std::cout << fixed << setprecision(2) << "\r\rReading LN3 Matrix: " << (double)id * 100 / (double)nind << "%";
+	}
+	infile.close();
+	oufile << "Reading Reading LN3 Matrix Elapse Time : " << (clock() - t1) * 1.0 / CLOCKS_PER_SEC * 1000 << " ms" << std::endl;
+
+	std::cout << std::endl;
+	oufile.flush();
+	//////////////////////////////////////////////////
+	cuMINQUE cuvarest;
+	std::cout << "Push back Y" << std::endl;
+	cuvarest.import_Y(Y.data(), Y.size());
+	std::cout << "Push back LN1 matrix" << std::endl;
+	cuvarest.push_back_Vi(LN1.data(), LN1.rows());
+	std::cout << "Push back LN2 matrix" << std::endl;
+	cuvarest.push_back_Vi(LN2.data(), LN2.rows());
+	std::cout << "Push back LN matrix" << std::endl;
+	cuvarest.push_back_Vi(LN3.data(), LN3.rows());
+	std::cout << "starting GPU MINQUE" << std::endl;
+	t1 = clock();
+	cuvarest.estimate();
+	std::cout << fixed << setprecision(2) << "GPU Elapse Time : " << (clock() - t1) * 1.0 / CLOCKS_PER_SEC * 1000 << " ms" << std::endl;
+	oufile << setprecision(2) << "GPU Elapse Time : " << (clock() - t1) * 1.0 / CLOCKS_PER_SEC * 1000 << " ms" << std::endl;
+	std::cout << fixed << setprecision(4) << "Estimated Variances: ";
+	oufile << fixed << setprecision(4) << "Estimated Variances: ";
+	std::vector<double> theta = cuvarest.GetTheta();
+	for (int i = 0; i < theta.size(); i++)
+	{
+		std::cout << theta.at(i) << " ";
+		oufile << theta.at(i) << " ";
+	}
+	std::cout << std::endl;
+	oufile << std::endl;
+	oufile.flush();
+	///////////////////////////////////////////////
+	MINQUE varest;
+	varest.importY(Y);
+	varest.pushback_Vi(LN1);
+	varest.pushback_Vi(LN2);
+	varest.pushback_Vi(LN3);
+	std::cout << "starting CPU MINQUE" << std::endl;
+	t1 = clock();
+	varest.estimate();
+	std::cout << "CPU Elapse Time : " << (clock() - t1) * 1.0 / CLOCKS_PER_SEC * 1000 << " ms" << std::endl;
+	oufile << "CPU Elapse Time : " << (clock() - t1) * 1.0 / CLOCKS_PER_SEC * 1000 << " ms" << std::endl;
+	std::cout << fixed << setprecision(4)<< "Estimated Variances: " << varest.Gettheta().transpose() << std::endl;
+	oufile << fixed << setprecision(4) << "Estimated Variances: " << varest.Gettheta().transpose() << std::endl;
+	oufile.flush();
+	oufile.close();
+}
+
+
 	
 
 

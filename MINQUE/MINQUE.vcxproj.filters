@@ -21,22 +21,16 @@
     <ClInclude Include="resource.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="cuMatrix.h">
+    <ClInclude Include="minque.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="cuMatrixSample.h">
+    <ClInclude Include="cuMINQUE.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="MatFunc.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="MINQUE.h">
+    <ClInclude Include="cuToolkit.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ToolKit.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="mixed_model.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -44,28 +38,20 @@
     <ClCompile Include="pch.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="cuMatrixSample.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="MatFunc.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="MINQUE.cpp">
+    <ClCompile Include="minque.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="ToolKit.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="mixed_model.cpp">
+    <ClCompile Include="cuMINQUE.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <CudaCompile Include="cuMatrix.cpp">
+    <ClCompile Include="cuToolkit.cpp">
       <Filter>Source Files</Filter>
-    </CudaCompile>
+    </ClCompile>
   </ItemGroup>
 </Project>

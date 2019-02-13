@@ -6,9 +6,9 @@ class MINQUE
 {
 public:
 	void importY(Eigen::VectorXd Y);
-	void Vi_pushback(Eigen::MatrixXd Ui);
-	void setGPU(bool isGPU);
-	void start();
+	void pushback_Vi(Eigen::MatrixXd Ui);
+	void estimate();
+	Eigen::VectorXd Gettheta();
 	~MINQUE();
 private:
 	int nind = 0;

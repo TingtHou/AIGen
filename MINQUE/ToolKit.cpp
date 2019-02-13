@@ -96,3 +96,4 @@ void ToolKit::Stringsplit(string & org, vector<string>& splited, string delim)
 		splited.push_back(org.substr(current, next - current));
 	} while (next != string::npos);
 }
+
