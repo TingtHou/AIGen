@@ -2,16 +2,16 @@
 #include "cuMINQUE.h"
 #include <Eigen/Dense>
 #include <fstream>
+#include "ThreadPool.h"
 cuMINQUE::cuMINQUE()
 {
-	status= cublasCreate(&handle);
-	if (status != CUBLAS_STATUS_SUCCESS) {
+	status = cublasCreate(&handle);
+	if (status != CUBLAS_STATUS_SUCCESS) 
+	{
 		fprintf(stderr, "!!!! CUBLAS initialization error\n");
 		return;
 	}
 }
-
-
 cuMINQUE::~cuMINQUE()
 {
 	cudaFree(D_Y);
@@ -52,6 +52,7 @@ cuMINQUE::~cuMINQUE()
 	cublasDestroy(handle);
 
 }
+
 void cuMINQUE::import_Y(double * Y, int nind)
 {
 	const double alpha = 1.0;
@@ -70,7 +71,7 @@ void cuMINQUE::import_Y(double * Y, int nind)
 	memset(H_Identity, 0, nind*nind * sizeof(double));
 	for (int id = 0; id < nind; id++) H_Identity[id*nind + id] = 1;
 	cudaMalloc((double**)&D_Identity, nind*nind * sizeof(double));
-	cudastat=cudaMemcpy(D_Identity, H_Identity, nind*nind * sizeof(double), cudaMemcpyHostToDevice);
+	cudastat = cudaMemcpy(D_Identity, H_Identity, nind*nind * sizeof(double), cudaMemcpyHostToDevice);
 	cudastat = cudaGetLastError();
 	if (cudastat != cudaSuccess)
 	{
@@ -79,17 +80,8 @@ void cuMINQUE::import_Y(double * Y, int nind)
 	cudaDeviceSynchronize();
 	V.clear();
 	cudaMalloc((void**)&D_Vsum, nind*nind * sizeof(double));
-	cudaMemset(D_Vsum, 0, nind*nind * sizeof(double));	
+	cudaMemset(D_Vsum, 0, nind*nind * sizeof(double));
 	cudaDeviceSynchronize();
-	V.push_back(D_Identity);
-	cublasDgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, nind, nind, nind, &alpha, D_Identity, nind, V[0], nind, &beta, D_Vsum, nind);
-	cudastat = cudaGetLastError();
-	if (cudastat != cudaSuccess)
-	{
-		std::cout << cudaGetErrorString(cudastat) << std::endl;
-	}
-	cudaDeviceSynchronize();
-	nVi++;
 }
 
 void cuMINQUE::push_back_Vi(double * Vi, int n)
@@ -122,12 +114,30 @@ void cuMINQUE::push_back_Vi(double * Vi, int n)
 void cuMINQUE::init()
 {
 	cudaMalloc((void **)&D_Vsum_INV, nind*nind * sizeof(double));
+	cudaDeviceSynchronize();
+	cudastat = cudaGetLastError();
+	if (cudastat != cudaSuccess)
+	{
+		std::cout << cudastat << std::endl;
+	}
 	cudaMalloc((double**)&D_Gamma_INV, nVi*nVi * sizeof(double));
+	cudaDeviceSynchronize();
+	cudastat = cudaGetLastError();
+	if (cudastat != cudaSuccess)
+	{
+		std::cout << cudastat << std::endl;
+	}
 	cudaMemset(D_Gamma_INV, 0, nVi*nVi * sizeof(double));
-	cudaDeviceSynchronize();
+	
 	cudaMalloc((double**)&D_Gamma, nVi*nVi * sizeof(double));
-	cudaMemset(D_Gamma, 0, nVi*nVi * sizeof(double));
 	cudaDeviceSynchronize();
+	cudastat = cudaGetLastError();
+	if (cudastat != cudaSuccess)
+	{
+		std::cout << cudastat << std::endl;
+	}
+	cudaMemset(D_Gamma, 0, nVi*nVi * sizeof(double));
+	
 	theta = (double*)malloc(nVi * sizeof(double));
 	memset(theta, 0, nVi * sizeof(double));
 	H_Gamma = (double*)malloc(nVi*nVi * sizeof(double));
@@ -140,9 +150,20 @@ int cuMINQUE::estimate()
 {
 	init();
 	cudaDeviceSynchronize();
+	cudastat = cudaGetLastError();
+	if (cudastat != cudaSuccess)
+	{
+		std::cout << cudastat << std::endl;
+	}
 	//////Calculate sum of Variables matrix////////
 	cuToolkit::cuMatrixInv(D_Vsum, D_Vsum_INV, nind);
 	cudaDeviceSynchronize();
+	cudastat = cudaGetLastError();
+	if (cudastat != cudaSuccess)
+	{
+		std::cout << cudastat << std::endl;
+	}
+	std::cout << "Calculate inversed matrix of SumV: Done" << std::endl;
 // 	double *H_Vsum = (double*)malloc(nind*nind * sizeof(double));
 // 	cudaMemcpy(H_Vsum, D_Vsum_INV, nind*nind * sizeof(double), cudaMemcpyDeviceToHost);
 // 	Eigen::MatrixXd test = Eigen::Map<Eigen::MatrixXd>(H_Vsum, nind, nind);
@@ -155,6 +176,7 @@ int cuMINQUE::estimate()
 	///////////Calculate Gamma Matrix////////////////////
 	
 	Calc_Gamma();
+	std::cout << "Calculate  matrix of Gamma: Done" << std::endl;
 	/////////////////////////////////////
 	
 	const double alpha = 1.0;
@@ -194,56 +216,88 @@ std::vector<double> cuMINQUE::GetTheta()
 	return retheta;
 }
 
+
 void cuMINQUE::Calc_Gamma()
 {
 	
-	double *D_Ksum_inv_Ki_Ksum_inv_Kj=nullptr, *D_Ksum_inv_Ki=nullptr,*D_Ksum_inv_Kj=nullptr;
-	double *H_Ksum_inv_Ki_Ksum_inv_Kj = nullptr;
-	cudaMalloc((double**)&D_Ksum_inv_Ki_Ksum_inv_Kj, nind*nind * sizeof(double));
-	cudaMalloc((double**)&D_Ksum_inv_Ki, nind*nind * sizeof(double));
-	cudaMalloc((double**)&D_Ksum_inv_Kj, nind*nind * sizeof(double));
-	cudaDeviceSynchronize();
-	H_Ksum_inv_Ki_Ksum_inv_Kj = (double*)malloc(nind*nind * sizeof(double));
-	const double alpha = 1.0;
-	const double beta = 0.0;
+// 	double *D_Ksum_inv_Ki_Ksum_inv_Kj=nullptr, *D_Ksum_inv_Ki=nullptr,*D_Ksum_inv_Kj=nullptr;
+// 	double *H_Ksum_inv_Ki_Ksum_inv_Kj = nullptr;
+// 	cudaMalloc((double**)&D_Ksum_inv_Ki_Ksum_inv_Kj, nind*nind * sizeof(double));
+// 	cudaMalloc((double**)&D_Ksum_inv_Ki, nind*nind * sizeof(double));
+// 	cudaMalloc((double**)&D_Ksum_inv_Kj, nind*nind * sizeof(double));
+// 	cudaDeviceSynchronize();
+//	H_Ksum_inv_Ki_Ksum_inv_Kj = (double*)malloc(nind*nind * sizeof(double));
+// 	const double alpha = 1.0;
+// 	const double beta = 0.0;
+	ThreadPool tp(10);
+	int k = 0;
 	for (int i=0;i<nVi;i++)
 	{
 		for (int j=i;j<nVi;j++)
 		{
-			cudaMemset(D_Ksum_inv_Ki_Ksum_inv_Kj, 0, nind*nind * sizeof(double));
-			cudaDeviceSynchronize();
-			memset(H_Ksum_inv_Ki_Ksum_inv_Kj, 0, nind*nind * sizeof(double));
-			status= cublasDgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, nind, nind, nind, &alpha, D_Vsum_INV, nind, V.at(i), nind, &beta, D_Ksum_inv_Ki, nind);
-			cudaDeviceSynchronize();
-			cudastat = cudaGetLastError();
-			if (cudastat != cudaSuccess)
-			{
-				std::cout << cudaGetErrorString(cudastat) << std::endl;
-			}
-			status=cublasDgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, nind, nind, nind, &alpha, D_Vsum_INV, nind, V.at(j), nind, &beta, D_Ksum_inv_Kj, nind);
-			cudaDeviceSynchronize();
+			tp.enqueue([k](double *D_Vsum_INV, double *Vi, double *Vj, int nind, double* D_Gamma,int i, int j, int nVi) {
+				double *D_Ksum_inv_Ki_Ksum_inv_Kj = nullptr, *D_Ksum_inv_Ki = nullptr, *D_Ksum_inv_Kj = nullptr;
+				cudaMalloc((double**)&D_Ksum_inv_Ki_Ksum_inv_Kj, nind*nind * sizeof(double));
+				cudaMalloc((double**)&D_Ksum_inv_Ki, nind*nind * sizeof(double));
+				cudaMalloc((double**)&D_Ksum_inv_Kj, nind*nind * sizeof(double));
+				const double alpha = 1.0;
+				const double beta = 0.0;
+				cublasHandle_t handle;
+				cublasStatus_t status= cublasCreate(&handle);
+				if (status != CUBLAS_STATUS_SUCCESS)
+				{
+					fprintf(stderr, "!!!! CUBLAS initialization error\n");
+					return;
+				}
+				cudaDeviceSynchronize();
+				cudaMemset(D_Ksum_inv_Ki_Ksum_inv_Kj, 0, nind*nind * sizeof(double));
+				cudaDeviceSynchronize();
+				status = cublasDgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, nind, nind, nind, &alpha, D_Vsum_INV, nind, Vi, nind, &beta, D_Ksum_inv_Ki, nind);
+				cudaDeviceSynchronize();
+				cudaError_t cudastat = cudaGetLastError();
+				if (cudastat != cudaSuccess)
+				{
+					std::cout << cudaGetErrorString(cudastat) << std::endl;
+				}
+				status = cublasDgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, nind, nind, nind, &alpha, D_Vsum_INV, nind, Vj, nind, &beta, D_Ksum_inv_Kj, nind);
+				cudaDeviceSynchronize();
 
-		
-			cudastat = cudaGetLastError();
-			if (cudastat != cudaSuccess)
-			{
-				std::cout << cudaGetErrorString(cudastat) << std::endl;
-			}
-			cublasDgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, nind, nind, nind, &alpha, D_Ksum_inv_Ki, nind, D_Ksum_inv_Kj, nind, &beta, D_Ksum_inv_Ki_Ksum_inv_Kj, nind);
-			cudaDeviceSynchronize();
-			cudastat = cudaGetLastError();
-			if (cudastat != cudaSuccess)
-			{
-				std::cout << cudaGetErrorString(cudastat) << std::endl;
-			}
-// 			cublasDgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, nind, nind, nind, &alpha, D_Vsum_INV, nind, init_V.at(i), nind, &beta, D_Ksum_inv_Ki_Ksum_inv_Kj, nind);
-// 
-// 			cublasDgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, nind, nind, nind, &alpha, D_Ksum_inv_Ki_Ksum_inv_Kj, nind, D_Vsum_INV, nind, &beta, D_Ksum_inv_Ki_Ksum_inv_Kj, nind);
-// 			cublasDgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, nind, nind, nind, &alpha, D_Ksum_inv_Ki_Ksum_inv_Kj, nind, init_V.at(j), nind, &beta, D_Ksum_inv_Ki_Ksum_inv_Kj, nind);
-			int ijID = j * nVi + i;
-			cudaMemcpy(H_Ksum_inv_Ki_Ksum_inv_Kj, D_Ksum_inv_Ki_Ksum_inv_Kj, nind*nind * sizeof(double), cudaMemcpyDeviceToHost);
-			cudaDeviceSynchronize();
-			cudastat = cudaGetLastError();
+
+				cudastat = cudaGetLastError();
+				if (cudastat != cudaSuccess)
+				{
+					std::cout << cudaGetErrorString(cudastat) << std::endl;
+				}
+				cublasDgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, nind, nind, nind, &alpha, D_Ksum_inv_Ki, nind, D_Ksum_inv_Kj, nind, &beta, D_Ksum_inv_Ki_Ksum_inv_Kj, nind);
+				cudaDeviceSynchronize();
+				cudastat = cudaGetLastError();
+				if (cudastat != cudaSuccess)
+				{
+					std::cout << cudaGetErrorString(cudastat) << std::endl;
+				}
+				// 			cublasDgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, nind, nind, nind, &alpha, D_Vsum_INV, nind, init_V.at(i), nind, &beta, D_Ksum_inv_Ki_Ksum_inv_Kj, nind);
+				// 
+				// 			cublasDgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, nind, nind, nind, &alpha, D_Ksum_inv_Ki_Ksum_inv_Kj, nind, D_Vsum_INV, nind, &beta, D_Ksum_inv_Ki_Ksum_inv_Kj, nind);
+				// 			cublasDgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, nind, nind, nind, &alpha, D_Ksum_inv_Ki_Ksum_inv_Kj, nind, init_V.at(j), nind, &beta, D_Ksum_inv_Ki_Ksum_inv_Kj, nind);
+				int ijID = j * nVi + i;
+				int jiID = i * nVi + j;
+				//		cudaMemcpy(H_Ksum_inv_Ki_Ksum_inv_Kj, D_Ksum_inv_Ki_Ksum_inv_Kj, nind*nind * sizeof(double), cudaMemcpyDeviceToHost);
+				cudaDeviceSynchronize();
+				cuMatrixTrace(D_Ksum_inv_Ki_Ksum_inv_Kj, nind, D_Gamma + ijID);
+				// 			double d = -1;
+				// 			cudaMemcpy(&d,D_Gamma + ijID, sizeof(double), cudaMemcpyDeviceToHost);
+				cudaDeviceSynchronize();
+				cudaMemcpy(D_Gamma + jiID, D_Gamma + ijID, sizeof(double), cudaMemcpyDeviceToDevice);
+				cudaDeviceSynchronize();
+				cudaFree(D_Ksum_inv_Ki_Ksum_inv_Kj);
+				cudaFree(D_Ksum_inv_Ki);
+				cudaFree(D_Ksum_inv_Kj);
+				D_Ksum_inv_Kj = nullptr;
+				D_Ksum_inv_Ki = nullptr;
+				D_Ksum_inv_Ki_Ksum_inv_Kj = nullptr;
+			}, D_Vsum_INV, V.at(i), V.at(j), nind,D_Gamma, i, j, nVi);
+			k++;
+/*			cudastat = cudaGetLastError();
 			if (cudastat != cudaSuccess)
 			{
 				std::cout << cudaGetErrorString(cudastat) << std::endl;
@@ -254,20 +308,16 @@ void cuMINQUE::Calc_Gamma()
 			}
 			int jiID = i * nVi + j;
 			H_Gamma[jiID] = H_Gamma[ijID];
-			
+			*/
 		}
 	}
-	cudaFree(D_Ksum_inv_Ki_Ksum_inv_Kj);
-	cudaFree(D_Ksum_inv_Ki);
-	cudaFree(D_Ksum_inv_Kj);
-	D_Ksum_inv_Kj = nullptr;
-	D_Ksum_inv_Ki = nullptr;
-	D_Ksum_inv_Ki_Ksum_inv_Kj = nullptr;
-	free(H_Ksum_inv_Ki_Ksum_inv_Kj);
+	tp.~ThreadPool();
+
+//	free(H_Ksum_inv_Ki_Ksum_inv_Kj);
 // 	Eigen::MatrixXd test = Eigen::Map<Eigen::MatrixXd>(H_Gamma, nVi, nVi);
 // 	std::cout << test << std::endl;
-	cublasSetMatrix(nVi, nVi, sizeof(double), H_Gamma, nVi, D_Gamma, nVi);
-	cudaDeviceSynchronize();
+//	cublasSetMatrix(nVi, nVi, sizeof(double), H_Gamma, nVi, D_Gamma, nVi);
+//	cudaDeviceSynchronize();
 	cuToolkit::cuMatrixInv(D_Gamma, D_Gamma_INV, nVi);	
 	cudaDeviceSynchronize();
 // 	double *H_Vsum = (double*)malloc(nVi*nVi * sizeof(double));

@@ -6,12 +6,7 @@ void MINQUE::importY(Eigen::VectorXd Y)
 {
 	this->Y = Y;
 	nind = Y.size();
-	Eigen::MatrixXd Identity = Eigen::MatrixXd(nind, nind);
-	Identity.setZero();
-	for (int i = 0; i < nind; i++) Identity(i, i) = 1.0;
 	V.clear();
-	V.insert(V.end(), Identity);
-	nVi++;
 }
 
 void MINQUE::pushback_Vi(Eigen::MatrixXd Vi)

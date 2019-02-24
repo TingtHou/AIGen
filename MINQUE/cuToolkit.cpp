@@ -15,7 +15,7 @@ int cuToolkit::cuMatrixInv(double * d_A, double *d_A_INV, int N)
 		cublasstatus = cudaGetLastError();
 		if (cublasstatus != cudaSuccess)
 		{
-			std::cout << cudaGetErrorString(cublasstatus)<<"!!!! CUSOLVER initialization error\n" << std::endl;
+			std::cout << cudaGetErrorString(cublasstatus) << std::endl <<"!!!! CUSOLVER initialization error\n" << std::endl;
 		}
 		return status;
 	}
@@ -42,11 +42,17 @@ int cuToolkit::cuMatrixInv(double * d_A, double *d_A_INV, int N)
 		return status;
 	}
 	cublasstatus =cudaMemcpy(d_A_INV, d_B, sizeA, cudaMemcpyDeviceToDevice);
+	cudaDeviceSynchronize();
 	if (cublasstatus != CUSOLVER_STATUS_SUCCESS) {
+		cublasstatus = cudaGetLastError();
+		if (cublasstatus != cudaSuccess)
+		{
+			std::cout << cudaGetErrorString(cublasstatus) << "!!!! CUSOLVER initialization error\n" << std::endl;
+		}
 		fprintf(stderr, "!!!! Data copy between device error.\n");
 		return cublasstatus;
 	}
-	cudaDeviceSynchronize();
+	
 	free(B);
 	B = nullptr;
 	cudaFree(d_B);
@@ -59,6 +65,30 @@ int cuToolkit::cuMatrixInv(double * d_A, double *d_A_INV, int N)
 		return status;
 	}
 	return status;
+}
+
+
+void cuToolkit::cuGetGPUinfo()
+{
+	std::cout<<"\\\\\\\\\\\\\\\\\\\\\\\\\GPU Info\\\\\\\\\\\\\\\\\\\\\\\\\\"<<std::endl;
+	int nDevices;
+	cudaGetDeviceCount(&nDevices);
+	printf("Device Numbers: %d\n", nDevices);
+	for (int i = 0; i < nDevices; i++) {
+		cudaDeviceProp prop;
+		cudaGetDeviceProperties(&prop, i);
+		std::cout << "#####################################" << std::endl;
+		printf("Device ID: %d\n", i);
+		printf("Device name: %s\n", prop.name);
+		printf("Memory Clock Rate (KHz): %d\n",
+			prop.memoryClockRate);
+		printf("Memory Bus Width (bits): %d\n",
+			prop.memoryBusWidth);
+		printf("Peak Memory Bandwidth (GB/s): %f\n\n",
+			2.0*prop.memoryClockRate*(prop.memoryBusWidth / 8) / 1.0e6);
+	}
+
+	std::cout << "\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\" << std::endl;
 }
 
 
@@ -80,3 +110,4 @@ void InverseTest()
 	MatrixXd a2 = Eigen::Map<MatrixXd>(ai, 4, 4);
 	std::cout << a2 << std::endl;
 }
+

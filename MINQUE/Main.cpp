@@ -1,5 +1,4 @@
 // MINQUE.cpp : This file contains the 'main' function. Program execution begins and ends there.
-//
 
 #include "pch.h"
 #include <iostream>
@@ -13,19 +12,140 @@
 #include "cuMINQUE.h"
 #include <iomanip>
 #include <io.h>
-
-
+#include <random>
+#include "eigenmvn.h"
+#include "Random.h"
+//#include "cuMatrix.cuh"
+//extern "C" void cuMatrixTrace(const double *Mat, double *sum, int ncols);
 void MinqueSample(string folder);
 void getFiles(string path, vector<string>& files);
+
+double ave(double a[], int n)
+{
+	int sum = 0;
+	for (int i = 0; i < n; i++)
+		sum += a[i];
+	return sum / n;
+} //平均值，没什么好说的?
+//方差要用的是平均值，不是中值； 
+double ave(std::vector<double> a)
+{
+	int sum = 0;
+	for (int i = 0; i < a.size(); i++)
+		sum += a[i];
+	return sum / (double)a.size();
+} //平均值，没什么好说的?
+//方差要用的是平均值，不是中值； 
+
+
+double variance(std::vector<double> a)
+{
+	double sum = 0;
+	double average = ave(a);//函数调用！！不许有【】！！！不许有int和double ！！ 
+	for (int i = 0; i < a.size(); i++)
+		sum = (a[i] - average)*(a[i] - average);
+	return sum / (double)a.size();
+}
+
+double Normaldist(double mean, double var)
+{
+	std::default_random_engine e; //引擎
+	std::normal_distribution<double> n(mean, var); //均值, 方差
+	return n(e);
+}
+
+template <class Iter> typename Iter::value_type cov(const Iter &x, const Iter &y)
+{
+	double sum_x = std::accumulate(std::begin(x), std::end(x), 0.0);
+	double sum_y = std::accumulate(std::begin(y), std::end(y), 0.0);
+
+	double mx = sum_x / x.size();
+	double my = sum_y / y.size();
+
+	double accum = 0.0;
+
+	for (auto i = 0; i < x.size(); i++)
+	{
+		accum += (x.at(i) - mx) * (y.at(i) - my);
+	}
+
+	return accum / (x.size() - 1);
+}
+extern "C" void cuMatrixTrace(const double *A, const int nrows, double *Result);
 int main()
 {
-	vector<string> files;
-	string path = "C:\\Users\\Hou59\\source\\repos\\TingtHou\\Kernel-Based-Neural-Network\\data3";
-	getFiles(path, files);
-	for (int i=0;i<files.size();i++)
+
+	int nind = 1000;
+	Eigen::VectorXd Y(nind);
+	Eigen::MatrixXd W1 = Eigen::MatrixXd::Random(nind,1);
+	Eigen::MatrixXd W2= Eigen::MatrixXd::Random(nind, 1);
+	Eigen::MatrixXd W3= Eigen::MatrixXd::Random(nind, 1);
+	Eigen::MatrixXd e(nind, nind);
+	Eigen::MatrixXd V1(nind, nind);
+	Eigen::MatrixXd V2(nind, nind);
+//	Eigen::MatrixXd V3(nind, nind);
+	e.setIdentity();
+	std::vector<double> edouble;
+	Random rad(1);
+	V1.setZero();
+	for (int i=0;i<Y.size();i++)
 	{
-		MinqueSample(files.at(i));
+		V1(i, i) = W1(i, 0)*W1(i, 0);
+		V2(i, i) = W2(i, 0)*W2(i, 0);
+	//	V3(i, i) = W3(i, 0)*W3(i, 0);
+		Y(i) =W1(i,0)*rad.Normal(0, 1.3)+ W2(i, 0)*rad.Normal(0, 1.5)+ /*W3(i, 0)*rad.Normal(0, 1.5) + */rad.Normal(0, 1);
+		edouble.push_back(Y[i]);
 	}
+	std::cout << "means: " << ave(edouble) << "\nVariance: " << cov(edouble,edouble) << std::endl;
+
+	cuMINQUE varest;
+	varest.import_Y(Y.data(),nind);
+	varest.push_back_Vi(e.data(),nind);
+	varest.push_back_Vi(V1.data(),nind);
+	varest.push_back_Vi(V2.data(), nind);
+	std::cout << "starting GPU MINQUE" << std::endl;
+	clock_t t1 = clock();
+	varest.estimate();
+	std::cout << "GPU Elapse Time : " << (clock() - t1) * 1.0 / CLOCKS_PER_SEC * 1000 << " ms" << std::endl;
+ 	std::cout << fixed << setprecision(4) << "Estimated Variances: ";
+	std::vector<double> theta = varest.GetTheta();
+	for (int i = 0; i < theta.size(); i++)
+	{
+		std::cout << theta.at(i) << " ";
+	}
+	std::cout << std::endl;
+	MINQUE min;
+	min.importY(Y);
+	min.pushback_Vi(e);
+	min.pushback_Vi(V1);
+	min.pushback_Vi(V2);
+//	min.pushback_Vi(V3);
+	std::cout << "starting CPU MINQUE" << std::endl;
+	clock_t t2 = clock();
+	min.estimate();
+	std::cout << "CPU Elapse Time : " << (clock() - t2) * 1.0 / CLOCKS_PER_SEC * 1000 << " ms" << std::endl;
+	std::cout << fixed << setprecision(4) << "Estimated Variances: " << min.Gettheta().transpose() << std::endl;
+	Eigen::VectorXd Real(3);
+	Real << 1 ,1.3*1.3, 1.5*1.5;
+	std::cout << "Estimated Variances: " << Real.transpose() << std::endl;
+	std::cout << "Bias: ";
+	for (int i=0; i<min.Gettheta().size();i++)
+	{
+		std::cout << abs(Real[i] - min.Gettheta()[i]) / Real[i] << "\t";
+	}
+	std::cout << std::endl;
+// 	Eigen::MatrixXd b = Eigen::MatrixXd::Random(4000, 4000);
+// 	clock_t t1 = clock();
+// 	Eigen::MatrixXd c=a*b;
+// 	std::cout << "Matrix multiplication Elapse Time : " << (clock() - t1) * 1.0 / CLOCKS_PER_SEC * 1000 << " ms" << std::endl;
+// 	cuToolkit::cuGetGPUinfo();
+// 	vector<string> files;
+// 	string path = "..//data3";
+// 	getFiles(path, files);
+// 	for (int i=0;i<files.size();i++)
+// 	{
+// 		MinqueSample(files.at(i));
+// 	}
 	
 }
 
@@ -180,34 +300,41 @@ void MinqueSample(string folder)
 	std::cout << std::endl;
 	oufile.flush();
 	//////////////////////////////////////////////////
-	cuMINQUE cuvarest;
-	std::cout << "Push back Y" << std::endl;
-	cuvarest.import_Y(Y.data(), Y.size());
-	std::cout << "Push back LN1 matrix" << std::endl;
-	cuvarest.push_back_Vi(LN1.data(), LN1.rows());
-	std::cout << "Push back LN2 matrix" << std::endl;
-	cuvarest.push_back_Vi(LN2.data(), LN2.rows());
-	std::cout << "Push back LN matrix" << std::endl;
-	cuvarest.push_back_Vi(LN3.data(), LN3.rows());
-	std::cout << "starting GPU MINQUE" << std::endl;
-	t1 = clock();
-	cuvarest.estimate();
-	std::cout << fixed << setprecision(2) << "GPU Elapse Time : " << (clock() - t1) * 1.0 / CLOCKS_PER_SEC * 1000 << " ms" << std::endl;
-	oufile << setprecision(2) << "GPU Elapse Time : " << (clock() - t1) * 1.0 / CLOCKS_PER_SEC * 1000 << " ms" << std::endl;
-	std::cout << fixed << setprecision(4) << "Estimated Variances: ";
-	oufile << fixed << setprecision(4) << "Estimated Variances: ";
-	std::vector<double> theta = cuvarest.GetTheta();
-	for (int i = 0; i < theta.size(); i++)
-	{
-		std::cout << theta.at(i) << " ";
-		oufile << theta.at(i) << " ";
-	}
-	std::cout << std::endl;
-	oufile << std::endl;
-	oufile.flush();
+// 
+// 	cuMINQUE cuvarest;
+// 	std::cout << "Push back Y" << std::endl;
+// 	cuvarest.import_Y(Y.data(), Y.size());
+//	Eigen::MatrixXd IdN(Y.size(), Y.size());
+//	IdN.setIdentity();
+//	cuvarest.pushback_Vi(IdN.data());
+// 	std::cout << "Push back LN1 matrix" << std::endl;
+// 	cuvarest.push_back_Vi(LN1.data(), LN1.rows());
+// 	std::cout << "Push back LN2 matrix" << std::endl;
+// 	cuvarest.push_back_Vi(LN2.data(), LN2.rows());
+// 	std::cout << "Push back LN3 matrix" << std::endl;
+// 	cuvarest.push_back_Vi(LN3.data(), LN3.rows());
+// 	std::cout << "starting GPU MINQUE" << std::endl;
+// 	t1 = clock();
+// 	cuvarest.estimate();
+// 	std::cout << fixed << setprecision(2) << "GPU Elapse Time : " << (clock() - t1) * 1.0 / CLOCKS_PER_SEC * 1000 << " ms" << std::endl;
+// 	oufile << setprecision(2) << "GPU Elapse Time : " << (clock() - t1) * 1.0 / CLOCKS_PER_SEC * 1000 << " ms" << std::endl;
+// 	std::cout << fixed << setprecision(4) << "Estimated Variances: ";
+// 	oufile << fixed << setprecision(4) << "Estimated Variances: ";
+// 	std::vector<double> theta = cuvarest.GetTheta();
+// 	for (int i = 0; i < theta.size(); i++)
+// 	{
+// 		std::cout << theta.at(i) << " ";
+// 		oufile << theta.at(i) << " ";
+// 	}
+// 	std::cout << std::endl;
+// 	oufile << std::endl;
+// 	oufile.flush();
 	///////////////////////////////////////////////
 	MINQUE varest;
 	varest.importY(Y);
+	Eigen::MatrixXd IdN(Y.size(), Y.size());
+	IdN.setIdentity();
+	varest.pushback_Vi(IdN);
 	varest.pushback_Vi(LN1);
 	varest.pushback_Vi(LN2);
 	varest.pushback_Vi(LN3);

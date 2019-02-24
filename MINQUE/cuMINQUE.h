@@ -5,6 +5,7 @@
 #include <cusolverDn.h>
 #include <vector>
 #include "cuToolkit.h"
+extern "C" void cuMatrixTrace(const double *A, const int nrows, double *Result);
 class cuMINQUE
 {
 public:

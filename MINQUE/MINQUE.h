@@ -1,7 +1,7 @@
 #pragma once
 #include <Eigen/Dense>
 #include <vector>
-#include "cuMatrix.h"
+#define EIGEN_USE_MKL_ALL
 class MINQUE
 {
 public:
