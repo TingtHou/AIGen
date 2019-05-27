@@ -1,0 +1,34 @@
+#include "pch.h"
+#include "cLog.h"
+#include <time.h>
+#include <iomanip>
+#include <string>
+
+LOG::LOG(std::string logfile)
+{
+	Logfile.open(logfile, std::ios::out);
+	std::time_t currenttime = std::time(0);
+	char tAll[255];
+	tm Tm;
+	localtime_s(&Tm, &currenttime);
+	std::strftime(tAll, sizeof(tAll), "%Y-%m-%d-%H-%M-%S", &Tm);
+	Logfile << tAll << std::endl;
+	Logfile.flush();
+}
+
+void LOG::write(std::string outline)
+{
+	std::time_t currenttime = std::time(0);
+	char tAll[255];
+	tm Tm;
+	localtime_s(&Tm, &currenttime);
+	std::strftime(tAll, sizeof(tAll), "%Y-%m-%d-%H-%M-%S", &Tm);
+	std::cout <<  outline << std::endl;
+	Logfile << tAll << "\t" << outline << std::endl;
+	Logfile.flush();
+}
+
+LOG::~LOG()
+{
+	Logfile.close();
+}

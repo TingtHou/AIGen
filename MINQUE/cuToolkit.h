@@ -4,10 +4,13 @@
 #include <malloc.h>
 #include <cusolverDn.h>
 #include <iostream>
+void InverseTest();
 class cuToolkit
 {
 public:
-	static int cuMatrixInv(double * d_A, double *d_A_INV, int N);
+	static bool cuLU(double * d_A, double *d_A_INV, int N);
+	static bool cuSVD(double * d_A, double *d_A_INV, int N);
 	static void cuGetGPUinfo();
+	
 };
 

@@ -2,16 +2,22 @@
 #include "minque.h"
 #include <iostream>
 #include <fstream>
+#include "ToolKit.h"
+
+//input y
 void MINQUE::importY(Eigen::VectorXd Y)
 {
 	this->Y = Y;
 	nind = Y.size();
 	V.clear();
+	ViSum = Eigen::MatrixXd(nind, nind);
+	ViSum.setZero();
 }
-
+//input covariance matrix for random effect i
 void MINQUE::pushback_Vi(Eigen::MatrixXd Vi)
 {
 	V.insert(V.end(), Vi);
+	ViSum += Vi;
 	nVi++;
 }
 
@@ -38,8 +44,8 @@ void MINQUE::Calc_Vsum_Inv()
 	{
 		ViSum +=  V.at(i);
 	}
-	Vsum_INV = ViSum.inverse();
-
+//	Vsum_INV = ViSum.inverse();
+	ToolKit::Inv_SVD(ViSum, Vsum_INV);
 }
 
 void MINQUE::Calc_Gamma()
@@ -54,7 +60,8 @@ void MINQUE::Calc_Gamma()
 			Gamma(j, i) = Gamma(i, j);
 		}
 	}
-	Gamma_INV = Gamma.inverse();
+//	Gamma_INV = Gamma.inverse();
+	ToolKit::Inv_SVD(Gamma, Gamma_INV);
 
 }
 
@@ -70,10 +77,11 @@ void MINQUE::Calc_Ai(int i)
 
 }
 
-
+//start estimate
 void MINQUE::estimate()
 {
-	Calc_Vsum_Inv();
+//	Calc_Vsum_Inv();
+	ToolKit::Inv_SVD(ViSum, Vsum_INV);
 	Calc_Gamma();
 	theta = Eigen::VectorXd(nVi);
 	for (int i=0;i<nVi;i++)
@@ -83,6 +91,7 @@ void MINQUE::estimate()
 	}
 }
 
+//return estimated covariance components
 Eigen::VectorXd  MINQUE::Gettheta()
 {
 	return theta;

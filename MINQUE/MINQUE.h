@@ -17,6 +17,7 @@ private:
 	Eigen::VectorXd Y;
 	std::vector<Eigen::MatrixXd> V;
 	Eigen::MatrixXd Vsum_INV;
+	Eigen::MatrixXd ViSum;
 	Eigen::MatrixXd Gamma;
 	Eigen::MatrixXd Gamma_INV;
 	Eigen::VectorXd Eta;
