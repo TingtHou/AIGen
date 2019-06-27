@@ -1,6 +1,7 @@
 #pragma once
 #include <Eigen/Dense>
 #include <vector>
+#include "cLog.h"
 class MinqueBase
 {
 public:
@@ -11,7 +12,7 @@ public:
 	virtual void estimate()=0;
 	Eigen::VectorXd getfix() { return fix; };
 	Eigen::VectorXd getvcs() { return vcs; };
-
+	void setLogfile(LOG *logfile);
 protected:
 	int nind = 0;
 	int nVi = 0;
@@ -23,6 +24,7 @@ protected:
 	Eigen::VectorXd vcs;
 	Eigen::VectorXd fix;
 	std::vector<Eigen::MatrixXd> Vi;
+	LOG *logfile;
 
 };
 

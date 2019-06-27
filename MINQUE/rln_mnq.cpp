@@ -27,15 +27,29 @@ void rln_mnq::estimate()
 	{
 		VW += W[i] * Vi[i];
 	}
-
 	Eigen::MatrixXd Inv_VW(nind,nind);
 	Inv_VW.setZero();
-	bool status=Inverse(VW, Inv_VW, Decomp, altDecomp, allowPseudoInverse);
+	int status=Inverse(VW, Inv_VW, Decomp, altDecomp, allowPseudoInverse);
 	//ToolKit::Inv_SVD(VW, Inv_VW,true);
-	if (status==false)
+	switch (status)
 	{
-		std::cout << "Error：Inverse error." << std::endl;
+	case 0:
+		break;
+	case 1:
+		if (allowPseudoInverse)
+		{
+			logfile->write("Calculating inverse matrix is failed, using pseudo inverse matrix instead", false);
+		}
+		else
+		{
+			logfile->write("Calculating inverse matrix is failed, and pseudo inverse matrix is not allowed", true);
+			exit(0);
+		}
+		break;
+	case 2:
+		logfile->write("Calculating inverse matrix is failed, and pseudo inverse matrix is also failed", true);
 		exit(0);
+		break;
 	}
 	std::vector<Eigen::MatrixXd> RV;
 	Eigen::VectorXd Ry;
@@ -54,11 +68,26 @@ void rln_mnq::estimate()
 		Eigen::MatrixXd B = Inv_VW * X;
 		Eigen::MatrixXd Xt_B = X.transpose()*B;
 		Eigen::MatrixXd INV_Xt_B(Xt_B.rows(), Xt_B.cols());
-		bool status = Inverse(Xt_B, INV_Xt_B, Decomp, altDecomp, allowPseudoInverse);
-		if (status == false)
+		int status = Inverse(Xt_B, INV_Xt_B, Decomp, altDecomp, allowPseudoInverse);
+		switch (status)
 		{
-			std::cout << "Error：Inverse error." << std::endl;
+		case 0:
+			break;
+		case 1:
+			if (allowPseudoInverse)
+			{
+				logfile->write("Calculating inverse matrix is failed, using pseudo inverse matrix instead", false);
+			}
+			else
+			{
+				logfile->write("Calculating inverse matrix is failed, and pseudo inverse matrix is not allowed", true);
+				exit(0);
+			}
+			break;
+		case 2:
+			logfile->write("Calculating inverse matrix is failed, and pseudo inverse matrix is also failed", true);
 			exit(0);
+			break;
 		}
 	//	ToolKit::Inv_SVD(Xt_B, INV_Xt_B,true);
 		C = INV_Xt_B * B.transpose();
@@ -88,11 +117,26 @@ void rln_mnq::estimate()
 		}
 	}
 	Eigen::MatrixXd INV_F(nVi, nVi);
-	bool status2 = Inverse(F, INV_F, Decomp, altDecomp, allowPseudoInverse);
-	if (status2 == false)
+	int status2 = Inverse(F, INV_F, Decomp, altDecomp, allowPseudoInverse);
+	switch (status2)
 	{
-		std::cout << "Error：Inverse error." << std::endl;
+	case 0:
+		break;
+	case 1:
+		if (allowPseudoInverse)
+		{
+			logfile->write("Calculating inverse matrix is failed, using pseudo inverse matrix instead", false);
+		}
+		else
+		{
+			logfile->write("Calculating inverse matrix is failed, and pseudo inverse matrix is not allowed", true);
+			exit(0);
+		}
+		break;
+	case 2:
+		logfile->write("Calculating inverse matrix is failed, and pseudo inverse matrix is also failed", true);
 		exit(0);
+		break;
 	}
 
 //	ToolKit::Inv_SVD(F, INV_F,true);

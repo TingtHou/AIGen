@@ -2,6 +2,7 @@
 #include "imnq.h"
 #include "LinearRegression.h"
 #include "rln_mnq.h"
+#include <sstream>
 #include <iomanip>
 void imnq::estimate()
 {
@@ -16,6 +17,11 @@ void imnq::setOptions(MinqueOptions mnqoptions)
 	this->Decomposition = mnqoptions.MatrixDecomposition;
 	this->altDecomposition = mnqoptions.altMatrixDecomposition;
 	this->allowpseudoinverse = mnqoptions.allowPseudoInverse;
+}
+
+int imnq::getIterateTimes()
+{
+	return initIterate;
 }
 
 
@@ -61,7 +67,8 @@ void imnq::Iterate()
 	vc0  = initVCS();
 	double diff = 0;
 	rln_mnq *mnq=nullptr;
-	while (itr>0)
+	logfile->write("Starting Iterate MINQUE Algorithm",true);
+	while (initIterate <itr)
 	{
 		mnq = new rln_mnq(Decomposition,altDecomposition,allowpseudoinverse);
 		mnq->importY(Y);
@@ -74,19 +81,22 @@ void imnq::Iterate()
 			mnq->puskback_X(X,false);
 		}
 		mnq->pushback_W(vc0);
+		mnq->setLogfile(logfile);
 		mnq->estimate();
 		vc1=mnq->getvcs();
 		Eigen::VectorXd tmp = vc1 - vc0;
 		diff = (vc1 - vc0).cwiseAbs().maxCoeff();
-		std::cout << std::fixed << std::setprecision(3) << "It: " << itr << "\t" << vc1.transpose() << "\tdiff: ";
-		std::cout<< std::scientific <<diff << std::endl;
+		std::stringstream ss;
+		ss<<std::fixed << std::setprecision(3) << "It: " << initIterate << "\t" << vc1.transpose() << "\tdiff: ";
+		ss << std::scientific << diff;
+		logfile->write(ss.str(),true);
 		if (diff<tol)
 		{
 
 			break;
 		}
 		vc0 = vc1;
-		itr--;
+		initIterate++;
 	}
 	vcs = mnq->getvcs();
 	fix = mnq->getfix();

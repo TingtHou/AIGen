@@ -62,3 +62,8 @@ void MinqueBase::pushback_W(Eigen::VectorXd W)
 	assert(nVi == nelmt);
 	this->W = W;
 }
+
+void MinqueBase::setLogfile(LOG * logfile)
+{
+	this->logfile = logfile;
+}
