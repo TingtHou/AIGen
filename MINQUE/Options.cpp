@@ -46,24 +46,26 @@ void Options::boostProgramOptionsRoutine(int argc, const char * const argv[])
 			"Specify full name of .fam file.\n")
 		("phe", po::value<std::string>()->value_name("[filename]"),
 			"Specify full name of phenotype file\n")
-		("kernel", po::value<std::vector<std::string> >()->multitoken()->value_name("[filenames]"),
-			"Specify full name of kernel files, different kernel files should be delimited by white-space characters\n");
+		("kernel", po::value<std::string>()->value_name("{prefix}"),
+			"Input a kernel file in binary format.\n\n")
+	    ("mkernel", po::value<std::string>()->value_name("[filename]"),
+				"Input multiple kernel files in binary format.\n");
 	po::options_description optsAlgorithm("Algorithm Parameters");
 	optsAlgorithm.add_options()
-		("iterate", po::value<int>()->value_name("times"), "The iterate times used in iterate minque method.\nDefault to 20.\n")
-		("tolerance", po::value<int>()->value_name("value"), "The threshold value used in iterate minque method.\nDefault to 1e-6.\n")
+		("iterate", po::value<int>()->value_name("times"), "The iterate times used in iterate minque method.\nDefault to 100.\n")
+		("tolerance", po::value<double>()->value_name("value"), "The threshold value used in iterate minque method.\nDefault to 1e-6.\n")
 		("inverse", po::value<std::string>()->value_name("mode"), "The matrix decomposition.\n"
-			"mode 0: Cholesky decomposition; mode 1: LU decomposition; mode 2: QR decomposition; mode 3: SVD decomposition.")
+			"mode 0: Cholesky decomposition; mode 1: LU decomposition; mode 2: QR decomposition; mode 3: SVD decomposition.\n")
 		("pseudo", po::value<bool>()->value_name("true/fasle"), "The pseudo will be used if the matrix is not invertible.\n"
 				"default to True.\n"
-				"If this option is set, the inverse mode should be mode 2 or mode 3.")
-		("altinverse", po::value<std::string>()->value_name("mode"), "The alternative matrix decomposition if the matrix is not invertible and the pseudo inverse is allowed.\n"
-				"Only mode 2: QR decomposition and mode 3 : SVD	decomposition are available.\n"
-				"Default to mode 3.");
+				"If this option is set, the inverse mode should be mode 2 or mode 3.\n")
+		("ginverse", po::value<std::string>()->value_name("mode"), "The alternative matrix decomposition if the matrix is not invertible and the pseudo inverse is allowed.\n"
+				"Only mode 2, QR decomposition and mode 3, SVD decomposition are available.\n"
+				"Default to mode 3.\n");
 	po::options_description optsComputerDevice("Computing Device Options");
 	optsComputerDevice.add_options()
 		("GPU", " Use CPU for computation.\n")
-		("e", po::value<int>()->value_name("[dev]"), "CUDA GPUs to use.\n");
+		("e", po::value<int>()->value_name("[dev]"), "Select GPUs to use.\n");
 
 
 	po::options_description optsDescOutFiles("Output Files");
