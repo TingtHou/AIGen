@@ -1,14 +1,17 @@
 #include "pch.h"
 #include "CommonFunc.h"
 #include "ToolKit.h"
-bool Inverse(Eigen::MatrixXd & Ori_Matrix, Eigen::MatrixXd & Inv_Matrix, int DecompositionMode, int AltDecompositionMode, bool allowPseudoInverse)
+#include <boost/algorithm/string.hpp>
+int Inverse(Eigen::MatrixXd & Ori_Matrix, Eigen::MatrixXd & Inv_Matrix, int DecompositionMode, int AltDecompositionMode, bool allowPseudoInverse)
 {
+	int status = 0;
 	bool statusInverse;
 	switch (DecompositionMode)
 	{
 	case Cholesky:
 	{
 		statusInverse = ToolKit::Inv_Cholesky(Ori_Matrix, Inv_Matrix);
+		status += !statusInverse;
 		if (!statusInverse&&allowPseudoInverse)
 		{
 			if (AltDecompositionMode==SVD)
@@ -19,14 +22,17 @@ bool Inverse(Eigen::MatrixXd & Ori_Matrix, Eigen::MatrixXd & Inv_Matrix, int Dec
 			{
 				statusInverse = ToolKit::Inv_QR(Ori_Matrix, Inv_Matrix, allowPseudoInverse);
 			}
+			status += !statusInverse;
 		}
 	}
 		break;
 	case LU:
 	{
 		statusInverse = ToolKit::Inv_LU(Ori_Matrix, Inv_Matrix);
+		status += !statusInverse;
 		if (!statusInverse&&allowPseudoInverse)
 		{
+			status += 1;
 			if (AltDecompositionMode == SVD)
 			{
 				statusInverse = ToolKit::Inv_SVD(Ori_Matrix, Inv_Matrix, allowPseudoInverse);
@@ -35,21 +41,24 @@ bool Inverse(Eigen::MatrixXd & Ori_Matrix, Eigen::MatrixXd & Inv_Matrix, int Dec
 			{
 				statusInverse = ToolKit::Inv_QR(Ori_Matrix, Inv_Matrix, allowPseudoInverse);
 			}
+			status += !statusInverse;
 		}
 	}
 	break;
 	case QR:
 	{
 		statusInverse = ToolKit::Inv_QR(Ori_Matrix, Inv_Matrix,allowPseudoInverse);
+		status += !statusInverse;
 	}
 	break;
 	case SVD:
 	{
 		statusInverse = ToolKit::Inv_SVD(Ori_Matrix, Inv_Matrix, allowPseudoInverse);
+		status += !statusInverse;
 	}
 	break;
 	}
-	return statusInverse;
+	return status;
 }
 
 double Variance(Eigen::VectorXd & Y)
@@ -82,4 +91,21 @@ double isNum(std::string line)
 	if (sin >> c)
 		return false;
 	return true;
+}
+
+
+std::string GetBaseName(std::string pathname)
+{
+	std::vector<string> splitstr;
+	boost::split(splitstr, pathname, boost::is_any_of("/\\"), boost::token_compress_on);
+	return splitstr.at(splitstr.size() - 1);
+}
+
+std::string GetParentPath(std::string pathname)
+{
+	std::vector<string> splitstr;
+	boost::split(splitstr, pathname, boost::is_any_of("/\\"), boost::token_compress_on);
+	splitstr.pop_back();
+	std::string ParentPath = boost::join(splitstr, "/");
+	return ParentPath==""?".":ParentPath;
 }
