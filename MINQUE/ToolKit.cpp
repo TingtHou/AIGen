@@ -120,21 +120,19 @@ bool ToolKit::Inv_Cholesky(Eigen::MatrixXd & Ori_Matrix, Eigen::MatrixXd & Inv_M
 	}
  	Inv_Matrix = LDLT.solve(IdentityMatrix);
 //	std::cout << IdentityMatrix.isApprox(Ori_Matrix*Inv_Matrix) << std::endl;  // false
-//	bool a_solution_exists = (Ori_Matrix*Inv_Matrix).isApprox(IdentityMatrix, precision);
+	bool a_solution_exists = (Ori_Matrix*Inv_Matrix).isApprox(IdentityMatrix,1e-10);
 //	Inv_Matrix = Ori_Matrix.ldlt().solve(IdentityMatrix);
-	return true;
+	return a_solution_exists;
 }
 
 bool ToolKit::Inv_LU(Eigen::MatrixXd & Ori_Matrix, Eigen::MatrixXd & Inv_Matrix)
 {
-	Eigen::FullPivLU<Eigen::MatrixXd> LU;
-	LU.compute(Ori_Matrix);
-	if (!LU.isInvertible())
-	{
-		return false;
-	}
+	Eigen::PartialPivLU<Eigen::MatrixXd> LU(Ori_Matrix);
+	Eigen::MatrixXd IdentityMatrix(Ori_Matrix.rows(), Ori_Matrix.cols());
+	IdentityMatrix.setIdentity();
 	Inv_Matrix = LU.inverse();
-	return true;
+	bool a_solution_exists = (Ori_Matrix*Inv_Matrix).isApprox(IdentityMatrix, 1e-10);
+	return a_solution_exists;
 }
 
 bool ToolKit::Inv_SVD(Eigen::MatrixXd & Ori_Matrix, Eigen::MatrixXd & Inv_Matrix, bool allowPseudoInverse)
@@ -146,6 +144,7 @@ bool ToolKit::Inv_SVD(Eigen::MatrixXd & Ori_Matrix, Eigen::MatrixXd & Inv_Matrix
 	singularValuesInv.setZero();
 	double  pinvtoler = 1.e-20; // choose your tolerance wisely
 	bool singlar = false;
+
 	for (unsigned int i = 0; i < singularValues.size(); ++i)
 	{
 		if (abs(singularValues(i)) > pinvtoler)
@@ -161,7 +160,8 @@ bool ToolKit::Inv_SVD(Eigen::MatrixXd & Ori_Matrix, Eigen::MatrixXd & Inv_Matrix
 		}
 	}
 	Inv_Matrix = svd.matrixV() * singularValuesInv * svd.matrixU().transpose();
-	return true;
+	bool a_solution_exists = (Ori_Matrix*Inv_Matrix*Ori_Matrix).isApprox(Ori_Matrix, 1e-10);
+	return a_solution_exists;
 }
 
 bool ToolKit::Inv_QR(Eigen::MatrixXd & Ori_Matrix, Eigen::MatrixXd & Inv_Matrix, bool allowPseudoInverse)
@@ -182,6 +182,7 @@ bool ToolKit::Inv_QR(Eigen::MatrixXd & Ori_Matrix, Eigen::MatrixXd & Inv_Matrix,
 	{
 		Inv_Matrix = QR.pseudoInverse();
 	}
-	return true;
+	bool a_solution_exists = (Ori_Matrix*Inv_Matrix*Ori_Matrix).isApprox(Ori_Matrix, 1e-10);
+	return a_solution_exists;
 }
 
