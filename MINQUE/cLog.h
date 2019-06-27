@@ -5,7 +5,7 @@ class LOG
 {
 public:
 	LOG(std::string logfile);
-	void write(std::string outline);
+	void write(std::string outline, bool terminateOpt);
 	~LOG();
 private:
 	std::ofstream Logfile;

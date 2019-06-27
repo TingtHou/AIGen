@@ -16,15 +16,18 @@ LOG::LOG(std::string logfile)
 	Logfile.flush();
 }
 
-void LOG::write(std::string outline)
+void LOG::write(std::string outline, bool terminateOpt)
 {
 	std::time_t currenttime = std::time(0);
 	char tAll[255];
 	tm Tm;
 	localtime_s(&Tm, &currenttime);
 	std::strftime(tAll, sizeof(tAll), "%Y-%m-%d-%H-%M-%S", &Tm);
-	std::cout <<  outline << std::endl;
-	Logfile << tAll << "\t" << outline << std::endl;
+	if (terminateOpt)
+	{
+		std::cout << outline << std::endl;
+	}
+	Logfile << tAll << " :\t" << outline << std::endl;
 	Logfile.flush();
 }
 
