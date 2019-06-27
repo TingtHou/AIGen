@@ -153,7 +153,7 @@ double LinearRegression::GetMSE()
 	double mse = 0;
 	for (int  i = 0; i < ynrow; i++)
 	{
-		mse = res[i] * res[i];
+		mse += res[i] * res[i];
 	}
 	mse /=ynrow -xncol;
 	return mse;
