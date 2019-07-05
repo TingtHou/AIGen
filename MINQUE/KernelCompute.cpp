@@ -1,8 +1,5 @@
 #include "pch.h"
 #include "KernelCompute.h"
-#include <vector>
-#include "PlinkReader.h"
-#include "CommonFunc.h"
 
 
 KernelCompute::KernelCompute()

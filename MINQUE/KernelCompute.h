@@ -1,10 +1,14 @@
 #pragma once
 #include <Eigen/dense>
 #include "CommonFunc.h"
+#include <vector>
+#include "PlinkReader.h"
+#include "CommonFunc.h"
+
 class KernelCompute
 {
 public:
-	KernelCompute(Eigen::MatrixXd &Geno, std::string KernelName, double maf = 0, double weights = 1, double constant = 1, double deg = 2, double sigmma = 1);
+	//	KernelCompute(Eigen::MatrixXd &Geno, std::string KernelName, double maf = 0, double weights = 1, double constant = 1, double deg = 2, double sigmma = 1);
 	KernelCompute();
 	~KernelCompute();
 	void test();
@@ -18,4 +22,4 @@ private:
 	void getIBS(Eigen::MatrixXd &Geno, double weights);
 	void stripSameCol(Eigen::MatrixXd &Geno);
 	void stdSNPmv(Eigen::MatrixXd &Geno);
-}
+};

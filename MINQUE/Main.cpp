@@ -154,9 +154,6 @@ void MINQUEAnalysis(boost::program_options::variables_map programOptions, DataMa
 
 int main(int argc, const char *const argv[])
 {
-	KernelCompute kp;
-	kp.test();
-
 	ofstream out;
 	string result = "result.txt";
 	string logfile = "result.log";

@@ -6,7 +6,6 @@
 #include <list>
 #include <map>
 #include <set>
-#include <vector>
 #include <string>
 #include <Eigen/dense>
 class PlinkReader

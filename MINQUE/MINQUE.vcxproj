@@ -23,8 +23,8 @@
     <ProjectGuid>{97A0BA4B-F7A0-4CC4-A286-A01185167AA0}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>MINQUE</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
     <ProjectName>KNN</ProjectName>
+    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -48,7 +48,7 @@
     <WholeProgramOptimization>false</WholeProgramOptimization>
     <UseIntelMKL>Parallel</UseIntelMKL>
     <CLRSupport>false</CLRSupport>
-    <UseOfMfc>Static</UseOfMfc>
+    <UseOfMfc>false</UseOfMfc>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
