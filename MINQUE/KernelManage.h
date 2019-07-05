@@ -18,7 +18,6 @@ private:
 	std::string prefix;
 	KernelData Kernels; //store kernel data
 	int nind=0;
-private:
 	void IDfileReader(std::ifstream &fin, KernelData &kdata);   // read *.grm.id
 	void BinFileReader(std::ifstream &fin, KernelData &kdata);  // read *.grm.bin
 	void NfileReader(std::ifstream &fin, KernelData &kdata);    //read *.grm.N.bin
@@ -34,8 +33,9 @@ public:
 	std::string print();
 	void setprecision(int datatype);
 	void setprefix(std::string prefix);
-	void write();
+	void writeText(std::string filename);
 	void write(std::string prefix);
+	void write();
 private:
 	std::string BinFileName; //*.grm.bin
 	std::string NfileName;   //*.grm.N.bin

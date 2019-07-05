@@ -8,6 +8,7 @@
 #include <set>
 #include <vector>
 #include <string>
+#include <Eigen/dense>
 class PlinkReader
 {
 
@@ -15,11 +16,9 @@ public:
 	PlinkReader();
 	PlinkReader(std::string bedfile, std::string bimfile, std::string famfile);
 	~PlinkReader();
-	void readPedfile(std::string pedfile);
-	void ReadMapFile(std::string mapfile);
-	void ReadFamFile(std::string famfile);
-	void ReadBimFile(std::string bimfile);
-	void ReadBedFile(std::string bedfile);
+
+	void savePedMap(std::string prefix);
+	Eigen::MatrixXd GetGeno();
 	void test();
 private:
 	static const int READER_MASK = 3;
@@ -61,10 +60,14 @@ private:
 private:
 	void buildpedigree();
 	void buildgenemap();
-	void savePedMap();
 	void savepedfile(std::string pedfile);
 	void savemapfile(std::string mapfile);
 	void CalcMAF();
+	void readPedfile(std::string pedfile);
+	void ReadMapFile(std::string mapfile);
+	void ReadFamFile(std::string famfile);
+	void ReadBimFile(std::string bimfile);
+	void ReadBedFile(std::string bedfile);
 	//map<std::string, int> _snp_name_map;
 	//multimap<std::string, std::string> _fid_pid_map; //pair<std::string, int>(_fid[i],_pid[i])
 	std::string out;

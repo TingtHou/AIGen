@@ -10,7 +10,10 @@ PlinkReader::PlinkReader(std::string bedfile, std::string bimfile, std::string f
 	this->bedfile = bedfile;
 	this->bimfile = bimfile;
 	this->famfile = famfile;
-
+	ReadBimFile(bimfile);
+	ReadFamFile(famfile);
+	ReadBedFile(bedfile);
+	
 }
 
 PlinkReader::PlinkReader()
@@ -172,7 +175,7 @@ void PlinkReader::ReadFamFile(std::string famfile)
 		int _sex = atoi(str_buf.c_str());
 		if (_sex!=1&&_sex!=2)
 		{
-			Sex.push_back(-9);
+			Sex.push_back(0);
 		}
 		else
 		{
@@ -283,16 +286,16 @@ void PlinkReader::ReadBedFile(std::string bedfile)
 				switch (byte_buf & READER_MASK)
 				{
 				case HOMOZYGOTE_FIRST:
-					Gene.push_back(0); //1 1
+					Gene.push_back(2); //1 1
 					break;
 				case HOMOZYGOTE_SECOND:
-					Gene.push_back(2); //2 2
+					Gene.push_back(0); //2 2
 					break;
 				case HETEROZYGOTE:
 					Gene.push_back(1); //1 2
 					break;
 				case MISSING:
-					Gene.push_back(-9); // 0 0
+					Gene.push_back(3); // 0 0
 					break;
 				default:
 					return;
@@ -300,13 +303,15 @@ void PlinkReader::ReadBedFile(std::string bedfile)
 			}
 			byte_buf = byte_buf >>  2;
 			++sampleCounter;
+			if (sampleCounter == len)
+			{
+				_marker.push_back(Gene);
+				Gene.clear();
+				sampleCounter = 0;
+				break;
+			}
 		}
-		if (sampleCounter == len)
-		{
-			_marker.push_back(Gene);
-			Gene.clear();
-			sampleCounter = 0;
-		}
+
 	}
 	if (SNP_major)
 	{
@@ -328,6 +333,19 @@ void PlinkReader::ReadBedFile(std::string bedfile)
 	std::cout << nind << " individuals and " << nmarker << " SNPs to be included from [" + bedfile + "]." << endl;
 }
 
+Eigen::MatrixXd PlinkReader::GetGeno()
+{
+	Eigen::MatrixXd Geno(nind,nmarker);
+	for (int i=0;i<nind;i++)
+	{
+		for (int j=0;j<nmarker;j++)
+		{
+			Geno(i, j) = Marker[i][j];
+		}
+	}
+	return Geno;
+}
+
 
 
 void PlinkReader::test()
@@ -344,7 +362,7 @@ void PlinkReader::test()
 // 	ReadBedFile(bedfile);
 	ReadMapFile(mapfile);
 	readPedfile(pedfile);
-	savePedMap();
+	//savePedMap();
 }
 
 void PlinkReader::buildpedigree()
@@ -365,11 +383,12 @@ void PlinkReader::buildgenemap()
 	}
 }
 
-void PlinkReader::savePedMap()
+void PlinkReader::savePedMap(std::string prefix)
 {
-	std::string basename = bedfile.substr(0, bedfile.rfind("."));
-	std::string pedfile = basename + "1.ped";
-	std::string mapfile = basename + "1.map";
+	
+//	std::string basename = bedfile.substr(0, bedfile.rfind("."));
+	std::string pedfile = prefix + ".ped";
+	std::string mapfile = prefix + ".map";
 	savemapfile(mapfile);
 	savepedfile(pedfile);
 }
@@ -393,18 +412,34 @@ void PlinkReader::savepedfile(std::string pedfile)
 			switch (alleles)
 			{
 			case 0:
-				str_alleles = minor_allele[j] + " " + minor_allele[j];
+				str_alleles = "1 1";
 				break;
 			case 1:
-				str_alleles = minor_allele[j] + " " + major_allele[j];
+				str_alleles = "1 2";
 				break;
 			case 2:
-				str_alleles = major_allele[j] + " " + major_allele[j];
+				str_alleles = "2 2";
 				break;
 			default:
 				str_alleles = "0 0";
 				break;
 			}
+
+// 			switch (alleles)
+// 			{
+// 			case 0:
+// 				str_alleles = minor_allele[j] + " " + minor_allele[j];
+// 				break;
+// 			case 1:
+// 				str_alleles = minor_allele[j] + " " + major_allele[j];
+// 				break;
+// 			case 2:
+// 				str_alleles = major_allele[j] + " " + major_allele[j];
+// 				break;
+// 			default:
+// 				str_alleles = "0 0";
+// 				break;
+// 			}
 			Ped <<"\t"<<str_alleles;
 		
 		}

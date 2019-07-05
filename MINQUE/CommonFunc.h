@@ -41,3 +41,4 @@ double mean(Eigen::VectorXd &Y);
 double isNum(std::string line);
 std::string GetBaseName(std::string pathname);
 std::string GetParentPath(std::string pathname);
+

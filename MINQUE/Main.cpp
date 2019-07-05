@@ -35,6 +35,7 @@
 #include <map>
 #include <boost/serialization/map.hpp>
 #include <boost/serialization/split_member.hpp>
+#include "KernelCompute.h"
 
 void readAlgrithomParameter(boost::program_options::variables_map programOptions, MinqueOptions &minque)
 {
@@ -148,86 +149,131 @@ void readAlgrithomParameter(boost::program_options::variables_map programOptions
 	}
 }
 
+void MINQUEAnalysis(boost::program_options::variables_map programOptions, DataManager dm, LOG *log, ofstream &out);
 
 
 int main(int argc, const char *const argv[])
 {
+	KernelCompute kp;
+	kp.test();
+
 	ofstream out;
-	string result="result.txt";
-	string logfile="result.log";
-	LOG *logout=nullptr;
-	bool GPU=false;
-	Options opt(argc, argv);
-	boost::program_options::variables_map programOptions = opt.GetOptions();
-
-
-	
-
-	if (1 == argc || programOptions.count("help"))
+	string result = "result.txt";
+	string logfile = "result.log";
+	LOG *logout = nullptr;
+	try
 	{
-		std::cout << opt.GetDescription() << std::endl;
-		exit(0);
-	}
-	if (programOptions.count("version"))
-	{
-		std::cout << "Kernel Based Neural Network Software alpha 0.1" << std::endl;
-		exit(0);
-	}
-	if (programOptions.count("check"))
-	{
-		CheckMatrixInverseMode();
-		exit(0);
-	}
+		Options opt(argc, argv);
+		boost::program_options::variables_map programOptions = opt.GetOptions();
+		if (1 == argc || programOptions.count("help"))
+		{
+			std::cout << opt.GetDescription() << std::endl;
+			exit(0);
+		}
+		if (programOptions.count("version"))
+		{
+			std::cout << "Kernel Based Neural Network Software alpha 0.1" << std::endl;
+			exit(0);
+		}
+		if (programOptions.count("check"))
+		{
+			CheckMatrixInverseMode();
+			exit(0);
+		}
 	
-	
+		if (programOptions.count("out"))
+		{
+			result = programOptions["out"].as < std::string >();
+			std::string basename = GetBaseName(result);
+			std::string ParentPath = GetParentPath(result);
+			int positionDot = basename.rfind('.');
+			logfile = ParentPath +"/"+basename.substr(0,positionDot) + ".log";
+			programOptions.erase("out");
+		}
+		if (programOptions.count("log"))
+		{
+			logfile = programOptions["log"].as < std::string >();
+			programOptions.erase("out");
+		}
+		logout = new LOG(logfile);
+		out.open(result, ios::out);
+		DataManager dm(programOptions, logout);
+		dm.read();
+		if (programOptions.count("recode"))
+		{
+			std::vector<KernelData> kernelList = dm.GetKernel();
+			for (int i = 0; i < kernelList.size(); i++)
+			{
+				KernelWriter kw(kernelList[i]);
+				std::string outname= programOptions["recode"].as < std::string >();
+				kw.writeText(outname);
+			}
+		}
+		if (programOptions.count("make-kbin"))
+		{
+			std::vector<KernelData> kernelList = dm.GetKernel();
+			bool isfloat = true;
+			if (programOptions.count("precision"))
+			{
+				isfloat= programOptions["precision"].as < int >();
+			}
+			for (int i = 0; i < kernelList.size(); i++)
+			{
+				KernelWriter kw(kernelList[i]);
+				std::string outname = programOptions["make-kbin"].as < std::string >();
+				kw.setprecision(isfloat);
+				kw.write(outname);
+			}
+		}
+		if (!programOptions.count("skip"))
+		{
+			MINQUEAnalysis(programOptions, dm, logout, out);
+		}
+		out.close();
+		delete logout;
+	}
+	catch (string &e)
+	{
+		logout->write(e, true);
+		out.close();
+		delete logout;
+//		std::cout << e << std::endl;
+	}
+
+}
+
+void MINQUEAnalysis(boost::program_options::variables_map programOptions, DataManager dm, LOG *logout, ofstream &out)
+{
+	bool GPU = false;
 	if (programOptions.count("GPU"))
 	{
 		GPU = true;
 	}
-
-	if (programOptions.count("out"))
-	{
-		result = programOptions["out"].as < std::string >();
-		std::string basename = GetBaseName(result);
-		std::string ParentPath = GetParentPath(result);
-		int positionDot = basename.rfind('.');
-		logfile = ParentPath +"/"+basename.substr(0,positionDot) + ".log";
-	}
-	if (programOptions.count("log"))
-	{
-		logfile = programOptions["log"].as < std::string >();
-	}
-	logout = new LOG(logfile);
-	out.open(result, ios::out);
-
-	DataManager dm(programOptions, logout);
-	dm.read();
-
 	PhenoData phe = dm.getPhenotype();
 	std::vector<KernelData> kd = dm.GetKernel();
 	MinqueOptions minopt;
 	readAlgrithomParameter(programOptions, minopt);
-	
+
 	std::vector<double> VarComp;
- 	Eigen::MatrixXd e(phe.fid_iid.size(), phe.fid_iid.size());
+	Eigen::MatrixXd e(phe.fid_iid.size(), phe.fid_iid.size());
 	e.setIdentity();
 	int iterateTimes = 0;
 	if (GPU)
 	{
-// 		cuMINQUE cuvarest;
-// 		cuvarest.importY(Response.data(), Response.size());
-// 		cuvarest.pushback_Vi(e.data(), e.rows());
-// 		for (int i = 0; i < Kmatrix.size(); i++)
-// 		{
-// 			cuvarest.pushback_Vi(Kmatrix[i].data(), Kmatrix[i].rows());
-// 		}
-// 		std::cout << "Starting MINQUE estimate using GPU" << std::endl;
-// 		clock_t t1 = clock();
-// 		cuvarest.estimate();
-// 		std::cout << fixed << setprecision(2) << "GPU Elapse Time : " << (clock() - t1) * 1.0 / CLOCKS_PER_SEC * 1000 << " ms" << std::endl;
-// 		logout << setprecision(2) << "GPU Elapse Time : " << (clock() - t1) * 1.0 / CLOCKS_PER_SEC * 1000 << " ms" << std::endl;
-// 
-// 		VarComp = cuvarest.GetTheta();
+		// 		cuMINQUE cuvarest;
+		// 		cuvarest.importY(Response.data(), Response.size());
+		// 		cuvarest.pushback_Vi(e.data(), e.rows());
+		// 		for (int i = 0; i < Kmatrix.size(); i++)
+		// 		{
+		// 			cuvarest.pushback_Vi(Kmatrix[i].data(), Kmatrix[i].rows());
+		// 		}
+		// 		std::cout << "Starting MINQUE estimate using GPU" << std::endl;
+		// 		clock_t t1 = clock();
+		// 		cuvarest.estimate();
+		// 		std::cout << fixed << setprecision(2) << "GPU Elapse Time : " << (clock() - t1) * 1.0 / CLOCKS_PER_SEC * 1000 << " ms" << std::endl;
+		// 		logout << setprecision(2) << "GPU Elapse Time : " << (clock() - t1) * 1.0 / CLOCKS_PER_SEC * 1000 << " ms" << std::endl;
+		// 
+		// 		VarComp = cuvarest.GetTheta();
 	}
 	else
 	{
@@ -248,7 +294,7 @@ int main(int argc, const char *const argv[])
 		Eigen::VectorXd::Map(&VarComp[0], varest.getvcs().size()) = varest.getvcs();
 		iterateTimes = varest.getIterateTimes();
 	}
-	logout->write("---Result----",false);
+	logout->write("---Result----", false);
 	out << "Source\tVariance" << std::endl;
 	logout->write("Source\tVariance", false);
 	std::cout << fixed << setprecision(4) << "Estimated Variances: ";
@@ -256,7 +302,7 @@ int main(int argc, const char *const argv[])
 	double VG = 0;
 	double VP = 0;
 	std::stringstream ss;
-	for (; i < VarComp.size()-1; i++)
+	for (; i < VarComp.size() - 1; i++)
 	{
 		std::cout << VarComp.at(i) << " ";
 		int index = i + 1;
@@ -273,10 +319,10 @@ int main(int argc, const char *const argv[])
 	logout->write(ss.str(), false);
 	VP += VarComp.at(i);
 	ss.str("");
-	ss << "Vp\t" << VP ;
-	out << ss.str()<< std::endl;
+	ss << "Vp\t" << VP;
+	out << ss.str() << std::endl;
 	logout->write(ss.str(), false);
-	for (i=0; i < VarComp.size() - 1; i++)
+	for (i = 0; i < VarComp.size() - 1; i++)
 	{
 		int index = i + 1;
 		ss.str("");
@@ -289,9 +335,7 @@ int main(int argc, const char *const argv[])
 	out << ss.str() << std::endl;
 	logout->write(ss.str(), false);
 	ss.str("");
-	ss << "Iterate Times:\t" << iterateTimes+1;
+	ss << "Iterate Times:\t" << iterateTimes + 1;
 	out << ss.str() << std::endl;
-	logout->write(ss.str(),false);
-	out.close();
-	delete logout;
+	logout->write(ss.str(), false);
 }

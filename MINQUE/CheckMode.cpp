@@ -3,6 +3,7 @@
 #include <Eigen/Dense>
 #include "ToolKit.h"
 #include <time.h>
+#include "KernelManage.h"
 #include <iostream>
 void CheckMatrixInverseMode()
 {
@@ -63,6 +64,36 @@ void CheckMatrixInverseMode()
 		std::cout << "Passed" << std::endl;
 	}
 	
+}
+
+void checkkernel()
+{
+	KernelReader kreader("../500_4098_sXX");
+	kreader.read();
+	KernelData kd = kreader.getKernel();
+	std::vector<int> id;
+	for (int i = 0; i < kd.fid_iid.size(); i++)
+	{
+		id.push_back(i);
+	}
+	std::random_shuffle(id.begin(), id.end());
+	KernelData newkd;
+	newkd.kernelMatrix.resize(id.size(), id.size());
+	newkd.VariantCountMatrix.resize(id.size(), id.size());
+	for (int i = 0; i < id.size(); i++)
+	{
+		for (int j = 0; j < id.size(); j++)
+		{
+			newkd.kernelMatrix(i, j) = kd.kernelMatrix(id[i], id[j]);
+			newkd.VariantCountMatrix(i, j) = kd.VariantCountMatrix(id[i], id[j]);
+		}
+		std::pair<int, string> fid_iid(i, kd.fid_iid[id[i]]);
+		std::pair<string, int > rfid_iid(kd.fid_iid[id[i]], i);
+		newkd.fid_iid.insert(fid_iid);
+		newkd.rfid_iid.insert(rfid_iid);
+	}
+	KernelWriter kw(newkd);
+	kw.write("../Random");
 }
 
 void CheckkernelIOStream()

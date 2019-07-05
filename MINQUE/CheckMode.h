@@ -2,3 +2,4 @@
 
 
 void CheckMatrixInverseMode();
+void checkkernel();

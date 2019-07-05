@@ -28,7 +28,11 @@ void DataManager::read()
 		KernelReader kreader(kernelfiles);
 		kreader.read();
 		KernelData tmp = kreader.getKernel();
-		match(phe, tmp, kernelfiles);
+		if (phe.fid_iid.size() > 0)
+		{
+			match(phe, tmp, kernelfiles);
+		}
+		
 		KernelList.push_back(tmp);
 	}
 	if (programOptions.count("mkernel"))
@@ -106,11 +110,16 @@ void DataManager::readmkernel(std::string mkernel)
 		KernelReader kreader(prefix);
 		kreader.read();
 		KernelData tmpData = kreader.getKernel();
-		match(phe, tmpData, prefix);
+		if (phe.fid_iid.size() > 0)
+		{
+			match(phe, tmpData, prefix);
+		}
+	
 		KernelList.push_back(tmpData);
 	}
 	klistifstream.close();
 }
+
 
 void DataManager::match(PhenoData &phenotype, KernelData &kernel, std::string prefix)
 {

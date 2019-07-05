@@ -47,11 +47,20 @@ void Options::boostProgramOptionsRoutine(int argc, const char * const argv[])
 		("phe", po::value<std::string>()->value_name("[filename]"),
 			"Specify full name of phenotype file\n")
 		("kernel", po::value<std::string>()->value_name("{prefix}"),
-			"Input a kernel file in binary format.\n\n")
+			"Specify .grm.bin + .grm.N.bin + .grm.id (GCTA triangular binary relationship matrix) filename prefix.\n\n")
 	    ("mkernel", po::value<std::string>()->value_name("[filename]"),
 				"Input multiple kernel files in binary format.\n");
+		po::options_description optsFilesOperation("File Operations");
+		optsFilesOperation.add_options()
+		("recode", po::value<std::string>()->value_name("[filename]"),
+				"Recode the binary kernel file to text format.\n")
+		("precision", po::value<int>()->value_name("precision"),
+				"Set precision for output kernel file; 0 for double, 1 for float.\n")
+		("make-kbin", po::value<std::string>()->value_name("{prefix}"),
+				"Generate .grm.bin + .grm.N.bin + .grm.id (GCTA triangular binary relationship matrix).\n");
 	po::options_description optsAlgorithm("Algorithm Parameters");
 	optsAlgorithm.add_options()
+		("skip", "Skip estimation process.\n")
 		("iterate", po::value<int>()->value_name("times"), "The iterate times used in iterate minque method.\nDefault to 100.\n")
 		("tolerance", po::value<double>()->value_name("value"), "The threshold value used in iterate minque method.\nDefault to 1e-6.\n")
 		("inverse", po::value<std::string>()->value_name("mode"), "The matrix decomposition.\n"
@@ -80,6 +89,7 @@ void Options::boostProgramOptionsRoutine(int argc, const char * const argv[])
 	optsDescCmdLine.
 		add(optsDescGeneral).
 		add(optsDescInFiles).
+		add(optsFilesOperation).
 		add(optsAlgorithm).
 		add(optsComputerDevice).
 		add(optsDescOutFiles).
