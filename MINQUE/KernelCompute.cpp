@@ -30,19 +30,18 @@ void KernelCompute::test()
 
 }
 
+void KernelCompute::getCAR(Eigen::MatrixXd & Geno, double maf, double weights)
+{
+}
+
 void KernelCompute::getGaussian(Eigen::MatrixXd & Geno, double weights, double sigmma)
 {
 }
 
-void KernelCompute::getIBS(Eigen::MatrixXd &Geno, double weights)
+void KernelCompute::getIBS(Eigen::MatrixXd & Geno, double weights)
 {
-	int nrow = Geno.rows();
-	int ncol = Geno.cols();
-	Eigen::MatrixXd gtemp1 = Geno;
-	Eigen::MatrixXd gtemp2 = Geno;
-
-
 }
+
 
 void KernelCompute::stripSameCol(Eigen::MatrixXd & Geno)
 {
