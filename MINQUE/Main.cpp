@@ -75,7 +75,7 @@ void readAlgrithomParameter(boost::program_options::variables_map programOptions
 				minque.MatrixDecomposition = 3;
 				break;
 			default:
-				std::cout << "The parameter inverse is not correct, please check it. More detail --help" << std::endl;
+				throw ("The parameter inverse is not correct, please check it. More detail --help");
 				break;
 			}
 		}
@@ -100,8 +100,7 @@ void readAlgrithomParameter(boost::program_options::variables_map programOptions
 			}
 			else
 			{
-				std::cout << "The parameter inverse is not correct, please check it. More detail --help" << std::endl;
-				exit(0);
+				throw ("The parameter inverse is not correct, please check it. More detail --help");
 			}
 		}
 		
@@ -125,7 +124,7 @@ void readAlgrithomParameter(boost::program_options::variables_map programOptions
 				minque.MatrixDecomposition = 3;
 				break;
 			default:
-				std::cout << "The parameter altinverse is not correct, please check it. More detail --help" << std::endl;
+				throw ("The parameter ginverse is not correct, please check it. More detail --help");
 				break;
 			}
 		}
@@ -142,19 +141,18 @@ void readAlgrithomParameter(boost::program_options::variables_map programOptions
 			}
 			else
 			{
-				std::cout << "The parameter altinverse is not correct, please check it. More detail --help" << std::endl;
-				exit(0);
+				throw ("The parameter ginverse is not correct, please check it. More detail --help");
 			}
 		}
 	}
 }
 
-void MINQUEAnalysis(boost::program_options::variables_map programOptions, DataManager dm, LOG *log, ofstream &out);
+void MINQUEAnalysis(boost::program_options::variables_map programOptions, DataManager dm, LOG *log, std::string &out);
 
 
 int main(int argc, const char *const argv[])
 {
-	ofstream out;
+	
 	string result = "result.txt";
 	string logfile = "result.log";
 	LOG *logout = nullptr;
@@ -165,17 +163,18 @@ int main(int argc, const char *const argv[])
 		if (1 == argc || programOptions.count("help"))
 		{
 			std::cout << opt.GetDescription() << std::endl;
-			exit(0);
+			return 1;
 		}
 		if (programOptions.count("version"))
 		{
 			std::cout << "Kernel Based Neural Network Software alpha 0.1" << std::endl;
-			exit(0);
+			return 1;
+
 		}
 		if (programOptions.count("check"))
 		{
 			CheckMatrixInverseMode();
-			exit(0);
+			return 1;
 		}
 	
 		if (programOptions.count("out"))
@@ -193,7 +192,7 @@ int main(int argc, const char *const argv[])
 			programOptions.erase("out");
 		}
 		logout = new LOG(logfile);
-		out.open(result, ios::out);
+		
 		DataManager dm(programOptions, logout);
 		dm.read();
 		if (programOptions.count("recode"))
@@ -224,22 +223,21 @@ int main(int argc, const char *const argv[])
 		}
 		if (!programOptions.count("skip"))
 		{
-			MINQUEAnalysis(programOptions, dm, logout, out);
+			MINQUEAnalysis(programOptions, dm, logout, result);
 		}
-		out.close();
+		
 		delete logout;
 	}
 	catch (string &e)
 	{
 		logout->write(e, true);
-		out.close();
 		delete logout;
 //		std::cout << e << std::endl;
 	}
 
 }
 
-void MINQUEAnalysis(boost::program_options::variables_map programOptions, DataManager dm, LOG *logout, ofstream &out)
+void MINQUEAnalysis(boost::program_options::variables_map programOptions, DataManager dm, LOG *logout, std::string &result)
 {
 	bool GPU = false;
 	if (programOptions.count("GPU"))
@@ -291,6 +289,8 @@ void MINQUEAnalysis(boost::program_options::variables_map programOptions, DataMa
 		Eigen::VectorXd::Map(&VarComp[0], varest.getvcs().size()) = varest.getvcs();
 		iterateTimes = varest.getIterateTimes();
 	}
+	ofstream out;
+	out.open(result, ios::out);
 	logout->write("---Result----", false);
 	out << "Source\tVariance" << std::endl;
 	logout->write("Source\tVariance", false);
@@ -335,4 +335,5 @@ void MINQUEAnalysis(boost::program_options::variables_map programOptions, DataMa
 	ss << "Iterate Times:\t" << iterateTimes + 1;
 	out << ss.str() << std::endl;
 	logout->write(ss.str(), false);
+	out.close();
 }
