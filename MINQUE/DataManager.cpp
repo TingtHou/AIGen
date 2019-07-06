@@ -149,10 +149,6 @@ void DataManager::match(PhenoData &phenotype, KernelData &kernel, std::string pr
 			{
 				throw ("Error: cannot find the individual [" + rowID + "] in the kernel file [" + prefix + "].\n");
 			}
-			if (!rKernelID.count(colID))
-			{
-				throw ("Error: cannot find the individual [" + colID + "] in the kernel file [" + prefix + "].\n");
-			}
 			kernel.kernelMatrix(i, j) = kernel.kernelMatrix(j, i) = tmpKMatrix(rKernelID[rowID], rKernelID[colID]);
 			kernel.VariantCountMatrix(i, j) = kernel.VariantCountMatrix(j, i) = tmpCMatrix(rKernelID[rowID], rKernelID[colID]);
 		}
