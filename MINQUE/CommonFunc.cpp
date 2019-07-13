@@ -60,7 +60,7 @@ int Inverse(Eigen::MatrixXd & Ori_Matrix, Eigen::MatrixXd & Inv_Matrix, int Deco
 	}
 	return status;
 }
-
+//Sample variance
 double Variance(Eigen::VectorXd & Y)
 {
 	double meanY = mean(Y);
@@ -70,7 +70,7 @@ double Variance(Eigen::VectorXd & Y)
 	{
 		variance += (Y[i] - meanY)*(Y[i] - meanY);
 	}
-	variance /= (double)nind;
+	variance /= (double)(nind-1);
 	return variance;
 }
 
@@ -108,4 +108,58 @@ std::string GetParentPath(std::string pathname)
 	splitstr.pop_back();
 	std::string ParentPath = boost::join(splitstr, "/");
 	return ParentPath==""?".":ParentPath;
+}
+
+
+void stripSameCol(Eigen::MatrixXd & Geno)
+{
+	std::vector<int> repeatID;
+	repeatID.clear();
+	for (int i = 0; i < Geno.cols(); i++)
+	{
+		double *test = Geno.col(i).data();
+		std::vector<double> rowi(test, test + Geno.col(i).size());
+		std::sort(rowi.begin(), rowi.end());
+		auto it = std::unique(rowi.begin(), rowi.end());
+		rowi.erase(it, rowi.end());
+		int len = rowi.size();
+		if (len == 1)
+		{
+			repeatID.push_back(i);
+		}
+	}
+	if (repeatID.empty())
+	{
+		return;
+	}
+	Eigen::MatrixXd tmpGeno = Geno;
+	Geno.resize(tmpGeno.rows(), tmpGeno.cols() - repeatID.size());
+	int j = 0;
+	for (int i = 0; i < tmpGeno.cols(); i++)
+	{
+		if (std::find(repeatID.begin(), repeatID.end(), i) != repeatID.end())
+		{
+			continue;
+		}
+		Geno.col(j++) = tmpGeno.col(i);
+	}
+
+}
+
+void stdSNPmv(Eigen::MatrixXd & Geno)
+{
+	int ncol = Geno.cols();
+	int nrow = Geno.rows();
+	Eigen::MatrixXd tmpGeno = Geno;
+	Geno.setZero();
+	for (int i = 0; i < ncol; i++)
+	{
+		Eigen::VectorXd Coli(nrow);
+		Coli << tmpGeno.col(i);
+		double means = mean(Coli);
+		double sd = std::sqrt(Variance(Coli));
+		Coli -= means * Eigen::VectorXd::Ones(nrow);
+		Coli /= sd;
+		Geno.col(i) << Coli;
+	}
 }

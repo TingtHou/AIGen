@@ -2,6 +2,7 @@
 #include "pch.h"
 #include <map>
 #include <string>
+#include <boost/bimap.hpp>
 #include <Eigen/Dense>
 #define EIGEN_USE_MKL_ALL
 enum MatrixDecompostionOptions :int
@@ -10,6 +11,17 @@ enum MatrixDecompostionOptions :int
 	LU = 1,
 	QR = 2,
 	SVD = 3
+};
+
+
+enum KernelNames :int
+{
+	CAR = 0,
+	Identity = 1,
+	Product = 2,
+	Ploymonial = 3,
+	Gaussian = 4,
+	IBS = 5
 };
 
 struct MinqueOptions
@@ -23,6 +35,7 @@ struct MinqueOptions
 
 struct KernelData
 {
+	boost::bimap<int, std::string> Bifid_iid;
 	std::map<int, std::string> fid_iid;
 	std::map<std::string, int> rfid_iid;
 	Eigen::MatrixXd kernelMatrix;
@@ -35,10 +48,20 @@ struct PhenoData
 	Eigen::VectorXd Phenotype;
 };
 
+struct GenoData
+{
+	std::map<int, std::string> fid_iid;
+	Eigen::MatrixXd Geno;               //individual mode, row: individual; col: SNP;
+
+};
+
 int Inverse(Eigen::MatrixXd & Ori_Matrix, Eigen::MatrixXd & Inv_Matrix,int DecompositionMode, int AltDecompositionMode, bool allowPseudoInverse);
 double Variance(Eigen::VectorXd &Y);
 double mean(Eigen::VectorXd &Y);
 double isNum(std::string line);
 std::string GetBaseName(std::string pathname);
 std::string GetParentPath(std::string pathname);
+void stripSameCol(Eigen::MatrixXd &Geno);
+void stdSNPmv(Eigen::MatrixXd &Geno);
+
 
