@@ -8,16 +8,22 @@
 #include <set>
 #include <string>
 #include <Eigen/dense>
+#include "ToolKit.h"
+#include <boost/algorithm/string.hpp>
+#include <boost/exception/all.hpp>
+#include <exception>
+#include <vector>
+#include "CommonFunc.h"
 class PlinkReader
 {
 
 public:
-	PlinkReader();
+	PlinkReader(std::string pedfile, std::string mapfile);
 	PlinkReader(std::string bedfile, std::string bimfile, std::string famfile);
 	~PlinkReader();
 
 	void savePedMap(std::string prefix);
-	Eigen::MatrixXd GetGeno();
+	GenoData GetGeno();
 	void test();
 private:
 	static const int READER_MASK = 3;
@@ -31,14 +37,17 @@ private:
 	std::string bimfile;
 	std::string famfile;
 	std::string bedfile;
+	std::string pedfile;
+	std::string mapfile;
 	///////////////////family info////////////////////////////////
-	std::map<std::string, int> fid_pid_index;
+	std::map<int, std::string> fid_iid_index;
 	std::vector<std::string> fid;
-	std::vector<std::string> pid;
+	std::vector<std::string> iid;
 	std::vector<std::string> PaternalID;
 	std::vector<std::string> MaternalID;
-	std::multimap<std::string, std::string> fid_pid; //pair<std::string, int>(_fid[i],_pid[i])
+	std::multimap<std::string, std::string> fid_iid; //pair<std::string, int>(_fid[i],_iid[i])
 	std::vector<int> Sex; //(1 = male; 2 = female; -9 = unknown)
+	int Sexstat[2];          //male 1 numder in sex[0], female 2 number in sex[1];
 	std::vector <int> Phenotype;
 	int nind=0;
 	///////////////////////Marker info//////////////////////////////////////

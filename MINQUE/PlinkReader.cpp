@@ -1,29 +1,32 @@
 #include "pch.h"
 #include "PlinkReader.h"
-#include "ToolKit.h"
-#include "Exception.h"
-#include <boost/algorithm/string.hpp>
-#include <boost/exception/all.hpp>
-#include <exception>
+PlinkReader::PlinkReader(std::string pedfile, std::string mapfile)
+{
+	this->pedfile = pedfile;
+	this->mapfile = mapfile;
+	ReadMapFile(mapfile);
+	readPedfile(pedfile);
+	buildpedigree();
+	buildgenemap();
+}
+// reading bed file, bim file, famfile in plink format
 PlinkReader::PlinkReader(std::string bedfile, std::string bimfile, std::string famfile)
 {
 	this->bedfile = bedfile;
 	this->bimfile = bimfile;
 	this->famfile = famfile;
+	Sexstat[0] = 0;
+	Sexstat[1] = 0;
 	ReadBimFile(bimfile);
 	ReadFamFile(famfile);
 	ReadBedFile(bedfile);
-	
+	buildpedigree();
+	buildgenemap();
 }
 
-PlinkReader::PlinkReader()
-{
-
-}
 
 PlinkReader::~PlinkReader()
 {
-
 }
 
 void PlinkReader::readPedfile(std::string pedfile)
@@ -32,26 +35,23 @@ void PlinkReader::readPedfile(std::string pedfile)
 	std::ifstream Ped(pedfile.c_str());
 	if (!Ped)
 	{
-			BOOST_THROW_EXCEPTION(
-				NoItemException() <<
-				ErrInfoItemType("ped"));
-//		std::cout << "Error: can not open the file [" << pedfile << "] to read!" << std::endl;
-	//	return;
+		throw ("Error: can not open the file [" + pedfile + "] to read!" );
 	}
-	std::cout << "Reading Plink map file from [" + pedfile + "]." << endl;
+	std::cout << "Reading genotype file from [" + pedfile + "]." << endl;
 	for (int i=0;i<nmarker;i++)
 	{
 		minor_allele.push_back("1");
 		major_allele.push_back("2");
 	}
 	std::getline(Ped, str_buf);
+	int indtmp = 0;
 	while (str_buf!="")
 	{
 		
 		std::vector<string> SplitVec;
 		boost::split(SplitVec, str_buf, boost::is_any_of(" \t"), boost::token_compress_on);
 		fid.push_back(SplitVec[0]);
-		pid.push_back(SplitVec[1]);
+		iid.push_back(SplitVec[1]);
 		PaternalID.push_back(SplitVec[2]);
 		MaternalID.push_back(SplitVec[3]);
 		int _sex = atoi(SplitVec[4].c_str());
@@ -82,16 +82,16 @@ void PlinkReader::readPedfile(std::string pedfile)
 			switch (alleles)
 			{
 			case 2:
-				Gene.push_back(0);
+				Gene.push_back(2);
 				break;
 			case 3:
 				Gene.push_back(1);
 				break;
 			case 4:
-				Gene.push_back(2);
+				Gene.push_back(0);
 				break;
 			default:
-				Gene.push_back(-9);
+				Gene.push_back(3);
 				break;
 			}
 		}
@@ -99,8 +99,14 @@ void PlinkReader::readPedfile(std::string pedfile)
 		std::getline(Ped, str_buf);
 		nind++;
 	}
-	buildpedigree();
 	Ped.close();
+	std::cout << nind << " individuals read from [" << pedfile << "]. " << std::endl;
+	if (nind != std::count(Phenotype.begin(), Phenotype.end(), -9))
+	{
+		std::cout << nind << " individuals with nonmissing phenotypes." << std::endl;
+		std::cout << std::count(Sex.begin(), Sex.end(), 1) << "males, " << std::count(Sex.begin(), Sex.end(), 2) << " females, and " << std::count(Sex.begin(), Sex.end(), -9) << " of unspecified sex." << std::endl;
+
+	}
 }
 
 
@@ -110,10 +116,10 @@ void PlinkReader::ReadMapFile(std::string mapfile)
 	std::ifstream Map(mapfile.c_str());
 	if (!Map)
 	{
-		std::cout << "Error: can not open the file [" << mapfile << "] to read!" << std::endl;
-		return;
+		throw ("Error: can not open the file [" + mapfile + "] to read!");
+		
 	}
-	std::cout << "Reading Plink map file from [" + mapfile + "]." << endl;
+	std::cout << "Reading map file from [" + mapfile + "]." << endl;
 
 	chr.clear();
 	marker_name.clear();
@@ -136,8 +142,7 @@ void PlinkReader::ReadMapFile(std::string mapfile)
 		nmarker++;
 	}
 	Map.close();
-	std::cout << nmarker << " SNPs to be included from [" + mapfile + "]." << std::endl;
-	buildgenemap();
+	std::cout << nmarker << " markers to be included from [" + mapfile + "]." << std::endl;
 }
 
 void PlinkReader::ReadFamFile(std::string famfile)
@@ -145,28 +150,28 @@ void PlinkReader::ReadFamFile(std::string famfile)
 	std::ifstream Fam(famfile.c_str());
 	if (!Fam)
 	{
-		std::cout << "Error: can not open the file [" << famfile << "] to read." << std::endl;
-		return;
+		throw ("Error: can not open the file [" + famfile + "] to read.");
 	}
-	std::cout << "Reading plink fam file from [" << famfile << "]." << endl;
-	fid_pid_index.clear();
+	std::cout << "Reading pedigree information from [" << famfile << "]." << endl;
+	fid_iid_index.clear();
 	PaternalID.clear();
 	MaternalID.clear();
-	fid_pid.clear();
+	fid_iid.clear();
 	Sex.clear();
 	Phenotype.clear();
-	pid.clear();
-	fid_pid.clear();
+	iid.clear();
+	fid_iid.clear();
 	int i = 0;
 	std::string str_buf;
 	nind = 0;
 	while (Fam)
 	{
+		std::string fid_iid;
 		Fam >> str_buf;
 		if (Fam.eof()) break;
 		fid.push_back(str_buf);
 		Fam >> str_buf;
-		pid.push_back(str_buf);
+		iid.push_back(str_buf);
 		Fam >> str_buf;
 		PaternalID.push_back(str_buf);
 		Fam >> str_buf;
@@ -175,11 +180,12 @@ void PlinkReader::ReadFamFile(std::string famfile)
 		int _sex = atoi(str_buf.c_str());
 		if (_sex!=1&&_sex!=2)
 		{
-			Sex.push_back(0);
+			Sex.push_back(-9);
 		}
 		else
 		{
 			Sex.push_back(_sex);
+			Sexstat[_sex - 1]++;
 		}
 		
 		Fam >> str_buf;
@@ -192,10 +198,17 @@ void PlinkReader::ReadFamFile(std::string famfile)
 		{
 			Phenotype.push_back(_phe);
 		}
-//		Phenotype.push_back(stod(str_buf));
 		nind++;
 	}
-
+	Fam.close();
+//	std::cout << nind << " individuals (" << Sexstat[0] << " males, " << Sexstat[1] << " females) loaded from .fam." << std::endl;
+	std::cout << nind << " individuals read from ["<<famfile<<"]. "<< std::endl;
+	if (nind != std::count(Phenotype.begin(), Phenotype.end(), -9))
+	{
+		std::cout << nind << "individuals with nonmissing phenotypes." << std::endl;
+		std::cout << std::count(Sex.begin(), Sex.end(), 1) << " males, " << std::count(Sex.begin(), Sex.end(), 2) << " females, and " << std::count(Sex.begin(), Sex.end(), -9) << " of unspecified sex." << std::endl;
+		
+	}
 }
 
 void PlinkReader::ReadBimFile(std::string bimfile)
@@ -205,11 +218,10 @@ void PlinkReader::ReadBimFile(std::string bimfile)
 	std::ifstream Bim(bimfile.c_str());
 	if (!Bim)
 	{
-		std::cout << "Error: can not open the file [" << bimfile << "] to read!" << std::endl;
-		return;
+		Bim.close();
+		throw ("Error: can not open the file [" + bimfile + "] to read!");
 	}
-	std::cout << "Reading Plink bim file from [" + bimfile + "]." << endl;
-
+	std::cout << "Reading map (extended format) from [" + bimfile + "]." << endl;
 	chr.clear();
 	marker_name.clear();
 	Gene_distance.clear();
@@ -238,7 +250,6 @@ void PlinkReader::ReadBimFile(std::string bimfile)
 	}
 	Bim.close();
 	std::cout << nmarker << " SNPs to be included from [" + bimfile + "]." << std::endl;
-	buildgenemap();
 }
 
 void PlinkReader::ReadBedFile(std::string bedfile)
@@ -246,9 +257,10 @@ void PlinkReader::ReadBedFile(std::string bedfile)
 	std::fstream Bed(bedfile.c_str(), std::ios::in | std::ios::binary);
 	if (!Bed)
 	{
-		std::cout << "Error: can not open the file [" << bedfile << "] to read." << std::endl;
-		return;
+		Bed.close();
+		throw ("Error: can not open the file [" + bedfile + "] to read.");
 	}
+	std::cout << "Reading genotype bitfile from [" + bedfile + "]." << endl;
 	char byte_buf;
 	for (int i=0;i<2;i++)
 	{
@@ -265,10 +277,9 @@ void PlinkReader::ReadBedFile(std::string bedfile)
 	}
 	else
 	{
-		std::cout << "Error: bed file [" << bedfile << "] is neither in SNP-major mode nor in individual-major mode." << std::endl;
-		return;
+		throw ("Error: bed file [" + bedfile + "] is neither in SNP-major mode nor in individual-major mode.");
 	}
-	std::cout << "Reading PLINK BED file from [" + bedfile + "] in "<< (SNP_major? "SNP-major format ...": "individual-major format ...") << std::endl;
+	std::cout << "Detected that binary PED file is v1.00 SNP - major mode" << std::endl;
 	int sampleCounter = 0;
 	std::vector<int> Gene;
 	Gene.clear();
@@ -330,20 +341,22 @@ void PlinkReader::ReadBedFile(std::string bedfile)
 		Marker = _marker;
 	}
 	Bed.close();
-	std::cout << nind << " individuals and " << nmarker << " SNPs to be included from [" + bedfile + "]." << endl;
+	std::cout << "Before frequency and genotyping pruning, there are "<<nmarker<< " SNPs." << endl;
 }
 
-Eigen::MatrixXd PlinkReader::GetGeno()
+GenoData PlinkReader::GetGeno()
 {
-	Eigen::MatrixXd Geno(nind,nmarker);
+	GenoData gd;
+	gd.Geno.resize(nind,nmarker);
 	for (int i=0;i<nind;i++)
 	{
 		for (int j=0;j<nmarker;j++)
 		{
-			Geno(i, j) = Marker[i][j];
+			gd.Geno(i, j) = Marker[i][j];
 		}
 	}
-	return Geno;
+	gd.fid_iid = fid_iid_index;
+	return gd;
 }
 
 
@@ -369,8 +382,8 @@ void PlinkReader::buildpedigree()
 {
 	for (int i=0;i<nind;i++)
 	{
-		fid_pid_index.insert(std::pair<std::string, int>(fid[i] + ":" + pid[i], i));
-		fid_pid.insert(std::pair<std::string, std::string>(fid[i], pid[i]));
+		fid_iid_index.insert({ i,fid[i] + "_" + iid[i] });
+		fid_iid.insert(std::pair<std::string, std::string>(fid[i], iid[i]));
 	}
 }
 
@@ -398,13 +411,13 @@ void PlinkReader::savepedfile(std::string pedfile)
 	std::ofstream Ped(pedfile.c_str());
 	if (!Ped)
 	{
-		std::cout << "Error: can not open the file [" << pedfile << "] to write." << std::endl;
-		return;
+		Ped.close();
+		throw ("Error: can not open the file [" + pedfile + "] to write.");
 	}
 	std::cout << "Writing PLINK ped file to [" + pedfile + "] ..." << std::endl;
 	for (int i=0;i<nind;i++)
 	{
-		Ped << fid[i] << "\t" << pid[i] << "\t" << PaternalID[i] << "\t" << MaternalID[i] << "\t" << Sex[i] << "\t" << Phenotype[i];
+		Ped << fid[i] << "\t" << iid[i] << "\t" << PaternalID[i] << "\t" << MaternalID[i] << "\t" << Sex[i] << "\t" << Phenotype[i];
 		for (int j=0;j<nmarker;j++)
 		{
 			int alleles = (int)Marker[i][j];
@@ -412,13 +425,13 @@ void PlinkReader::savepedfile(std::string pedfile)
 			switch (alleles)
 			{
 			case 0:
-				str_alleles = "1 1";
+				str_alleles = "2 2";
 				break;
 			case 1:
 				str_alleles = "1 2";
 				break;
 			case 2:
-				str_alleles = "2 2";
+				str_alleles = "1 1";
 				break;
 			default:
 				str_alleles = "0 0";
@@ -455,8 +468,8 @@ void PlinkReader::savemapfile(std::string mapfile)
 	std::ofstream Map(mapfile.c_str());
 	if (!Map)
 	{
-		std::cout << "Error: can not open the file [" << mapfile << "] to write." << std::endl;
-		return;
+		Map.close();
+		throw ("Error: can not open the file [" + mapfile + "] to write.");
 	}
 	std::cout << "Writing PLINK map file to [" + mapfile + "] ..." << std::endl;
 	for (int i=0;i<nmarker;i++)
