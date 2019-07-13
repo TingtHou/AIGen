@@ -33,5 +33,10 @@ void LOG::write(std::string outline, bool terminateOpt)
 
 LOG::~LOG()
 {
-	Logfile.close();
+	
 }
+
+void LOG::close()
+{
+	Logfile.close();
+};
