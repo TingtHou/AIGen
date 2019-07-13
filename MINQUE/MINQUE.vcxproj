@@ -53,7 +53,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
     <UseIntelMKL>Parallel</UseIntelMKL>
@@ -83,18 +83,18 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>E:\Program Files (x86)\IntelSWTools\compilers_and_libraries_2019.2.190\windows\mkl\include\fftw;E:\Program Files (x86)\IntelSWTools\compilers_and_libraries_2019.2.190\windows\mkl\include;D:\boost\boost_1_66_0;D:\eigen-eigen-323c052e1731;$(IncludePath)</IncludePath>
-    <LibraryPath>E:\Program Files (x86)\IntelSWTools\compilers_and_libraries_2019.2.190\windows\mkl\lib\intel64_win;E:\Program Files %28x86%29\IntelSWTools\compilers_and_libraries_2019.2.190\windows\compiler\lib\intel64_win;E:\Program Files (x86)\IntelSWTools\compilers_and_libraries_2019.2.190\windows\compiler\lib\ia32_win;E:\Program Files (x86)\IntelSWTools\compilers_and_libraries_2019.2.190\windows\mkl\lib\ia32_win;D:\boost\boost_1_66_0\stage\lib;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.0\lib\x64;$(LibraryPath)</LibraryPath>
-    <ExecutablePath>E:\Program Files (x86)\IntelSWTools\compilers_and_libraries_2019.2.190\windows\mkl\bin;$(ExecutablePath)</ExecutablePath>
+    <IncludePath>D:\boost_1_70_0;D:\eigen;$(IncludePath)</IncludePath>
+    <LibraryPath>D:\boost_1_70_0\lib64-msvc-14.1;$(LibraryPath)</LibraryPath>
+    <ExecutablePath>$(ExecutablePath)</ExecutablePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>E:\Program Files (x86)\IntelSWTools\compilers_and_libraries_2019.2.190\windows\mkl\include\fftw;E:\Program Files (x86)\IntelSWTools\compilers_and_libraries_2019.2.190\windows\mkl\include;D:\boost\boost_1_66_0;D:\eigen-eigen-323c052e1731;$(IncludePath)</IncludePath>
-    <LibraryPath>E:\Program Files (x86)\IntelSWTools\compilers_and_libraries_2019.2.190\windows\mkl\lib\intel64_win;E:\Program Files %28x86%29\IntelSWTools\compilers_and_libraries_2019.2.190\windows\compiler\lib\intel64_win;D:\boost\boost_1_66_0\stage\lib;$(LibraryPath)</LibraryPath>
-    <ExecutablePath>E:\Program Files (x86)\IntelSWTools\compilers_and_libraries_2019.2.190\windows\mkl\bin;$(ExecutablePath)</ExecutablePath>
+    <IncludePath>D:\boost_1_70_0;D:\eigen;$(IncludePath)</IncludePath>
+    <LibraryPath>D:\boost_1_70_0\lib64-msvc-14.1;$(LibraryPath)</LibraryPath>
+    <ExecutablePath>$(ExecutablePath)</ExecutablePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -124,11 +124,12 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <SupportJustMyCode>false</SupportJustMyCode>
       <LanguageStandard>stdcpp14</LanguageStandard>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>mkl_intel_c.lib;mkl_intel_thread.lib;mkl_core.lib;libiomp5md.lib;cusolver.lib;cublas.lib;cuda.lib;cudadevrt.lib;cudart.lib;cudart_static.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>mkl_intel_ilp64.lib;mkl_intel_thread.lib;mkl_core.lib;libiomp5md.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -178,7 +179,6 @@
     <ClInclude Include="cLog.h" />
     <ClInclude Include="CommonFunc.h" />
     <ClInclude Include="DataManager.h" />
-    <ClInclude Include="Exception.h" />
     <ClInclude Include="imnq.h" />
     <ClInclude Include="KernelCompute.h" />
     <ClInclude Include="KernelManage.h" />
@@ -196,7 +196,6 @@
     <ClCompile Include="clog.cpp" />
     <ClCompile Include="CommonFunc.cpp" />
     <ClCompile Include="DataManager.cpp" />
-    <ClCompile Include="Exception.cpp" />
     <ClCompile Include="imnq.cpp" />
     <ClCompile Include="KernelCompute.cpp" />
     <ClCompile Include="KernelManage.cpp" />
