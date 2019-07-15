@@ -57,7 +57,7 @@
     <ClInclude Include="DataManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="KernelCompute.h">
+    <ClInclude Include="KernelGenerator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -107,7 +107,7 @@
     <ClCompile Include="DataManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="KernelCompute.cpp">
+    <ClCompile Include="KernelGenerator.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

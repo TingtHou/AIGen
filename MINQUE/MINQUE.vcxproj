@@ -180,7 +180,7 @@
     <ClInclude Include="CommonFunc.h" />
     <ClInclude Include="DataManager.h" />
     <ClInclude Include="imnq.h" />
-    <ClInclude Include="KernelCompute.h" />
+    <ClInclude Include="KernelGenerator.h" />
     <ClInclude Include="KernelManage.h" />
     <ClInclude Include="LinearRegression.h" />
     <ClInclude Include="MinqueBase.h" />
@@ -197,7 +197,7 @@
     <ClCompile Include="CommonFunc.cpp" />
     <ClCompile Include="DataManager.cpp" />
     <ClCompile Include="imnq.cpp" />
-    <ClCompile Include="KernelCompute.cpp" />
+    <ClCompile Include="KernelGenerator.cpp" />
     <ClCompile Include="KernelManage.cpp" />
     <ClCompile Include="LinearRegression.cpp" />
     <ClCompile Include="MinqueBase.cpp" />
