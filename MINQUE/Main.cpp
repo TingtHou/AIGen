@@ -35,7 +35,7 @@
 #include <map>
 #include <boost/serialization/map.hpp>
 #include <boost/serialization/split_member.hpp>
-#include "KernelCompute.h"
+#include "KernelGenerator.h"
 
 void readAlgrithomParameter(boost::program_options::variables_map programOptions, MinqueOptions &minque)
 {
@@ -146,13 +146,13 @@ void readAlgrithomParameter(boost::program_options::variables_map programOptions
 		}
 	}
 }
+void ReadData(boost::program_options::variables_map programOptions, DataManager &dm, LOG *logout);
 
 void MINQUEAnalysis(boost::program_options::variables_map programOptions, DataManager dm, LOG *log, std::string &out);
 
 
 int main(int argc, const char *const argv[])
 {
-	
 	string result = "result.txt";
 	string logfile = "result.log";
 	LOG *logout = nullptr;
@@ -171,12 +171,6 @@ int main(int argc, const char *const argv[])
 			return 1;
 
 		}
-		if (programOptions.count("check"))
-		{
-			CheckMatrixInverseMode();
-			return 1;
-		}
-	
 		if (programOptions.count("out"))
 		{
 			result = programOptions["out"].as < std::string >();
@@ -189,15 +183,95 @@ int main(int argc, const char *const argv[])
 		if (programOptions.count("log"))
 		{
 			logfile = programOptions["log"].as < std::string >();
-			programOptions.erase("out");
+			programOptions.erase("log");
 		}
 		logout = new LOG(logfile);
 		
-		DataManager dm(programOptions, logout);
-		dm.read();
+		DataManager dm(logout);
+		ReadData(programOptions, dm, logout);
+		std::vector<KernelData> kernelList;
+		if (programOptions.count("make-kernel"))
+		{
+			int kerneltype;
+			std::string kernelname= programOptions["make-kernel"].as < std::string >();
+			if (isNum(kernelname))
+			{
+				switch (stoi(kernelname))
+				{
+				case 0:
+					kerneltype = CAR;
+					break;
+				case 1:
+					kerneltype = Identity;
+					break;
+				case 2:
+					kerneltype = Product;
+					break;
+				case 3:
+					kerneltype = Ploymonial;
+					break;
+				case 4:
+					kerneltype = Gaussian;
+					break;
+				case 5:
+					kerneltype = IBS;
+					break;
+				default:
+					throw ("Error: The kernel name [" + kernelname + "] cannot be identified.");
+					break;
+				}
+			}
+			else
+			{
+				transform(kernelname.begin(), kernelname.end(), kernelname.begin(), tolower);
+				if (kernelname == "car")
+				{
+					kerneltype = CAR;
+				}
+				else if (kernelname == "identity")
+				{
+					kerneltype = Identity;
+				}
+				else if (kernelname == "product")
+				{
+					kerneltype = Product;
+				}
+				else if (kernelname == "polynomial")
+				{
+					kerneltype = Ploymonial;
+				}
+				else if (kernelname == "gaussian")
+				{
+					kerneltype = Gaussian;
+				}
+				else if (kernelname == "ibs")
+				{
+					kerneltype = IBS;
+				}
+				else
+				{
+					throw ("Error: The kernel name [" + kernelname + "] cannot be identified.");
+				}
+			}
+			double weight= programOptions["weight"].as < double >();
+			double constant= programOptions["constant"].as < double >();
+			double deg = programOptions["deg"].as < double >();
+			double sigmma=programOptions["sigma"].as < double >();
+			GenoData gd = dm.getGenotype();
+			if (programOptions.count("std"))
+			{
+				stdSNPmv(gd.Geno);
+			}
+			KernelGenerator kernelGenr(gd, kerneltype, weight, constant, deg, sigmma);
+			kernelList.push_back(kernelGenr.getKernel());
+		}
+		if (kernelList.size())
+		{
+			dm.SetKernel(kernelList);
+		}
 		if (programOptions.count("recode"))
 		{
-			std::vector<KernelData> kernelList = dm.GetKernel();
+			
 			for (int i = 0; i < kernelList.size(); i++)
 			{
 				KernelWriter kw(kernelList[i]);
@@ -205,9 +279,9 @@ int main(int argc, const char *const argv[])
 				kw.writeText(outname);
 			}
 		}
-		if (programOptions.count("make-kbin"))
+		if (programOptions.count("make-bin"))
 		{
-			std::vector<KernelData> kernelList = dm.GetKernel();
+			std::string outname = programOptions["make-bin"].as < std::string >();
 			bool isfloat = true;
 			if (programOptions.count("precision"))
 			{
@@ -215,15 +289,25 @@ int main(int argc, const char *const argv[])
 			}
 			for (int i = 0; i < kernelList.size(); i++)
 			{
+				if (i>1)
+				{
+					outname += i;
+				}
 				KernelWriter kw(kernelList[i]);
-				std::string outname = programOptions["make-kbin"].as < std::string >();
+			
 				kw.setprecision(isfloat);
 				kw.write(outname);
 			}
+
 		}
-		if (!programOptions.count("skip"))
+		if (dm.getPhenotype().fid_iid.size()!=0)
 		{
-			MINQUEAnalysis(programOptions, dm, logout, result);
+			dm.match();
+			if (!programOptions.count("skip"))
+			{
+				MINQUEAnalysis(programOptions, dm, logout, result);
+			}
+
 		}
 		
 		delete logout;
@@ -231,8 +315,79 @@ int main(int argc, const char *const argv[])
 	catch (string &e)
 	{
 		logout->write(e, true);
+		logout->close();
 		delete logout;
 //		std::cout << e << std::endl;
+	}
+	catch (const std::exception &err)
+	{
+		logout->write(err.what(), true);
+		logout->close();
+		delete logout;
+	}
+
+}
+
+void ReadData(boost::program_options::variables_map programOptions, DataManager &dm, LOG *logout)
+{
+	std::vector<std::string> GFile;
+	if (programOptions.count("phe"))
+	{
+		std::string reponsefile = programOptions["phe"].as < std::string >();
+		dm.readPhe(reponsefile);
+
+	}
+	if (programOptions.count("kernel"))
+	{
+		std::string kernelfiles = programOptions["kernel"].as<std::string >();
+		dm.readKernel(kernelfiles);
+	}
+	if (programOptions.count("mkernel"))
+	{
+		std::string mkernelfile = programOptions["mkernel"].as<std::string >();
+		dm.readmKernel(mkernelfile);
+	}
+	if (programOptions.count("bfile"))
+	{
+		std::string Prefix = programOptions["bfile"].as<std::string >();
+		GFile.push_back(Prefix + ".bed");
+		GFile.push_back(Prefix + ".bim");
+		GFile.push_back(Prefix + ".fam");
+	}
+	if (programOptions.count("file"))
+	{
+		std::string Prefix = programOptions["file"].as<std::string >();
+		GFile.push_back(Prefix + ".ped");
+		GFile.push_back(Prefix + ".map");
+	}
+	if (programOptions.count("ped"))
+	{
+		std::string filename = programOptions["ped"].as<std::string >();
+		GFile.push_back(filename);
+	}
+	if (programOptions.count("map"))
+	{
+		std::string filename = programOptions["map"].as<std::string >();
+		GFile.push_back(filename);
+	}
+	if (programOptions.count("bed"))
+	{
+		std::string filename = programOptions["bed"].as<std::string >();
+		GFile.push_back(filename);
+	}
+	if (programOptions.count("bim"))
+	{
+		std::string filename = programOptions["bim"].as<std::string >();
+		GFile.push_back(filename);
+	}
+	if (programOptions.count("fam"))
+	{
+		std::string filename = programOptions["fam"].as<std::string >();
+		GFile.push_back(filename);
+	}
+	if (GFile.size()!=0)
+	{
+		dm.readGeno(GFile);
 	}
 
 }
