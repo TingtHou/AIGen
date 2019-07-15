@@ -104,7 +104,7 @@ void PlinkReader::readPedfile(std::string pedfile)
 	if (nind != std::count(Phenotype.begin(), Phenotype.end(), -9))
 	{
 		std::cout << nind << " individuals with nonmissing phenotypes." << std::endl;
-		std::cout << std::count(Sex.begin(), Sex.end(), 1) << "males, " << std::count(Sex.begin(), Sex.end(), 2) << " females, and " << std::count(Sex.begin(), Sex.end(), -9) << " of unspecified sex." << std::endl;
+		std::cout << std::count(Sex.begin(), Sex.end(), 1) << " males, " << std::count(Sex.begin(), Sex.end(), 2) << " females, and " << std::count(Sex.begin(), Sex.end(), -9) << " of unspecified sex." << std::endl;
 
 	}
 }
