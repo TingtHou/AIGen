@@ -56,8 +56,17 @@ void Options::boostProgramOptionsRoutine(int argc, const char * const argv[])
 				"Recode the binary kernel file to text format.\n")
 		("precision", po::value<int>()->value_name("precision"),
 				"Set precision for output kernel file; 0 for double, 1 for float.\n")
-		("make-kbin", po::value<std::string>()->value_name("{prefix}"),
+		("make-bin", po::value<std::string>()->value_name("{prefix}"),
 				"Generate .grm.bin + .grm.N.bin + .grm.id (GCTA triangular binary relationship matrix).\n");
+	po::options_description optsKernelGenr("Kernel Parameters");
+	optsKernelGenr.add_options()
+		("make-kernel", po::value<std::string>()->value_name("[kernel name]"), "Compute kernel matrix.\n"
+		 "mode 0: CAR kernel; mode 1: Identity kernel; mode 2: Product kernel; mode 3: Ploymonial kernel; mode 4: Gaussian kernel; mode 5 IBS.\n")
+		("std", "Standardize SNP data.\n")
+		("weight", po::value<double>()->value_name("value")->default_value(1), "The weight value used for kernel calculating.\n")
+		("constant", po::value<double>()->value_name("value")->default_value(1), "The constant value used for polynomial kernel calculating.\n")
+		("deg", po::value<double>()->value_name("value")->default_value(2), "The degree value used for polynomial kernel calculating.\n")
+		("sigma", po::value<double>()->value_name("value")->default_value(1), "The standard deviation used for Gaussian kernel.\n");
 	po::options_description optsAlgorithm("Algorithm Parameters");
 	optsAlgorithm.add_options()
 		("skip", "Skip estimation process.\n")
@@ -90,6 +99,7 @@ void Options::boostProgramOptionsRoutine(int argc, const char * const argv[])
 		add(optsDescGeneral).
 		add(optsDescInFiles).
 		add(optsFilesOperation).
+		add(optsKernelGenr).
 		add(optsAlgorithm).
 		add(optsComputerDevice).
 		add(optsDescOutFiles).
