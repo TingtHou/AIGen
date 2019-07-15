@@ -1,0 +1,114 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Natvis Include="eigen.natvis" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="CheckMode.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="clog.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="CommonFunc.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="DataManager.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="imnq.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="KernelGenerator.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="KernelManage.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="LinearRegression.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Main.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="MinqueBase.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Options.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="pch.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="PlinkReader.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Random.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="rln_mnq.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="ToolKit.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="CheckMode.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="cLog.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="CommonFunc.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="DataManager.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="imnq.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="KernelGenerator.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="KernelManage.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="LinearRegression.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="MinqueBase.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="Options.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="pch.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="PlinkReader.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="Random.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="rln_mnq.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="ToolKit.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="eigen_autoexp_part.dat" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Header">
+      <UniqueIdentifier>{f475cb47-e96c-401f-993d-962820681351}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source">
+      <UniqueIdentifier>{1104405b-286c-4451-b548-8db1915b5583}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
