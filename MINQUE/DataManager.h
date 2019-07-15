@@ -5,20 +5,27 @@
 class DataManager
 {
 public:
-	DataManager(boost::program_options::variables_map programOptions, LOG *log);
-	void read();
+	DataManager(LOG *log);
+//	void read();
+	void readPhe(std::string phefilename);
+	void readKernel(std::string prefix);
+	void readmKernel(std::string mkernelfilename);
+	void readGeno(std::vector<std::string> filelist);                 //[ped, map] or [bed, bim, fam];
 	PhenoData getPhenotype() {	return phe;	};
 	std::vector<KernelData> GetKernel() { return KernelList; };
+	void SetKernel(std::vector<KernelData> KernelList) { this->KernelList=KernelList; };
+	void match();
+	GenoData getGenotype() { return geno; };
 	~DataManager();
 private:
 	PhenoData phe;
+	GenoData geno;
 	std::vector<KernelData> KernelList;
 	LOG *log;
-	boost::program_options::variables_map programOptions;
 private:
-	
 	void readResponse(std::string resopnsefile, PhenoData &phe);
 	void readmkernel(std::string mkernel);
 	void match(PhenoData &phenotype, KernelData &kernel, std::string prefix);
+	void match(PhenoData &phenotype, KernelData &kernel);
 };
 
