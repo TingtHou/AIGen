@@ -1,0 +1,7 @@
+Source	Variance
+V(G1)	0.225317
+V(e)	0.986336
+Vp	1.21165
+V(G1)/Vp	0.185958
+Sum of V(G)/Vp	0.185958
+Iterate Times:	6

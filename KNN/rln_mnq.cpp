@@ -3,7 +3,7 @@
 #include "ToolKit.h"
 #include <iostream>
 #include <fstream>
-
+#include <iomanip>
 
 rln_mnq::rln_mnq(int DecompositionMode, int altDecompositionMode, bool allowPseudoInverse)
 {
@@ -18,6 +18,7 @@ void rln_mnq::estimate()
 	if (W.size()==0)
 	{
 		W = Eigen::VectorXd(nVi);
+		#pragma omp parallel for
 		for (int i=0;i<nVi;i++)
 		{
 			W[i] = 1 / (double)nVi;
@@ -42,14 +43,14 @@ void rln_mnq::estimate()
 		}
 		else
 		{
-			logfile->write("Calculating inverse matrix is failed, and pseudo inverse matrix is not allowed", true);
-			exit(0);
+			throw ("Error: calculating inverse matrix is failed, and pseudo inverse matrix is not allowed");
 		}
 		break;
 	case 2:
-		logfile->write("Calculating inverse matrix is failed, and pseudo inverse matrix is also failed", true);
-		exit(0);
+		throw("Error: calculating inverse matrix is failed, and pseudo inverse matrix is also failed");
 		break;
+	default:
+		throw("Error: unknown code [" + std::to_string(status) + "] from calculating inverse matrix.");
 	}
 	std::vector<Eigen::MatrixXd> RV;
 	Eigen::VectorXd Ry;
@@ -80,14 +81,14 @@ void rln_mnq::estimate()
 			}
 			else
 			{
-				logfile->write("Calculating inverse matrix is failed, and pseudo inverse matrix is not allowed", true);
-				exit(0);
+				throw ("Error: calculating inverse matrix is failed, and pseudo inverse matrix is not allowed");
 			}
 			break;
 		case 2:
-			logfile->write("Calculating inverse matrix is failed, and pseudo inverse matrix is also failed", true);
-			exit(0);
+			throw("Error: calculating inverse matrix is failed, and pseudo inverse matrix is also failed");
 			break;
+		default:
+			throw("Error: unknown code [" + std::to_string(status) + "] from calculating inverse matrix.");
 		}
 	//	ToolKit::Inv_SVD(Xt_B, INV_Xt_B,true);
 		C = INV_Xt_B * B.transpose();
@@ -101,6 +102,7 @@ void rln_mnq::estimate()
 
 	Eigen::VectorXd u(nVi);
 	u.setZero();
+	#pragma omp parallel for
 	for (int i = 0; i < nVi; i++)
 	{
 		Eigen::VectorXd Vi_Ry = Vi[i]*Ry;
@@ -108,6 +110,7 @@ void rln_mnq::estimate()
 	}
 
 	Eigen::MatrixXd F(nVi, nVi);
+	#pragma omp parallel for
 	for (int i = 0; i < nVi; i++)
 	{
 		for (int j=i;j<nVi;j++)
@@ -129,14 +132,14 @@ void rln_mnq::estimate()
 		}
 		else
 		{
-			logfile->write("Calculating inverse matrix is failed, and pseudo inverse matrix is not allowed", true);
-			exit(0);
+			throw ("Error: calculating inverse matrix is failed, and pseudo inverse matrix is not allowed");
 		}
 		break;
 	case 2:
-		logfile->write("Calculating inverse matrix is failed, and pseudo inverse matrix is also failed", true);
-		exit(0);
+		throw("Error: calculating inverse matrix is failed, and pseudo inverse matrix is also failed");
 		break;
+	default:
+		throw("Error: unknown code [" + std::to_string(status) + "] from calculating inverse matrix.");
 	}
 
 //	ToolKit::Inv_SVD(F, INV_F,true);
