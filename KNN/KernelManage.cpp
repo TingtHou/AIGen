@@ -41,10 +41,7 @@ void KernelReader::IDfileReader(std::ifstream &fin, KernelData &kdata)
 		std::vector<std::string> splitline;
 		boost::split(splitline, line, boost::is_any_of(" \t"), boost::token_compress_on);
 		std::string fid_iid = splitline[0] + "_" + splitline[1];
-		std::pair<int, std::string> each(i, fid_iid);
-		std::pair<std::string, int> reach(fid_iid,i++);
-		kdata.fid_iid.insert(each);
-		kdata.rfid_iid.insert(reach);
+		kdata.fid_iid.insert({i++, fid_iid });
 		nind++;
 	}
 }
@@ -277,7 +274,7 @@ void KernelWriter::write(std::string prefix)
 
 void KernelWriter::IDfileWriter(std::ofstream & fin, KernelData & kdata)
 {
-	for (auto it=kdata.fid_iid.begin();it!=kdata.fid_iid.end();it++)
+	for (auto it=kdata.fid_iid.left.begin();it!=kdata.fid_iid.left.end();it++)
 	{
 		std::string fid_iid = it->second;
 		std::vector<std::string> splitline;
