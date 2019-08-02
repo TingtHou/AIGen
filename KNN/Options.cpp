@@ -55,7 +55,7 @@ void Options::boostProgramOptionsRoutine(int argc, const char * const argv[])
 		("recode", po::value<std::string>()->value_name("[filename]"),
 				"Recode the binary kernel file to text format.\n")
 		("precision", po::value<int>()->value_name("precision"),
-				"Set precision for output kernel file; 0 for double, 1 for float.\n")
+				"Set precision for output kernel file (binary format); 0 for double, 1 for float.\n")
 		("make-bin", po::value<std::string>()->value_name("{prefix}"),
 				"Generate .grm.bin + .grm.N.bin + .grm.id (GCTA triangular binary relationship matrix).\n");
 	po::options_description optsKernelGenr("Kernel Parameters");
@@ -91,9 +91,9 @@ void Options::boostProgramOptionsRoutine(int argc, const char * const argv[])
 		("out", po::value<std::string>()->value_name("[filename]"), "Specify full name of output file.\n")
 		("log", po::value<std::string>()->value_name("[filename]"), "Specify full name of log file.\n");
 
-	po::options_description optsCheckingParametr("Checking Parameter");
-	optsCheckingParametr.add_options()
-		("check", "Checking software mode.\n");
+// 	po::options_description optsCheckingParametr("Checking Parameter");
+// 	optsCheckingParametr.add_options()
+// 		("check", "Checking software mode.\n");
 
 	optsDescCmdLine.
 		add(optsDescGeneral).
@@ -102,8 +102,8 @@ void Options::boostProgramOptionsRoutine(int argc, const char * const argv[])
 		add(optsKernelGenr).
 		add(optsAlgorithm).
 		add(optsComputerDevice).
-		add(optsDescOutFiles).
-		add(optsCheckingParametr);
+		add(optsDescOutFiles);
+//		add(optsCheckingParametr);
 	try
 	{
 		po::store(parse_command_line(
