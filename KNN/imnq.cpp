@@ -70,6 +70,7 @@ void imnq::Iterate()
 	logfile->write("Starting Iterate MINQUE Algorithm",true);
 	while (initIterate <itr)
 	{
+	//	clock_t t1 = clock();
 		mnq = new rln_mnq(Decomposition,altDecomposition,allowpseudoinverse);
 		mnq->importY(Y);
 		for (int i=0;i<nVi;i++)
@@ -84,12 +85,11 @@ void imnq::Iterate()
 		mnq->setLogfile(logfile);
 		mnq->estimate();
 		vc1=mnq->getvcs();
-		Eigen::VectorXd tmp = vc1 - vc0;
-		diff = (vc1 - vc0).cwiseAbs().maxCoeff();
-		std::stringstream ss;
-		ss<<std::fixed << std::setprecision(3) << "It: " << initIterate << "\t" << vc1.transpose() << "\tdiff: ";
-		ss << std::scientific << diff;
-		logfile->write(ss.str(),true);
+		diff = (vc1 - vc0).squaredNorm() / vc0.squaredNorm();
+//		std::stringstream ss;
+// 		ss<<std::fixed << std::setprecision(3) << "It: " << initIterate << "\t" << vc1.transpose() << "\tdiff: ";
+// 		ss << std::scientific << diff;
+// 		logfile->write(ss.str(),true);
 		if (diff<tol)
 		{
 
@@ -97,8 +97,10 @@ void imnq::Iterate()
 		}
 		vc0 = vc1;
 		initIterate++;
+	//	std::cout << "Iterate Time : " << (clock() - t1) * 1.0 / CLOCKS_PER_SEC * 1000 << " ms" << std::endl;
 	}
 	vcs = mnq->getvcs();
 	fix = mnq->getfix();
 	delete mnq;
+	
 }
