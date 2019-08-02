@@ -14,18 +14,18 @@ int Inverse(Eigen::MatrixXd & Ori_Matrix, Eigen::MatrixXd & Inv_Matrix, int Deco
 		status += !statusInverse;
 		if (!statusInverse&&allowPseudoInverse)
 		{
-			if (AltDecompositionMode==SVD)
+			if (AltDecompositionMode == SVD)
 			{
 				statusInverse = ToolKit::Inv_SVD(Ori_Matrix, Inv_Matrix, allowPseudoInverse);
 			}
-			if (AltDecompositionMode==QR)
+			if (AltDecompositionMode == QR)
 			{
 				statusInverse = ToolKit::Inv_QR(Ori_Matrix, Inv_Matrix, allowPseudoInverse);
 			}
 			status += !statusInverse;
 		}
 	}
-		break;
+	break;
 	case LU:
 	{
 		statusInverse = ToolKit::Inv_LU(Ori_Matrix, Inv_Matrix);
@@ -47,7 +47,7 @@ int Inverse(Eigen::MatrixXd & Ori_Matrix, Eigen::MatrixXd & Inv_Matrix, int Deco
 	break;
 	case QR:
 	{
-		statusInverse = ToolKit::Inv_QR(Ori_Matrix, Inv_Matrix,allowPseudoInverse);
+		statusInverse = ToolKit::Inv_QR(Ori_Matrix, Inv_Matrix, allowPseudoInverse);
 		status += !statusInverse;
 	}
 	break;
@@ -161,5 +161,16 @@ void stdSNPmv(Eigen::MatrixXd & Geno)
 		Coli -= means * Eigen::VectorXd::Ones(nrow);
 		Coli /= sd;
 		Geno.col(i) << Coli;
+	}
+}
+
+void set_difference(boost::bimap<int, std::string>& map1, boost::bimap<int, std::string>& map2, std::vector<std::string>& overlap)
+{
+	for (auto it=map1.left.begin();it!=map1.left.end();it++)
+	{
+		if (map2.right.count(it->second))
+		{
+			overlap.push_back(it->second);
+		}
 	}
 }

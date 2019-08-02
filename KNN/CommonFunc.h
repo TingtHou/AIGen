@@ -26,7 +26,7 @@ enum KernelNames :int
 
 struct MinqueOptions
 {
-	int iterate = 100;
+	int iterate = 200;
 	double tolerance = 1e-6;
 	int MatrixDecomposition = 0;
 	int altMatrixDecomposition = 3;
@@ -35,16 +35,14 @@ struct MinqueOptions
 
 struct KernelData
 {
-	boost::bimap<int, std::string> Bifid_iid;
-	std::map<int, std::string> fid_iid;
-	std::map<std::string, int> rfid_iid;
+	boost::bimap<int, std::string> fid_iid;
 	Eigen::MatrixXd kernelMatrix;
 	Eigen::MatrixXd VariantCountMatrix;
 };
 
 struct PhenoData
 {
-	std::map<int, std::string> fid_iid;
+	boost::bimap<int, std::string> fid_iid;
 	Eigen::VectorXd Phenotype;
 };
 
@@ -63,5 +61,5 @@ std::string GetBaseName(std::string pathname);
 std::string GetParentPath(std::string pathname);
 void stripSameCol(Eigen::MatrixXd &Geno);
 void stdSNPmv(Eigen::MatrixXd &Geno);
-
+void set_difference(boost::bimap<int, std::string> &map1, boost::bimap<int, std::string> &map2, std::vector<std::string> &overlap);
 
