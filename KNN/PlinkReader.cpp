@@ -1,6 +1,33 @@
 #include "pch.h"
 #include "PlinkReader.h"
-PlinkReader::PlinkReader(std::string pedfile, std::string mapfile)
+#include "Random.h"
+#include <iomanip>
+// PlinkReader::PlinkReader(std::string pedfile, std::string mapfile)
+// {
+// 	this->pedfile = pedfile;
+// 	this->mapfile = mapfile;
+// 	ReadMapFile(mapfile);
+// 	readPedfile(pedfile);
+// 	buildpedigree();
+// 	buildgenemap();
+// 	buildMAF();
+// }
+// reading bed file, bim file, famfile in plink format
+// PlinkReader::PlinkReader(std::string bedfile, std::string bimfile, std::string famfile)
+// {
+// 	this->bedfile = bedfile;
+// 	this->bimfile = bimfile;
+// 	this->famfile = famfile;
+// 	ReadBimFile(bimfile);
+// 	ReadFamFile(famfile);
+// 	ReadBedFile(bedfile);
+// 	buildpedigree();
+// 	buildgenemap();
+// 	buildMAF();
+// }
+
+// reading ped file, map file in plink format
+void PlinkReader::read(std::string pedfile, std::string mapfile)
 {
 	this->pedfile = pedfile;
 	this->mapfile = mapfile;
@@ -8,22 +35,42 @@ PlinkReader::PlinkReader(std::string pedfile, std::string mapfile)
 	readPedfile(pedfile);
 	buildpedigree();
 	buildgenemap();
+	buildMAF();
+	if (isImpute)
+	{
+		Impute();
+	}
+	else
+	{
+		removeMissing();
+	}
 }
 // reading bed file, bim file, famfile in plink format
-PlinkReader::PlinkReader(std::string bedfile, std::string bimfile, std::string famfile)
+void PlinkReader::read(std::string bedfile, std::string bimfile, std::string famfile)
 {
 	this->bedfile = bedfile;
 	this->bimfile = bimfile;
 	this->famfile = famfile;
-	Sexstat[0] = 0;
-	Sexstat[1] = 0;
 	ReadBimFile(bimfile);
 	ReadFamFile(famfile);
 	ReadBedFile(bedfile);
 	buildpedigree();
 	buildgenemap();
+	buildMAF();
+	if (isImpute)
+	{
+		Impute();
+	}
+	else
+	{
+		removeMissing();
+	}
 }
 
+
+PlinkReader::PlinkReader()
+{
+}
 
 PlinkReader::~PlinkReader()
 {
@@ -91,7 +138,7 @@ void PlinkReader::readPedfile(std::string pedfile)
 				Gene.push_back(0);
 				break;
 			default:
-				Gene.push_back(3);
+				Gene.push_back(-9);
 				break;
 			}
 		}
@@ -185,7 +232,6 @@ void PlinkReader::ReadFamFile(std::string famfile)
 		else
 		{
 			Sex.push_back(_sex);
-			Sexstat[_sex - 1]++;
 		}
 		
 		Fam >> str_buf;
@@ -306,7 +352,7 @@ void PlinkReader::ReadBedFile(std::string bedfile)
 					Gene.push_back(1); //1 2
 					break;
 				case MISSING:
-					Gene.push_back(3); // 0 0
+					Gene.push_back(-9); // 0 0
 					break;
 				default:
 					return;
@@ -344,10 +390,115 @@ void PlinkReader::ReadBedFile(std::string bedfile)
 	std::cout << "Before frequency and genotyping pruning, there are "<<nmarker<< " SNPs." << endl;
 }
 
+void PlinkReader::buildMAF()
+{
+	minor_freq.resize(nmarker);
+	MissinginSNP.resize(nmarker);
+	minor_allele.resize(nmarker);
+//	clock_t time = clock();
+	#pragma omp parallel for
+	for (int i=0;i<nmarker;i++)
+	{
+		std::vector<int>SNPper(nind);
+		for (int j=0;j<nind;j++)
+		{
+			SNPper[j] = Marker[j][i];
+		}
+		int missnind=std::count(SNPper.begin(), SNPper.end(), -9);
+		if (missnind)
+		{
+			MissinginSNP[i] = true;
+		}
+		else
+		{
+			MissinginSNP[i] = false;
+		}
+		//calculate the allele 2
+		int minor= 2*std::count(SNPper.begin(), SNPper.end(), 0)+ std::count(SNPper.begin(), SNPper.end(), 1);
+		double freq = double(minor) / (2*double(nind - missnind));
+		if (freq>0.5)
+		{
+			minor_freq[i] = 1 - freq; 
+			minor_allele[i] = "2";
+			major_allele[i] = "1";
+		}
+		else
+		{
+			minor_freq[i] = freq;
+			minor_allele[i] = "1";
+			major_allele[i] = "2";
+		}
+	}
+//	std::cout<< "Elapse Time : " << (clock() - time) * 1.0 / CLOCKS_PER_SEC * 1000 << " ms";
+
+}
+
+void PlinkReader::Impute()
+{
+	Random rd(0);
+	#pragma omp parallel for
+	for (int i = 0; i < nmarker; i++)
+	{
+		if (!MissinginSNP[i])
+		{
+			#pragma omp parallel for
+			for (int j = 0; j < nind; j++)
+			{
+				if ((Marker[j][i] + 9) <= 1e-10) //if marker[j][i]=-9, avoid double bias
+				{
+					std::string allele1 = major_allele[i];
+					std::string allele2 = major_allele[i];
+					if (rd.Uniform() < minor_freq[i])
+					{
+						allele1 = minor_allele[i];
+					}
+					if (rd.Uniform() < minor_freq[i])
+					{
+						allele2 = minor_allele[i];
+					}
+					if (allele1 == "1"&&allele2 == "1") //alleles = 1 1
+					{
+						Marker[j][i] = 2;
+					}
+					else if (allele1 == "2"&&allele2 == "2")//alleles = 2 2
+					{
+						Marker[j][i] = 0;
+					}
+					else
+					{
+						Marker[j][i] = 1; //alleles = 2 1 or alleles = 1 2
+					}
+
+				}
+			}
+		}
+	}
+}
+
+void PlinkReader::removeMissing()
+{
+	int MissnSNP = std::count(MissinginSNP.begin(), MissinginSNP.end(), true);
+	std::vector<std::vector<int>> tmpMarker = Marker;
+	#pragma omp parallel for
+	for (int i=0;i<nind;i++)
+	{
+		Marker[i].resize(nmarker - MissnSNP);
+		int id = 0;
+		for (int j=0;j< nmarker;j++)
+		{
+			if (!MissinginSNP[j])
+			{
+				Marker[i][id++] = tmpMarker[i][j];
+			}
+		}
+	}
+}
+
 GenoData PlinkReader::GetGeno()
 {
 	GenoData gd;
 	gd.Geno.resize(nind,nmarker);
+	#pragma omp parallel for
 	for (int i=0;i<nind;i++)
 	{
 		for (int j=0;j<nmarker;j++)
@@ -377,6 +528,13 @@ void PlinkReader::test()
 	readPedfile(pedfile);
 	//savePedMap();
 }
+
+void PlinkReader::setImpute(bool isImpute)
+{
+	this->isImpute = isImpute;
+}
+
+
 
 void PlinkReader::buildpedigree()
 {
@@ -480,8 +638,3 @@ void PlinkReader::savemapfile(std::string mapfile)
 	Map.close();
 	std::cout << "Writing "<<nmarker << " markers to [" + mapfile + "]." << endl;
 }
-
-void PlinkReader::CalcMAF()
-{
-}
-

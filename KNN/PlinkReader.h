@@ -18,13 +18,17 @@ class PlinkReader
 {
 
 public:
-	PlinkReader(std::string pedfile, std::string mapfile);
-	PlinkReader(std::string bedfile, std::string bimfile, std::string famfile);
+	PlinkReader();
+// 	PlinkReader(std::string pedfile, std::string mapfile);
+// 	PlinkReader(std::string bedfile, std::string bimfile, std::string famfile);
 	~PlinkReader();
 
 	void savePedMap(std::string prefix);
 	GenoData GetGeno();
 	void test();
+	void setImpute(bool isImpute);
+	void read(std::string pedfile, std::string mapfile);
+	void read(std::string bedfile, std::string bimfile, std::string famfile);
 private:
 	static const int READER_MASK = 3;
 	static const int HOMOZYGOTE_FIRST = 0;
@@ -32,13 +36,13 @@ private:
 	static const int HETEROZYGOTE = 2;
 	static const int MISSING = 1;
 	static const int MISSINGcode = -9;
-
+	bool isImpute;
 private:
-	std::string bimfile;
-	std::string famfile;
-	std::string bedfile;
-	std::string pedfile;
-	std::string mapfile;
+	std::string bimfile=NULL;
+	std::string famfile=NULL;
+	std::string bedfile=NULL;
+	std::string pedfile=NULL;
+	std::string mapfile=NULL;
 	///////////////////family info////////////////////////////////
 	std::map<int, std::string> fid_iid_index;
 	std::vector<std::string> fid;
@@ -62,6 +66,7 @@ private:
 	std::vector<double> minor_freq;            //pair<std::string, int>(marker[i],id)
 //	std::vector<double> major_freq;
 	int nmarker = 0;
+	std::vector<bool> MissinginSNP;
 	////////////////////////Marker Data//////////////////////////////////////////
 	std::vector<std::vector<int>> Marker;          //nind x nmarker  
 	bool SNP_major = true;
@@ -70,12 +75,14 @@ private:
 	void buildgenemap();
 	void savepedfile(std::string pedfile);
 	void savemapfile(std::string mapfile);
-	void CalcMAF();
 	void readPedfile(std::string pedfile);
 	void ReadMapFile(std::string mapfile);
 	void ReadFamFile(std::string famfile);
 	void ReadBimFile(std::string bimfile);
 	void ReadBedFile(std::string bedfile);
+	void buildMAF();
+	void Impute();
+	void removeMissing();
 	//map<std::string, int> _snp_name_map;
 	//multimap<std::string, std::string> _fid_pid_map; //pair<std::string, int>(_fid[i],_pid[i])
 	std::string out;
