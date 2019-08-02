@@ -32,7 +32,6 @@
 #include <sstream>
 #include <fstream>
 #include <iomanip>
-#include <ctime>
 #include <map>
 #include <boost/serialization/map.hpp>
 #include <boost/serialization/split_member.hpp>
@@ -149,18 +148,11 @@ void readAlgrithomParameter(boost::program_options::variables_map programOptions
 }
 void ReadData(boost::program_options::variables_map programOptions, DataManager &dm, LOG *logout);
 
-void MINQUEAnalysis(boost::program_options::variables_map programOptions, DataManager &dm, LOG *log, std::string &out);
+void MINQUEAnalysis(boost::program_options::variables_map programOptions, DataManager dm, LOG *log, std::string &out);
 
 
 int main(int argc, const char *const argv[])
 {
-	printf("\n"
-		"@----------------------------------------------------------@\n"
-		"|        KNN       |     v alpha 0.1    |   19/July/2019   |\n"
-		"|----------------------------------------------------------|\n"
-		"|    Statistical Genetics and Statistical Learning Group   | \n"
-		"@----------------------------------------------------------@\n"
-		"\n");
 	string result = "result.txt";
 	string logfile = "result.log";
 	LOG *logout = nullptr;
@@ -195,10 +187,9 @@ int main(int argc, const char *const argv[])
 		}
 		logout = new LOG(logfile);
 		
-		DataManager dm;
+		DataManager dm(logout);
 		ReadData(programOptions, dm, logout);
-		std::vector<KernelData> kernelList;\
-		//generate a built-in kernel or not
+		std::vector<KernelData> kernelList;
 		if (programOptions.count("make-kernel"))
 		{
 			int kerneltype;
@@ -269,19 +260,46 @@ int main(int argc, const char *const argv[])
 			GenoData gd = dm.getGenotype();
 			if (programOptions.count("std"))
 			{
-				logout->write("Standardize the genotype matrix", true);
 				stdSNPmv(gd.Geno);
 			}
-			logout->write("Starting generate a " +kernelname+" kernel from input genotype", true);
 			KernelGenerator kernelGenr(gd, kerneltype, weight, constant, deg, sigmma);
 			kernelList.push_back(kernelGenr.getKernel());
 		}
-		//The built-in kernel will overwrite the kernel from file
 		if (kernelList.size())
 		{
 			dm.SetKernel(kernelList);
 		}
-		//if the phenotype is inputed, the estimation will be started.
+		if (programOptions.count("recode"))
+		{
+			
+			for (int i = 0; i < kernelList.size(); i++)
+			{
+				KernelWriter kw(kernelList[i]);
+				std::string outname= programOptions["recode"].as < std::string >();
+				kw.writeText(outname);
+			}
+		}
+		if (programOptions.count("make-bin"))
+		{
+			std::string outname = programOptions["make-bin"].as < std::string >();
+			bool isfloat = true;
+			if (programOptions.count("precision"))
+			{
+				isfloat= programOptions["precision"].as < int >();
+			}
+			for (int i = 0; i < kernelList.size(); i++)
+			{
+				if (i>1)
+				{
+					outname += i;
+				}
+				KernelWriter kw(kernelList[i]);
+			
+				kw.setprecision(isfloat);
+				kw.write(outname);
+			}
+
+		}
 		if (dm.getPhenotype().fid_iid.size()!=0)
 		{
 			dm.match();
@@ -291,39 +309,7 @@ int main(int argc, const char *const argv[])
 			}
 
 		}
-		if (programOptions.count("recode"))
-		{
-
-			for (int i = 0; i < kernelList.size(); i++)
-			{
-				KernelWriter kw(kernelList[i]);
-				std::string outname = programOptions["recode"].as < std::string >();
-				kw.writeText(outname);
-			}
-		}
-		//output kernel matrices as binary format
-		if (programOptions.count("make-bin"))
-		{
-			std::string outname = programOptions["make-bin"].as < std::string >();
-			bool isfloat = true;
-			if (programOptions.count("precision"))
-			{
-				isfloat = programOptions["precision"].as < int >();
-			}
-			for (int i = 0; i < dm.GetKernel().size(); i++)
-			{
-				if (i > 1)
-				{
-					outname += i;
-				}
-				KernelWriter kw(dm.GetKernel()[i]);
-
-				kw.setprecision(isfloat);
-				kw.write(outname);
-			}
-
-		}
-		logout->close();
+		
 		delete logout;
 	}
 	catch (string &e)
@@ -339,12 +325,7 @@ int main(int argc, const char *const argv[])
 		logout->close();
 		delete logout;
 	}
-	//get now time
-	time_t now = time(0);
-	//format time to string;
-	char dt[256];
-	ctime_s(dt,256, &now);
-	std::cout << "\n\nAnalysis finished: " << dt << std::endl;
+
 }
 
 void ReadData(boost::program_options::variables_map programOptions, DataManager &dm, LOG *logout)
@@ -353,32 +334,18 @@ void ReadData(boost::program_options::variables_map programOptions, DataManager 
 	if (programOptions.count("phe"))
 	{
 		std::string reponsefile = programOptions["phe"].as < std::string >();
-		logout->write("Reading Phenotype from [" + reponsefile + "].",true);
-		clock_t t1 = clock();
 		dm.readPhe(reponsefile);
-		std::stringstream ss;
-		ss << "Read Phenotype Elapse Time : " << (clock() - t1) * 1.0 / CLOCKS_PER_SEC * 1000 << " ms";
-		logout->write(ss.str(), true);
+
 	}
 	if (programOptions.count("kernel"))
 	{
 		std::string kernelfiles = programOptions["kernel"].as<std::string >();
-		logout->write("Reading kernel list from [" + kernelfiles + "].", true);
-		clock_t t1 = clock();
 		dm.readKernel(kernelfiles);
-		std::stringstream ss;
-		ss << "Read kernel file Elapse Time : " << (clock() - t1) * 1.0 / CLOCKS_PER_SEC * 1000 << " ms";
-		logout->write(ss.str(), true);
 	}
 	if (programOptions.count("mkernel"))
 	{
 		std::string mkernelfile = programOptions["mkernel"].as<std::string >();
-		logout->write("Reading kernel list from [" + mkernelfile + "].", true);
-		clock_t t1 = clock();
 		dm.readmKernel(mkernelfile);
-		std::stringstream ss;
-		ss << "Read multi-kernel Elapse Time : " << (clock() - t1) * 1.0 / CLOCKS_PER_SEC * 1000 << " ms";
-		logout->write(ss.str(), true);
 	}
 	if (programOptions.count("bfile"))
 	{
@@ -420,16 +387,12 @@ void ReadData(boost::program_options::variables_map programOptions, DataManager 
 	}
 	if (GFile.size()!=0)
 	{
-		clock_t t1 = clock();
-		dm.readGeno(GFile,false);
-		std::stringstream ss;
-		ss << "Read Genotype Elapse Time : " << (clock() - t1) * 1.0 / CLOCKS_PER_SEC * 1000 << " ms";
-		logout->write(ss.str(), true);
+		dm.readGeno(GFile);
 	}
 
 }
 
-void MINQUEAnalysis(boost::program_options::variables_map programOptions, DataManager &dm, LOG *logout, std::string &result)
+void MINQUEAnalysis(boost::program_options::variables_map programOptions, DataManager dm, LOG *logout, std::string &result)
 {
 	bool GPU = false;
 	if (programOptions.count("GPU"))
@@ -486,14 +449,14 @@ void MINQUEAnalysis(boost::program_options::variables_map programOptions, DataMa
 	logout->write("---Result----", false);
 	out << "Source\tVariance" << std::endl;
 	logout->write("Source\tVariance", false);
-//	std::cout << fixed << setprecision(4) << "Estimated Variances: ";
+	std::cout << fixed << setprecision(4) << "Estimated Variances: ";
 	int i = 0;
 	double VG = 0;
 	double VP = 0;
 	std::stringstream ss;
 	for (; i < VarComp.size() - 1; i++)
 	{
-	//	std::cout << VarComp.at(i) << " ";
+		std::cout << VarComp.at(i) << " ";
 		int index = i + 1;
 		ss.str("");
 		ss << "V(G" << index << ")\t" << VarComp.at(i);

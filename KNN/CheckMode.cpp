@@ -68,7 +68,7 @@ void CheckMatrixInverseMode()
 
 void checkkernel()
 {
-	KernelReader kreader("../sample/sub500_4098");
+	KernelReader kreader("../500_4098_sXX");
 	kreader.read();
 	KernelData kd = kreader.getKernel();
 	std::vector<int> id;
@@ -87,11 +87,13 @@ void checkkernel()
 			newkd.kernelMatrix(i, j) = kd.kernelMatrix(id[i], id[j]);
 			newkd.VariantCountMatrix(i, j) = kd.VariantCountMatrix(id[i], id[j]);
 		}
-		auto it = kd.fid_iid.left.find(id[i]);
-		newkd.fid_iid.insert({ i,  it->second});
+		std::pair<int, string> fid_iid(i, kd.fid_iid[id[i]]);
+		std::pair<string, int > rfid_iid(kd.fid_iid[id[i]], i);
+		newkd.fid_iid.insert(fid_iid);
+		newkd.rfid_iid.insert(rfid_iid);
 	}
 	KernelWriter kw(newkd);
-	kw.write("../sample/RandomS");
+	kw.write("../Random");
 }
 
 void CheckkernelIOStream()
