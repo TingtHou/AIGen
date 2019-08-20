@@ -38,11 +38,11 @@ private:
 	static const int MISSINGcode = -9;
 	bool isImpute;
 private:
-	std::string bimfile=NULL;
-	std::string famfile=NULL;
-	std::string bedfile=NULL;
-	std::string pedfile=NULL;
-	std::string mapfile=NULL;
+	std::string bimfile;
+	std::string famfile;
+	std::string bedfile;
+	std::string pedfile;
+	std::string mapfile;
 	///////////////////family info////////////////////////////////
 	std::map<int, std::string> fid_iid_index;
 	std::vector<std::string> fid;
