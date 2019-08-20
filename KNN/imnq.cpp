@@ -85,11 +85,12 @@ void imnq::Iterate()
 		mnq->setLogfile(logfile);
 		mnq->estimate();
 		vc1=mnq->getvcs();
+	//	diff = (vc1 - vc0).cwiseAbs().maxCoeff();
 		diff = (vc1 - vc0).squaredNorm() / vc0.squaredNorm();
-//		std::stringstream ss;
-// 		ss<<std::fixed << std::setprecision(3) << "It: " << initIterate << "\t" << vc1.transpose() << "\tdiff: ";
-// 		ss << std::scientific << diff;
-// 		logfile->write(ss.str(),true);
+		std::stringstream ss;
+		ss<<std::fixed << std::setprecision(3) << "It: " << initIterate << "\t" << vc1.transpose() << "\tdiff: ";
+		ss << std::scientific << diff;
+		logfile->write(ss.str(),true);
 		if (diff<tol)
 		{
 
