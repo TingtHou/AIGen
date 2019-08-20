@@ -91,13 +91,14 @@ void imnq::Iterate()
 		ss<<std::fixed << std::setprecision(3) << "It: " << initIterate << "\t" << vc1.transpose() << "\tdiff: ";
 		ss << std::scientific << diff;
 		logfile->write(ss.str(),true);
+		vc0 = vc1;
+		initIterate++;
 		if (diff<tol)
 		{
 
 			break;
 		}
-		vc0 = vc1;
-		initIterate++;
+	
 	//	std::cout << "Iterate Time : " << (clock() - t1) * 1.0 / CLOCKS_PER_SEC * 1000 << " ms" << std::endl;
 	}
 	vcs = mnq->getvcs();
