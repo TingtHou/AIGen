@@ -16,6 +16,10 @@ LOG::LOG(std::string logfile)
 	Logfile.flush();
 }
 
+LOG::LOG()
+{
+}
+
 void LOG::write(std::string outline, bool terminateOpt)
 {
 	std::time_t currenttime = std::time(0);
