@@ -76,7 +76,7 @@ void readAlgrithomParameter(boost::program_options::variables_map programOptions
 				minque.MatrixDecomposition = 3;
 				break;
 			default:
-				throw ("The parameter inverse is not correct, please check it. More detail --help");
+				throw std::exception("The parameter inverse is not correct, please check it. More detail --help");
 				break;
 			}
 		}
@@ -101,7 +101,7 @@ void readAlgrithomParameter(boost::program_options::variables_map programOptions
 			}
 			else
 			{
-				throw ("The parameter inverse is not correct, please check it. More detail --help");
+				throw std::exception("The parameter inverse is not correct, please check it. More detail --help");
 			}
 		}
 		
@@ -119,13 +119,13 @@ void readAlgrithomParameter(boost::program_options::variables_map programOptions
 			switch (number)
 			{
 			case 2:
-				minque.MatrixDecomposition = 2;
+				minque.altMatrixDecomposition = 2;
 				break;
 			case 3:
-				minque.MatrixDecomposition = 3;
+				minque.altMatrixDecomposition = 3;
 				break;
 			default:
-				throw ("The parameter ginverse is not correct, please check it. More detail --help");
+				throw std::exception("The parameter ginverse is not correct, please check it. More detail --help");
 				break;
 			}
 		}
@@ -133,16 +133,16 @@ void readAlgrithomParameter(boost::program_options::variables_map programOptions
 		{
 			if (Decomposition == "qr")
 			{
-				minque.MatrixDecomposition = 2;
+				minque.altMatrixDecomposition = 2;
 
 			}
 			else if (Decomposition == "svd")
 			{
-				minque.MatrixDecomposition = 3;
+				minque.altMatrixDecomposition = 3;
 			}
 			else
 			{
-				throw ("The parameter ginverse is not correct, please check it. More detail --help");
+				throw std::exception("The parameter ginverse is not correct, please check it. More detail --help");
 			}
 		}
 	}
@@ -152,192 +152,206 @@ void ReadData(boost::program_options::variables_map programOptions, DataManager 
 void MINQUEAnalysis(boost::program_options::variables_map programOptions, DataManager &dm, LOG *log, std::string &out);
 
 
+void TryMain(int argc, const char *const argv[], LOG * logout)
+{
+	boost::bimap<std::string,int> kernelPool;
+	kernelPool.insert({ "car",CAR });
+	kernelPool.insert({ "identity",Identity });
+	kernelPool.insert({ "product",Product });
+	kernelPool.insert({ "polynomial",Polymonial });
+	kernelPool.insert({ "gaussian",Gaussian });
+	kernelPool.insert({ "ibs",IBS });
+
+	Options opt(argc, argv);
+	boost::program_options::variables_map programOptions = opt.GetOptions();
+	if (1 == argc || programOptions.count("help"))
+	{
+		std::cout << opt.GetDescription() << std::endl;
+		return;
+	}
+	if (programOptions.count("version"))
+	{
+		std::cout << "Kernel Based Neural Network Software alpha 0.1.1" << std::endl;
+		return;
+
+	}
+
+	string result= "result.txt";
+	std::string logfile="result.log";
+	if (programOptions.count("out"))
+	{
+		result = programOptions["out"].as < std::string >();
+		std::string basename = GetBaseName(result);
+		std::string ParentPath = GetParentPath(result);
+		int positionDot = basename.rfind('.');
+		logfile = ParentPath + "/" + basename.substr(0, positionDot) + ".log";
+		programOptions.erase("out");
+	}
+	if (programOptions.count("log"))
+	{
+		logfile = programOptions["log"].as < std::string >();
+		programOptions.erase("log");
+	}
+	delete logout;
+	logout = new LOG(logfile);
+	logout->write(opt.print(), true);
+	DataManager dm;
+	ReadData(programOptions, dm, logout);
+	std::vector<KernelData> kernelList; 
+		//generate a built-in kernel or not
+	if (programOptions.count("make-kernel"))
+	{
+		int kerneltype;
+		std::string kernelname = programOptions["make-kernel"].as < std::string >();
+		if (isNum(kernelname))
+		{
+			kerneltype = stoi(kernelname);
+		}
+		else
+		{
+			transform(kernelname.begin(), kernelname.end(), kernelname.begin(), tolower);
+			auto it = kernelPool.left.find(kernelname);
+			kerneltype = it->second;
+		}
+		if (kernelPool.right.count(kerneltype))
+		{
+			auto it = kernelPool.right.find(kerneltype);
+			logout->write("Generate a " + it->second + " kernel from input genotype", true);
+		}
+		else
+		{
+			throw ("Error: Invalided kernel name " + kernelname);
+		}
+		GenoData gd = dm.getGenotype();
+		if (programOptions.count("std"))
+		{
+			logout->write("Standardize the genotype matrix", true);
+			stdSNPmv(gd.Geno);
+		}
+		Eigen::VectorXd weight(gd.Geno.cols());
+		weight.setOnes();
+		// read weight vector from specific file. If the file is not settled, the weight will be identity vector.
+		if (programOptions.count("weight"))
+		{
+			std::string weightVFile = programOptions["weight"].as < std::string >();
+			ifstream infile;
+			infile.open(weightVFile);
+			if (!infile.is_open())
+			{
+				throw ("Error: cannot open the file [" + weightVFile + "] to read.");
+			}
+			int id = 0;
+			while (!infile.eof())
+			{
+				std::string eleInVector;
+				getline(infile, eleInVector);
+				if (infile.fail())
+				{
+					continue;
+				}
+				boost::algorithm::trim(eleInVector);
+				if (eleInVector.empty())
+				{
+					continue;
+				}
+				if (id < weight.size())
+				{
+					weight[id++] = stod(eleInVector);
+				}
+			}
+		}
+		double constant = 1;
+		double deg = 2;
+		double sigmma = 1;
+		bool scale = false;
+		if (programOptions.count("constant"))
+			constant=programOptions["constant"].as < double >();
+		if (programOptions.count("deg"))
+			deg = programOptions["deg"].as < double >();
+		if (programOptions.count("sigma"))
+			sigmma = programOptions["sigma"].as < double >();
+		if (programOptions.count("scale"))
+			scale = programOptions["scale"].as < bool >();
+		KernelGenerator kernelGenr(gd, kerneltype, weight,scale, constant, deg, sigmma);
+		kernelList.push_back(kernelGenr.getKernel());
+	}
+	//The built-in kernel will overwrite the kernel from file
+	if (kernelList.size())
+	{
+		dm.SetKernel(kernelList);
+	}
+	//if the phenotype is inputed, the estimation will be started.
+	if (dm.getPhenotype().fid_iid.size() != 0)
+	{
+		dm.match();
+		if (!programOptions.count("skip"))
+		{
+			MINQUEAnalysis(programOptions, dm, logout, result);
+		}
+
+	}
+	if (programOptions.count("recode"))
+	{
+
+		for (int i = 0; i < kernelList.size(); i++)
+		{
+			KernelWriter kw(kernelList[i]);
+			std::string outname = programOptions["recode"].as < std::string >();
+			kw.writeText(outname);
+		}
+	}
+	//output kernel matrices as binary format
+	if (programOptions.count("make-bin"))
+	{
+		std::string outname = programOptions["make-bin"].as < std::string >();
+		bool isfloat = true;
+		if (programOptions.count("precision"))
+		{
+			isfloat = programOptions["precision"].as < int >();
+		}
+		for (int i = 0; i < dm.GetKernel().size(); i++)
+		{
+			if (i > 1)
+			{
+				outname += i;
+			}
+			KernelWriter kw(dm.GetKernel()[i]);
+
+			kw.setprecision(isfloat);
+			kw.write(outname);
+		}
+
+	}
+
+}
+
 int main(int argc, const char *const argv[])
 {
 	printf("\n"
 		"@----------------------------------------------------------@\n"
-		"|        KNN       |     v alpha 0.1    |   19/July/2019   |\n"
+		"|        KNN       |     v alpha 0.1.1  |    20/Aug/2019   |\n"
 		"|----------------------------------------------------------|\n"
 		"|    Statistical Genetics and Statistical Learning Group   | \n"
 		"@----------------------------------------------------------@\n"
 		"\n");
-	string result = "result.txt";
-	string logfile = "result.log";
-	LOG *logout = nullptr;
+	LOG *logout = new LOG();
 	try
 	{
-		Options opt(argc, argv);
-		boost::program_options::variables_map programOptions = opt.GetOptions();
-		if (1 == argc || programOptions.count("help"))
-		{
-			std::cout << opt.GetDescription() << std::endl;
-			return 1;
-		}
-		if (programOptions.count("version"))
-		{
-			std::cout << "Kernel Based Neural Network Software alpha 0.1" << std::endl;
-			return 1;
-
-		}
-		if (programOptions.count("out"))
-		{
-			result = programOptions["out"].as < std::string >();
-			std::string basename = GetBaseName(result);
-			std::string ParentPath = GetParentPath(result);
-			int positionDot = basename.rfind('.');
-			logfile = ParentPath +"/"+basename.substr(0,positionDot) + ".log";
-			programOptions.erase("out");
-		}
-		if (programOptions.count("log"))
-		{
-			logfile = programOptions["log"].as < std::string >();
-			programOptions.erase("log");
-		}
-		logout = new LOG(logfile);
-		
-		DataManager dm;
-		ReadData(programOptions, dm, logout);
-		std::vector<KernelData> kernelList;\
-		//generate a built-in kernel or not
-		if (programOptions.count("make-kernel"))
-		{
-			int kerneltype;
-			std::string kernelname= programOptions["make-kernel"].as < std::string >();
-			if (isNum(kernelname))
-			{
-				switch (stoi(kernelname))
-				{
-				case 0:
-					kerneltype = CAR;
-					break;
-				case 1:
-					kerneltype = Identity;
-					break;
-				case 2:
-					kerneltype = Product;
-					break;
-				case 3:
-					kerneltype = Ploymonial;
-					break;
-				case 4:
-					kerneltype = Gaussian;
-					break;
-				case 5:
-					kerneltype = IBS;
-					break;
-				default:
-					throw ("Error: The kernel name [" + kernelname + "] cannot be identified.");
-					break;
-				}
-			}
-			else
-			{
-				transform(kernelname.begin(), kernelname.end(), kernelname.begin(), tolower);
-				if (kernelname == "car")
-				{
-					kerneltype = CAR;
-				}
-				else if (kernelname == "identity")
-				{
-					kerneltype = Identity;
-				}
-				else if (kernelname == "product")
-				{
-					kerneltype = Product;
-				}
-				else if (kernelname == "polynomial")
-				{
-					kerneltype = Ploymonial;
-				}
-				else if (kernelname == "gaussian")
-				{
-					kerneltype = Gaussian;
-				}
-				else if (kernelname == "ibs")
-				{
-					kerneltype = IBS;
-				}
-				else
-				{
-					throw ("Error: The kernel name [" + kernelname + "] cannot be identified.");
-				}
-			}
-			double weight= programOptions["weight"].as < double >();
-			double constant= programOptions["constant"].as < double >();
-			double deg = programOptions["deg"].as < double >();
-			double sigmma=programOptions["sigma"].as < double >();
-			GenoData gd = dm.getGenotype();
-			if (programOptions.count("std"))
-			{
-				logout->write("Standardize the genotype matrix", true);
-				stdSNPmv(gd.Geno);
-			}
-			logout->write("Starting generate a " +kernelname+" kernel from input genotype", true);
-			KernelGenerator kernelGenr(gd, kerneltype, weight, constant, deg, sigmma);
-			kernelList.push_back(kernelGenr.getKernel());
-		}
-		//The built-in kernel will overwrite the kernel from file
-		if (kernelList.size())
-		{
-			dm.SetKernel(kernelList);
-		}
-		//if the phenotype is inputed, the estimation will be started.
-		if (dm.getPhenotype().fid_iid.size()!=0)
-		{
-			dm.match();
-			if (!programOptions.count("skip"))
-			{
-				MINQUEAnalysis(programOptions, dm, logout, result);
-			}
-
-		}
-		if (programOptions.count("recode"))
-		{
-
-			for (int i = 0; i < kernelList.size(); i++)
-			{
-				KernelWriter kw(kernelList[i]);
-				std::string outname = programOptions["recode"].as < std::string >();
-				kw.writeText(outname);
-			}
-		}
-		//output kernel matrices as binary format
-		if (programOptions.count("make-bin"))
-		{
-			std::string outname = programOptions["make-bin"].as < std::string >();
-			bool isfloat = true;
-			if (programOptions.count("precision"))
-			{
-				isfloat = programOptions["precision"].as < int >();
-			}
-			for (int i = 0; i < dm.GetKernel().size(); i++)
-			{
-				if (i > 1)
-				{
-					outname += i;
-				}
-				KernelWriter kw(dm.GetKernel()[i]);
-
-				kw.setprecision(isfloat);
-				kw.write(outname);
-			}
-
-		}
-		logout->close();
-		delete logout;
+		TryMain(argc, argv, logout);
 	}
 	catch (string &e)
 	{
 		logout->write(e, true);
-		logout->close();
-		delete logout;
 //		std::cout << e << std::endl;
 	}
 	catch (const std::exception &err)
 	{
 		logout->write(err.what(), true);
-		logout->close();
-		delete logout;
+	}
+	catch (...)
+	{
+		logout->write("Unknown Error", true);
+		
 	}
 	//get now time
 	time_t now = time(0);
@@ -345,6 +359,8 @@ int main(int argc, const char *const argv[])
 	char dt[256];
 	ctime_s(dt,256, &now);
 	std::cout << "\n\nAnalysis finished: " << dt << std::endl;
+	logout->close();
+	delete logout;
 }
 
 void ReadData(boost::program_options::variables_map programOptions, DataManager &dm, LOG *logout)
@@ -524,7 +540,7 @@ void MINQUEAnalysis(boost::program_options::variables_map programOptions, DataMa
 	out << ss.str() << std::endl;
 	logout->write(ss.str(), false);
 	ss.str("");
-	ss << "Iterate Times:\t" << iterateTimes + 1;
+	ss << "Iterate Times:\t" << iterateTimes;
 	out << ss.str() << std::endl;
 	logout->write(ss.str(), false);
 	out.close();
