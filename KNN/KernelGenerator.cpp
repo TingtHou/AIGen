@@ -3,19 +3,17 @@
 #include <cmath>
 #include <fstream>
 
-KernelGenerator::KernelGenerator(GenoData & gd, int KernelName, double weight, double constant, double deg, double sigmma)
+KernelGenerator::KernelGenerator(GenoData & gd, int KernelName, Eigen::VectorXd &weights,  double scale, double constant, double deg, double sigmma)
 {
 	int nrow = gd.Geno.rows();
 	int ncol = gd.Geno.cols();
-	Eigen::VectorXd weights(ncol);
-	weights.setOnes();
-	weights *= weight;
 	kernels.kernelMatrix.resize(nrow, nrow);
+	this->scale = scale;
 	switch (KernelName)
 	{
 	case CAR:
-		//getCAR(gd.Geno, weights, kernels.kernelMatrix);
-		throw("Error: this kernel generator does not work now.");
+		getCAR(gd.Geno, weights, kernels.kernelMatrix);
+	//	throw std::exception("Error: this kernel generator does not work now.");
 		break;
 	case Identity:
 		getIdentity(gd.Geno, kernels.kernelMatrix);
@@ -23,20 +21,20 @@ KernelGenerator::KernelGenerator(GenoData & gd, int KernelName, double weight, d
 	case Product:
 		getProduct(gd.Geno, weights, kernels.kernelMatrix);
 		break;
-	case Ploymonial:
-	//	getPolynomial(gd.Geno, weights, constant, deg, kernels.kernelMatrix);
-		throw("Error: this kernel generator does not work now.");
+	case Polymonial:
+		getPolynomial(gd.Geno, weights, constant, deg, kernels.kernelMatrix);
+	//	throw std::exception("Error: this kernel generator does not work now.");
 		break;
 	case Gaussian:
-	//	getGaussian(gd.Geno, weights, sigmma, kernels.kernelMatrix);
-		throw("Error: this kernel generator does not work now.");
+		getGaussian(gd.Geno, weights, sigmma, kernels.kernelMatrix);
+	//	throw std::exception("Error: this kernel generator does not work now.");
 		break;
 	case IBS:
-	//	getIBS(gd.Geno, weights, kernels.kernelMatrix);
-		throw("Error: this kernel generator does not work now.");
+		getIBS(gd.Geno, weights, kernels.kernelMatrix);
+	//	throw std::exception("Error: this kernel generator does not work now.");
 		break;
 	default:
-		throw ("Invalided kernel name!");
+		throw std::exception("Invalided kernel name!");
 		break;
 	}
 	for (auto it=gd.fid_iid.begin();it!=gd.fid_iid.end();it++)
@@ -49,6 +47,7 @@ KernelGenerator::KernelGenerator(GenoData & gd, int KernelName, double weight, d
 	kernels.VariantCountMatrix.setOnes();
 	kernels.VariantCountMatrix *= totalsize;
 }
+
 
 KernelGenerator::KernelGenerator()
 {
@@ -136,6 +135,7 @@ void KernelGenerator::getCAR(Eigen::MatrixXd & Geno, Eigen::VectorXd &weights, E
 	S.diagonal().setZero();
 	Eigen::MatrixXd D(nrow, nrow);
 	D.setZero();
+    #pragma omp parallel for
 	for (int i=0;i<nrow;i++)
 	{
 		D(i, i) = S.row(i).sum();
@@ -147,6 +147,7 @@ void KernelGenerator::getCAR(Eigen::MatrixXd & Geno, Eigen::VectorXd &weights, E
 	///////////////////////
 	Eigen::MatrixXd centered = Geno.rowwise() - Geno.colwise().mean();
 	Eigen::MatrixXd cor = (centered.transpose() * centered)/ double(nrow - 1);
+	#pragma omp parallel for
 	for (int i=0;i<ncol;i++)
 	{
 		for (int j=0;j<=i;j++)
@@ -160,7 +161,7 @@ void KernelGenerator::getCAR(Eigen::MatrixXd & Geno, Eigen::VectorXd &weights, E
 	}
 	double gamma = cor.mean();
 	Eigen::MatrixXd Va = D - gamma * S;
-	std::cout << Va << std::endl;
+//	std::cout << Va << std::endl;
 	Inverse(Va, kernel, 0, 3, true);
 }
 
@@ -176,11 +177,16 @@ void KernelGenerator::getProduct(Eigen::MatrixXd & Geno, Eigen::VectorXd &weight
 	int ncol = Geno.cols();
 	int nrow = Geno.rows();
 	kernel.resize(nrow, nrow);
-// 	Eigen::MatrixXd sqrtw=weights.asDiagonal();
-// 	sqrtw.cwiseSqrt();
-// 	Eigen::MatrixXd Geno_sqetw = Geno * sqrtw;
+ 	Eigen::MatrixXd sqrtw=weights.asDiagonal();
+	sqrtw = sqrtw.cwiseSqrt();
+ 	Eigen::MatrixXd Geno_sqetw = Geno * sqrtw;
+	kernel = (1 / double(ncol))*(Geno_sqetw*Geno_sqetw.transpose());
+	if (scale)
+	{
+		kernel = (1 / weights.sum())*kernel;
+	}
 // 	kernel = (1 / weights.sum())*(Geno_sqetw*Geno_sqetw.transpose());
-	kernel = (1 / double(ncol))*(Geno*Geno.transpose());
+	
 }
 
 void KernelGenerator::getPolynomial(Eigen::MatrixXd & Geno, Eigen::VectorXd & weights, double constant, double deg, Eigen::MatrixXd & kernel)
@@ -189,9 +195,14 @@ void KernelGenerator::getPolynomial(Eigen::MatrixXd & Geno, Eigen::VectorXd & we
 	int ncol = Geno.cols();
 	kernel.resize(nrow, nrow);
 	Eigen::MatrixXd sqrtw = weights.asDiagonal();
-	sqrtw.cwiseSqrt();
+	sqrtw = sqrtw.cwiseSqrt();
 	Eigen::MatrixXd Geno_sqetw = Geno * sqrtw;
-	kernel = (constant*Eigen::MatrixXd::Ones(nrow,nrow) + (1 / weights.sum())*(Geno_sqetw*Geno_sqetw.transpose())).array().pow(deg);
+	kernel = (1 / double(ncol))*(Geno_sqetw*Geno_sqetw.transpose());
+	if (scale)
+	{
+		kernel = (1 / weights.sum())*kernel;
+	}
+	kernel = (constant*Eigen::MatrixXd::Ones(nrow,nrow) + kernel).array().pow(deg);
 }
 
 
@@ -214,7 +225,11 @@ void KernelGenerator::getGaussian(Eigen::MatrixXd & Geno, Eigen::VectorXd & weig
 			DistMat(j, i) = DistMat(i, j) = std::sqrt(rowi_rowj.sum());
 		}
 	}
-	kernel = -(1 / (2 * sigmma*weights.sum()))*(DistMat.array().pow(2));
+	kernel = -(1 / (2 * double(ncol) * sigmma))*(DistMat.array().pow(2));
+	if (scale)
+	{
+		kernel= (1 / weights.sum())*kernel;
+	}
 	kernel=kernel.array().exp();
 
 }

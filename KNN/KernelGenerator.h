@@ -9,13 +9,14 @@
 class KernelGenerator
 {
 public:
-	KernelGenerator(GenoData & gd, int KernelName, double weights, double constant = 1, double deg = 2, double sigmma = 1);
+	KernelGenerator(GenoData & gd, int KernelName, Eigen::VectorXd &weights, double scale, double constant = 1, double deg = 2, double sigmma = 1);
 	KernelGenerator();
 	void BuildBin(std::string prefix);
 	KernelData getKernel() { return kernels; };
 	~KernelGenerator();
 	void test();
 private:
+	bool scale;
 	KernelData kernels;
 	void getCAR(Eigen::MatrixXd &Geno, Eigen::VectorXd &weights, Eigen::MatrixXd &kernel);
 	void getIdentity(Eigen::MatrixXd &Geno, Eigen::MatrixXd &kernel);
