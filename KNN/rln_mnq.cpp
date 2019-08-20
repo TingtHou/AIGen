@@ -43,11 +43,11 @@ void rln_mnq::estimate()
 		}
 		else
 		{
-			throw ("Error: calculating inverse matrix is failed, and pseudo inverse matrix is not allowed");
+			throw std::exception("Error: calculating inverse matrix is failed, and pseudo inverse matrix is not allowed");
 		}
 		break;
 	case 2:
-		throw("Error: calculating inverse matrix is failed, and pseudo inverse matrix is also failed");
+		throw std::exception("Error: calculating inverse matrix is failed, and pseudo inverse matrix is also failed");
 		break;
 	default:
 		throw("Error: unknown code [" + std::to_string(status) + "] from calculating inverse matrix.");
@@ -81,11 +81,11 @@ void rln_mnq::estimate()
 			}
 			else
 			{
-				throw ("Error: calculating inverse matrix is failed, and pseudo inverse matrix is not allowed");
+				throw std::exception("Error: calculating inverse matrix is failed, and pseudo inverse matrix is not allowed");
 			}
 			break;
 		case 2:
-			throw("Error: calculating inverse matrix is failed, and pseudo inverse matrix is also failed");
+			throw std::exception("Error: calculating inverse matrix is failed, and pseudo inverse matrix is also failed");
 			break;
 		default:
 			throw("Error: unknown code [" + std::to_string(status) + "] from calculating inverse matrix.");
@@ -132,14 +132,14 @@ void rln_mnq::estimate()
 		}
 		else
 		{
-			throw ("Error: calculating inverse matrix is failed, and pseudo inverse matrix is not allowed");
+			throw std::exception("Error: calculating inverse matrix is failed, and pseudo inverse matrix is not allowed");
 		}
 		break;
 	case 2:
-		throw("Error: calculating inverse matrix is failed, and pseudo inverse matrix is also failed");
+		throw std::exception("Error: calculating inverse matrix is failed, and pseudo inverse matrix is also failed");
 		break;
 	default:
-		throw("Error: unknown code [" + std::to_string(status) + "] from calculating inverse matrix.");
+		throw ("Error: unknown code [" + std::to_string(status) + "] from calculating inverse matrix.");
 	}
 
 //	ToolKit::Inv_SVD(F, INV_F,true);
