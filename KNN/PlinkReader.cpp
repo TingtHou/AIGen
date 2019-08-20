@@ -36,14 +36,20 @@ void PlinkReader::read(std::string pedfile, std::string mapfile)
 	buildpedigree();
 	buildgenemap();
 	buildMAF();
-	if (isImpute)
+	int MissnSNP = std::count(MissinginSNP.begin(), MissinginSNP.end(), true);
+	if (MissnSNP)
 	{
-		Impute();
+		std::cout << MissnSNP << " Markers have missing data" << std::endl;
+		if (isImpute)
+		{
+			Impute();
+		}
+		else
+		{
+			removeMissing();
+		}
 	}
-	else
-	{
-		removeMissing();
-	}
+	
 }
 // reading bed file, bim file, famfile in plink format
 void PlinkReader::read(std::string bedfile, std::string bimfile, std::string famfile)
@@ -57,13 +63,18 @@ void PlinkReader::read(std::string bedfile, std::string bimfile, std::string fam
 	buildpedigree();
 	buildgenemap();
 	buildMAF();
-	if (isImpute)
+	int MissnSNP = std::count(MissinginSNP.begin(), MissinginSNP.end(), true);
+	if (MissnSNP)
 	{
-		Impute();
-	}
-	else
-	{
-		removeMissing();
+		std::cout << MissnSNP << " Markers have missing data" << std::endl;
+		if (isImpute)
+		{
+			Impute();
+		}
+		else
+		{
+			removeMissing();
+		}
 	}
 }
 
@@ -435,6 +446,7 @@ void PlinkReader::buildMAF()
 
 void PlinkReader::Impute()
 {
+	std::cout << "Impute missing genotypes" << std::endl;
 	Random rd(0);
 	#pragma omp parallel for
 	for (int i = 0; i < nmarker; i++)
@@ -477,6 +489,7 @@ void PlinkReader::Impute()
 
 void PlinkReader::removeMissing()
 {
+	std::cout << "Remove missing genotypes" << std::endl;
 	int MissnSNP = std::count(MissinginSNP.begin(), MissinginSNP.end(), true);
 	std::vector<std::vector<int>> tmpMarker = Marker;
 	#pragma omp parallel for

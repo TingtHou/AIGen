@@ -73,6 +73,8 @@ void Options::boostProgramOptionsRoutine(int argc, const char * const argv[])
 				"Input multiple kernel files in binary format.\n");
 		po::options_description optsFilesOperation("File Operations");
 		optsFilesOperation.add_options()
+		("impute", po::value<bool>()->value_name("True/False"),
+				"Impute missing genotypes.\n")
 		("recode", po::value<std::string>()->value_name("[filename]"),
 				"Recode the binary kernel file to text format.\n")
 		("precision", po::value<int>()->value_name("precision"),

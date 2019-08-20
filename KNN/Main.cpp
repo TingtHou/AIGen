@@ -366,6 +366,7 @@ int main(int argc, const char *const argv[])
 void ReadData(boost::program_options::variables_map programOptions, DataManager &dm, LOG *logout)
 {
 	std::vector<std::string> GFile;
+	bool isImpute = false;
 	if (programOptions.count("phe"))
 	{
 		std::string reponsefile = programOptions["phe"].as < std::string >();
@@ -434,15 +435,19 @@ void ReadData(boost::program_options::variables_map programOptions, DataManager 
 		std::string filename = programOptions["fam"].as<std::string >();
 		GFile.push_back(filename);
 	}
+	if (programOptions.count("impute"))
+	{
+		isImpute = programOptions["impute"].as<bool>();
+	}
 	if (GFile.size()!=0)
 	{
 		clock_t t1 = clock();
-		dm.readGeno(GFile,false);
+		dm.readGeno(GFile, isImpute);
 		std::stringstream ss;
 		ss << "Read Genotype Elapse Time : " << (clock() - t1) * 1.0 / CLOCKS_PER_SEC * 1000 << " ms";
 		logout->write(ss.str(), true);
 	}
-
+	
 }
 
 void MINQUEAnalysis(boost::program_options::variables_map programOptions, DataManager &dm, LOG *logout, std::string &result)

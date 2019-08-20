@@ -170,6 +170,7 @@ void DataManager::match(PhenoData &phenotype, KernelData &kernel)
 	{
 		return;
 	}
+	std::cout << "Match genotypes and phenotypes" << std::endl;
 	PhenoData tmpPhe = phenotype;
 	KernelData tmpKernel = kernel;
 	std::vector<std::string> overlapID;
