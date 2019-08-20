@@ -11,9 +11,9 @@ class cuMINQUE
 public:
 	cuMINQUE();
 	~cuMINQUE();
-	void import_Y(double *Y, int nind);
-	void push_back_Vi(double *Vi,int n);
-	int estimate();
+	bool importY(double *Y, int nind);
+	bool pushback_Vi(double *Vi,int n);
+	bool estimate();
 	std::vector<double> GetTheta();
 private:
 	cublasStatus_t status;
@@ -44,9 +44,9 @@ private:
 	double *D_Ai = nullptr;
 	
 private:
-	void init();
-	void Calc_Gamma();
-	void Calc_Ai(int i);
-	void Cal_Eta(int i);
+	bool init();
+	bool Calc_Gamma();
+	bool Calc_Ai(int i);
+	bool Cal_Eta(int i);
 };
 
