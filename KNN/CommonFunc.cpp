@@ -32,7 +32,6 @@ int Inverse(Eigen::MatrixXd & Ori_Matrix, Eigen::MatrixXd & Inv_Matrix, int Deco
 		status += !statusInverse;
 		if (!statusInverse&&allowPseudoInverse)
 		{
-			status += 1;
 			if (AltDecompositionMode == SVD)
 			{
 				statusInverse = ToolKit::Inv_SVD(Ori_Matrix, Inv_Matrix, allowPseudoInverse);

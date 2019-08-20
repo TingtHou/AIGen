@@ -19,7 +19,7 @@ enum KernelNames :int
 	CAR = 0,
 	Identity = 1,
 	Product = 2,
-	Ploymonial = 3,
+	Polymonial = 3,
 	Gaussian = 4,
 	IBS = 5
 };
@@ -52,6 +52,7 @@ struct GenoData
 	Eigen::MatrixXd Geno;               //individual mode, row: individual; col: SNP;
 
 };
+
 
 int Inverse(Eigen::MatrixXd & Ori_Matrix, Eigen::MatrixXd & Inv_Matrix,int DecompositionMode, int AltDecompositionMode, bool allowPseudoInverse);
 double Variance(Eigen::VectorXd &Y);
