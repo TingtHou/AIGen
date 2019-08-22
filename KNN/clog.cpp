@@ -20,6 +20,18 @@ LOG::LOG()
 {
 }
 
+void LOG::setlog(std::string logfile)
+{
+	Logfile.open(logfile, std::ios::out);
+	std::time_t currenttime = std::time(0);
+	char tAll[255];
+	tm Tm;
+	localtime_s(&Tm, &currenttime);
+	std::strftime(tAll, sizeof(tAll), "%Y-%m-%d-%H-%M-%S", &Tm);
+	Logfile << tAll << std::endl;
+	Logfile.flush();
+}
+
 void LOG::write(std::string outline, bool terminateOpt)
 {
 	std::time_t currenttime = std::time(0);
@@ -42,5 +54,9 @@ LOG::~LOG()
 
 void LOG::close()
 {
-	Logfile.close();
+	if (Logfile.is_open())
+	{
+		Logfile.close();
+	}
+	
 };
