@@ -192,8 +192,7 @@ void TryMain(int argc, const char *const argv[], LOG * logout)
 		logfile = programOptions["log"].as < std::string >();
 		programOptions.erase("log");
 	}
-	delete logout;
-	logout = new LOG(logfile);
+	logout->setlog(logfile);
 	logout->write(opt.print(), true);
 	DataManager dm;
 	ReadData(programOptions, dm, logout);
@@ -201,7 +200,7 @@ void TryMain(int argc, const char *const argv[], LOG * logout)
 		//generate a built-in kernel or not
 	if (programOptions.count("make-kernel"))
 	{
-		int kerneltype;
+		int kerneltype=-1;
 		std::string kernelname = programOptions["make-kernel"].as < std::string >();
 		if (isNum(kernelname))
 		{
@@ -210,17 +209,21 @@ void TryMain(int argc, const char *const argv[], LOG * logout)
 		else
 		{
 			transform(kernelname.begin(), kernelname.end(), kernelname.begin(), tolower);
-			auto it = kernelPool.left.find(kernelname);
-			kerneltype = it->second;
+			if (kernelPool.left.count(kernelname))
+			{
+				auto it = kernelPool.left.find(kernelname);
+				kerneltype = it->second;
+			}
+			
 		}
-		if (kernelPool.right.count(kerneltype))
+		if (kerneltype!=-1)
 		{
 			auto it = kernelPool.right.find(kerneltype);
 			logout->write("Generate a " + it->second + " kernel from input genotype", true);
 		}
 		else
 		{
-			throw ("Error: Invalided kernel name " + kernelname);
+			throw ("Error: Invalided kernel name \"" + kernelname+"\"");
 		}
 		GenoData gd = dm.getGenotype();
 		if (programOptions.count("std"))
@@ -280,16 +283,6 @@ void TryMain(int argc, const char *const argv[], LOG * logout)
 	{
 		dm.SetKernel(kernelList);
 	}
-	//if the phenotype is inputed, the estimation will be started.
-	if (dm.getPhenotype().fid_iid.size() != 0)
-	{
-		dm.match();
-		if (!programOptions.count("skip"))
-		{
-			MINQUEAnalysis(programOptions, dm, logout, result);
-		}
-
-	}
 	if (programOptions.count("recode"))
 	{
 
@@ -322,7 +315,17 @@ void TryMain(int argc, const char *const argv[], LOG * logout)
 		}
 
 	}
+	//if the phenotype is inputed, the estimation will be started.
+	if (dm.getPhenotype().fid_iid.size() != 0)
+	{
+		dm.match();
+		if (!programOptions.count("skip"))
+		{
+			MINQUEAnalysis(programOptions, dm, logout, result);
+		}
 
+	}
+	
 }
 
 int main(int argc, const char *const argv[])
@@ -331,10 +334,11 @@ int main(int argc, const char *const argv[])
 		"@----------------------------------------------------------@\n"
 		"|        KNN       |     v alpha 0.1.1  |    20/Aug/2019   |\n"
 		"|----------------------------------------------------------|\n"
-		"|    Statistical Genetics and Statistical Learning Group   | \n"
+		"|    Statistical Genetics and Statistical Learning Group   |\n"
 		"@----------------------------------------------------------@\n"
 		"\n");
-	LOG *logout = new LOG();
+	LOG *logout = NULL;
+	logout=new LOG();
 	try
 	{
 		TryMain(argc, argv, logout);
@@ -353,14 +357,16 @@ int main(int argc, const char *const argv[])
 		logout->write("Unknown Error", true);
 		
 	}
+	logout->close();
+	delete logout;
 	//get now time
 	time_t now = time(0);
 	//format time to string;
 	char dt[256];
 	ctime_s(dt,256, &now);
 	std::cout << "\n\nAnalysis finished: " << dt << std::endl;
-	logout->close();
-	delete logout;
+	
+	return 1;
 }
 
 void ReadData(boost::program_options::variables_map programOptions, DataManager &dm, LOG *logout)
