@@ -26,7 +26,7 @@ std::string Options::print()
 	buffer << "Accepted Options:\n";
 	for (auto it=programOptions.begin();it!=programOptions.end();it++)
 	{
-		buffer <<"  --"<< it->first << "\t";
+		buffer <<"  --"<< std::left << std::setw(11)<< it->first << "\t";
 		auto& value = it->second.value();
 		if (auto v = boost::any_cast<int>(&value))
 			buffer << *v;
@@ -137,14 +137,14 @@ void Options::boostProgramOptionsRoutine(int argc, const char * const argv[])
 	catch (po::too_many_positional_options_error &e)
 	{
 		std::cerr << e.what() << std::endl;
-		std::cout << optsDescCmdLine << std::endl;
+//		std::cout << optsDescCmdLine << std::endl;
 		exit(1);
 	}
 	catch (po::error_with_option_name &e)
 	{
 	// Another usage error occurred
 		std::cerr << e.what() << std::endl;
-		std::cout << optsDescCmdLine << std::endl;
+//		std::cout << optsDescCmdLine << std::endl;
 		exit(1);
 	}
 
