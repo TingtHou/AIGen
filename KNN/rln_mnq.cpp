@@ -1,9 +1,6 @@
 #include "pch.h"
 #include "rln_mnq.h"
-#include "ToolKit.h"
-#include <iostream>
-#include <fstream>
-#include <iomanip>
+
 
 rln_mnq::rln_mnq(int DecompositionMode, int altDecompositionMode, bool allowPseudoInverse)
 {
@@ -115,7 +112,7 @@ void rln_mnq::estimate()
 	{
 		for (int j=i;j<nVi;j++)
 		{
-			F(i, j) = RV[i].cwiseProduct(RV[j]).sum();
+			F(i, j) = RV[i].transpose().cwiseProduct(RV[j]).sum();
 			F(j, i) = F(i, j);
 		}
 	}
