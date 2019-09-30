@@ -1,8 +1,6 @@
 #include "pch.h"
 #include "cLog.h"
-#include <time.h>
-#include <iomanip>
-#include <string>
+
 
 LOG::LOG(std::string logfile)
 {
