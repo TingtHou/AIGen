@@ -1,7 +1,6 @@
 #include "pch.h"
 #include "PlinkReader.h"
-#include "Random.h"
-#include <iomanip>
+
 // PlinkReader::PlinkReader(std::string pedfile, std::string mapfile)
 // {
 // 	this->pedfile = pedfile;

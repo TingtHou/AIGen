@@ -15,7 +15,7 @@ void rln_mnq::estimate()
 	if (W.size()==0)
 	{
 		W = Eigen::VectorXd(nVi);
-		#pragma omp parallel for
+		//#pragma omp parallel for
 		for (int i=0;i<nVi;i++)
 		{
 			W[i] = 1 / (double)nVi;
@@ -36,18 +36,34 @@ void rln_mnq::estimate()
 	case 1:
 		if (allowPseudoInverse)
 		{
-			logfile->write("Calculating inverse matrix is failed, using pseudo inverse matrix instead", false);
+			stringstream ss;
+			ss<< YELLOW << "[Warning]: " << WHITE << "Thread ID: " << ThreadId 
+				<< "\tCalculating inverse matrix is failed, using pseudo inverse matrix instead\n";
+			printf("%s",ss.str().c_str());
+//			logfile->write("Calculating inverse matrix is failed, using pseudo inverse matrix instead", false);
+			logger::record(logger::Level::Warning) << "Thread ID: "<<ThreadId<<"\tCalculating inverse matrix is failed, using pseudo inverse matrix instead";
 		}
 		else
 		{
-			throw std::exception("Error: calculating inverse matrix is failed, and pseudo inverse matrix is not allowed");
+			stringstream ss;
+			ss << RED << "[Error]: " << WHITE << "Thread ID: " << ThreadId
+				<< "\tcalculating inverse matrix is failed, and pseudo inverse matrix is not allowed\n";
+			throw std::exception(logic_error(ss.str().c_str()));
 		}
 		break;
 	case 2:
-		throw std::exception("Error: calculating inverse matrix is failed, and pseudo inverse matrix is also failed");
+	{
+		stringstream ss;
+		ss << RED << "[Error]: " << WHITE << "Thread ID: " << ThreadId
+			<< "\tcalculating inverse matrix is failed, and pseudo inverse matrix is also failed\n";
+		throw std::exception(logic_error(ss.str().c_str()));
+	}
 		break;
 	default:
-		throw("Error: unknown code [" + std::to_string(status) + "] from calculating inverse matrix.");
+		stringstream ss;
+		ss << RED << "[Error]: " << WHITE << "Thread ID: " << ThreadId
+			<< "\tunknown code [" << std::to_string(status) << "] from calculating inverse matrix.\n";
+		throw std::exception(logic_error(ss.str().c_str()));
 	}
 	std::vector<Eigen::MatrixXd> RV;
 	Eigen::VectorXd Ry;
@@ -74,18 +90,34 @@ void rln_mnq::estimate()
 		case 1:
 			if (allowPseudoInverse)
 			{
-				logfile->write("Calculating inverse matrix is failed, using pseudo inverse matrix instead", false);
+				stringstream ss;
+				ss << YELLOW << "[Warning]: " << WHITE << "Thread ID: " << ThreadId
+					<< "\tCalculating inverse matrix is failed, using pseudo inverse matrix instead\n";
+				printf("%s", ss.str().c_str());
+				//			logfile->write("Calculating inverse matrix is failed, using pseudo inverse matrix instead", false);
+				logger::record(logger::Level::Warning) << "Thread ID: " << ThreadId << "\tCalculating inverse matrix is failed, using pseudo inverse matrix instead";
 			}
 			else
 			{
-				throw std::exception("Error: calculating inverse matrix is failed, and pseudo inverse matrix is not allowed");
+				stringstream ss;
+				ss << RED << "[Error]: " << WHITE << "Thread ID: " << ThreadId
+					<< "\tcalculating inverse matrix is failed, and pseudo inverse matrix is not allowed\n";
+				throw std::exception(logic_error(ss.str().c_str()));
 			}
 			break;
 		case 2:
-			throw std::exception("Error: calculating inverse matrix is failed, and pseudo inverse matrix is also failed");
-			break;
+		{
+			stringstream ss;
+			ss << RED << "[Error]: " << WHITE << "Thread ID: " << ThreadId
+				<< "\tcalculating inverse matrix is failed, and pseudo inverse matrix is also failed\n";
+			throw std::exception(logic_error(ss.str().c_str()));
+		}
+		break;
 		default:
-			throw("Error: unknown code [" + std::to_string(status) + "] from calculating inverse matrix.");
+			stringstream ss;
+			ss << RED << "[Error]: " << WHITE << "Thread ID: " << ThreadId
+				<< "\tunknown code [" << std::to_string(status) << "] from calculating inverse matrix.\n";
+			throw std::exception(logic_error(ss.str().c_str()));
 		}
 	//	ToolKit::Inv_SVD(Xt_B, INV_Xt_B,true);
 		C = INV_Xt_B * B.transpose();
@@ -99,7 +131,7 @@ void rln_mnq::estimate()
 
 	Eigen::VectorXd u(nVi);
 	u.setZero();
-	#pragma omp parallel for
+//	#pragma omp parallel for
 	for (int i = 0; i < nVi; i++)
 	{
 		Eigen::VectorXd Vi_Ry = Vi[i]*Ry;
@@ -107,7 +139,7 @@ void rln_mnq::estimate()
 	}
 
 	Eigen::MatrixXd F(nVi, nVi);
-	#pragma omp parallel for
+//	#pragma omp parallel for
 	for (int i = 0; i < nVi; i++)
 	{
 		for (int j=i;j<nVi;j++)
@@ -117,26 +149,42 @@ void rln_mnq::estimate()
 		}
 	}
 	Eigen::MatrixXd INV_F(nVi, nVi);
-	int status2 = Inverse(F, INV_F, Decomp, altDecomp, allowPseudoInverse);
-	switch (status2)
+	status = Inverse(F, INV_F, Decomp, altDecomp, allowPseudoInverse);
+	switch (status)
 	{
 	case 0:
 		break;
 	case 1:
 		if (allowPseudoInverse)
 		{
-			logfile->write("Calculating inverse matrix is failed, using pseudo inverse matrix instead", false);
+			stringstream ss;
+			ss << YELLOW << "[Warning]: " << WHITE << "Thread ID: " << ThreadId
+				<< "\tCalculating inverse matrix is failed, using pseudo inverse matrix instead\n";
+			printf("%s", ss.str().c_str());
+			//			logfile->write("Calculating inverse matrix is failed, using pseudo inverse matrix instead", false);
+			logger::record(logger::Level::Warning) << "Thread ID: " << ThreadId << "\tCalculating inverse matrix is failed, using pseudo inverse matrix instead";
 		}
 		else
 		{
-			throw std::exception("Error: calculating inverse matrix is failed, and pseudo inverse matrix is not allowed");
+			stringstream ss;
+			ss << RED << "[Error]: " << WHITE << "Thread ID: " << ThreadId
+				<< "\tcalculating inverse matrix is failed, and pseudo inverse matrix is not allowed\n";
+			throw std::exception(logic_error(ss.str().c_str()));
 		}
 		break;
 	case 2:
-		throw std::exception("Error: calculating inverse matrix is failed, and pseudo inverse matrix is also failed");
-		break;
+	{
+		stringstream ss;
+		ss << RED << "[Error]: " << WHITE << "Thread ID: " << ThreadId
+			<< "\tcalculating inverse matrix is failed, and pseudo inverse matrix is also failed\n";
+		throw std::exception(logic_error(ss.str().c_str()));
+	}
+	break;
 	default:
-		throw ("Error: unknown code [" + std::to_string(status) + "] from calculating inverse matrix.");
+		stringstream ss;
+		ss << RED << "[Error]: " << WHITE << "Thread ID: " << ThreadId
+			<< "\tunknown code [" << std::to_string(status) << "] from calculating inverse matrix.\n";
+		throw std::exception(logic_error(ss.str().c_str()));
 	}
 
 //	ToolKit::Inv_SVD(F, INV_F,true);

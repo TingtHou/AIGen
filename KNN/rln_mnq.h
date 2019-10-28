@@ -6,6 +6,7 @@
 #include <iostream>
 #include <fstream>
 #include <iomanip>
+#include "logger.h"
 #define EIGEN_USE_MKL_ALL
 class rln_mnq :
 	public MinqueBase

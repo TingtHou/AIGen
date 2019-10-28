@@ -9,7 +9,6 @@
 
 #include "pch.h"
 #include "Random.h"
-#include <time.h>
 using namespace boost;
 
 Random::Random()

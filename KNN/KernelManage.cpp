@@ -1,10 +1,6 @@
 #include "pch.h"
 #include "KernelManage.h"
-#include <fstream>
-#include <boost/algorithm/string.hpp>
-#include <map>
-#include "KernelManage.h"
-#include <iomanip>
+
 
 
 KernelReader::KernelReader(std::string prefix)

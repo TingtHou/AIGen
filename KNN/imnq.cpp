@@ -1,12 +1,12 @@
 #include "pch.h"
 #include "imnq.h"
-#include "LinearRegression.h"
-#include "rln_mnq.h"
-#include <sstream>
-#include <iomanip>
+
 void imnq::estimate()
 {
-	
+	int nProcessors = omp_get_max_threads();
+
+	std::cout << nProcessors << std::endl;
+	omp_set_num_threads(nProcessors);
 	Iterate();
 }
 
@@ -22,6 +22,12 @@ void imnq::setOptions(MinqueOptions mnqoptions)
 int imnq::getIterateTimes()
 {
 	return initIterate;
+}
+
+void imnq::isEcho(bool isecho)
+{
+	this->isecho = isecho;
+
 }
 
 
@@ -67,7 +73,9 @@ void imnq::Iterate()
 	vc0  = initVCS();
 	double diff = 0;
 	rln_mnq *mnq=nullptr;
-	logfile->write("Starting Iterate MINQUE Algorithm",true);
+//	printf("Starting Iterate MINQUE Algorithm.\n");
+//	logfile->write("Starting Iterate MINQUE Algorithm",true);
+	logger::record(logger::Level::Info) << "Starting Iterate MINQUE Algorithm at thread "<<ThreadId;
 	while (initIterate <itr)
 	{
 	//	clock_t t1 = clock();
@@ -82,15 +90,21 @@ void imnq::Iterate()
 			mnq->puskback_X(X,false);
 		}
 		mnq->pushback_W(vc0);
-		mnq->setLogfile(logfile);
+//		mnq->setLogfile(logfile);
+		mnq->setThreadId(ThreadId);
 		mnq->estimate();
 		vc1=mnq->getvcs();
-	//	diff = (vc1 - vc0).cwiseAbs().maxCoeff();
-		diff = (vc1 - vc0).squaredNorm() / vc0.squaredNorm();
+		diff = (vc1 - vc0).cwiseAbs().maxCoeff();
+	//	diff = (vc1 - vc0).squaredNorm() / vc0.squaredNorm();
 		std::stringstream ss;
-		ss<<std::fixed << std::setprecision(3) << "It: " << initIterate << "\t" << vc1.transpose() << "\tdiff: ";
+		ss << std::fixed << "Thread ID: " << ThreadId << std::setprecision(3) << "\tIt: " << initIterate << "\t" << vc1.transpose() << "\tdiff: ";
 		ss << std::scientific << diff;
-		logfile->write(ss.str(),true);
+		if (isecho)
+		{
+			printf("%s\n", ss.str().c_str());
+		}
+		logger::record(logger::Level::Info) << ss.str();
+// 		logfile->write(ss.str(),true);
 		vc0 = vc1;
 		initIterate++;
 		if (diff<tol)

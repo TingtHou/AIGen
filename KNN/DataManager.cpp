@@ -1,11 +1,6 @@
 #include "pch.h"
 #include "DataManager.h"
-#include <fstream>
-#include <string>
-#include <boost/algorithm/string.hpp>
-#include "KernelManage.h"
-#include "PlinkReader.h"
-#include "CommonFunc.h"
+
 DataManager::DataManager()
 {
 }
@@ -83,7 +78,7 @@ void DataManager::readGeno(std::vector<std::string> filelist, bool isImpute)
 		break;
 	default:
 		std::stringstream ss;
-		ss << "Error: Cannot open genotype files, ";
+		ss <<RED <<"[Error]: "<<WHITE<< "Cannot open genotype files, ";
 		for (int i=0; i<filelist.size();i++)
 		{
 			ss << "[" << filelist[i] << "], ";
@@ -166,7 +161,10 @@ void DataManager::match(PhenoData &phenotype, KernelData &kernel)
 // 	{
 // 		throw ("Error: the number of individuals in phenotype file cannot match the kernel file.\n");
 // 	}
-	if (phenotype.fid_iid == kernel.fid_iid)
+	if (phenotype.fid_iid.size()==kernel.fid_iid.size() 
+		&& std::equal(phenotype.fid_iid.begin(), 
+						phenotype.fid_iid.end(),
+						kernel.fid_iid.begin()))
 	{
 		return;
 	}
@@ -205,4 +203,5 @@ void DataManager::match(PhenoData &phenotype, KernelData &kernel)
 		phenotype.fid_iid.insert({ i, rowID });
 		kernel.fid_iid.insert({ i, rowID });
 	}
+	std::cout<<phenotype.Phenotype<<std::endl;
 }

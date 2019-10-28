@@ -1,7 +1,13 @@
 #pragma once
-#include "cLog.h"
 #include "CommonFunc.h"
 #include <boost/program_options.hpp>
+#include <fstream>
+#include <string>
+#include <boost/algorithm/string.hpp>
+#include "KernelManage.h"
+#include "PlinkReader.h"
+#include "CommonFunc.h"
+#include "logger.h"
 class DataManager
 {
 public:

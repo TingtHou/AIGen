@@ -1,7 +1,6 @@
 #include "pch.h"
 #include "KernelGenerator.h"
-#include <cmath>
-#include <fstream>
+
 
 KernelGenerator::KernelGenerator(GenoData & gd, int KernelName, Eigen::VectorXd &weights,  double scale, double constant, double deg, double sigmma)
 {
@@ -34,7 +33,7 @@ KernelGenerator::KernelGenerator(GenoData & gd, int KernelName, Eigen::VectorXd 
 	//	throw std::exception("Error: this kernel generator does not work now.");
 		break;
 	default:
-		throw std::exception("Invalided kernel name!");
+		throw std::exception(logic_error("Invalided kernel name!"));
 		break;
 	}
 	for (auto it=gd.fid_iid.begin();it!=gd.fid_iid.end();it++)

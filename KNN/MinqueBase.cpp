@@ -63,7 +63,13 @@ void MinqueBase::pushback_W(Eigen::VectorXd W)
 	this->W = W;
 }
 
-void MinqueBase::setLogfile(LOG * logfile)
+void MinqueBase::setThreadId(int Thread_id)
 {
-	this->logfile = logfile;
+	ThreadId = Thread_id;
 }
+
+// void MinqueBase::setLogfile(LOG * logfile)
+// {
+// 	this->logfile = logfile;
+// }
+

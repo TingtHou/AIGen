@@ -1,7 +1,6 @@
 #include "pch.h"
 #include "ToolKit.h"
-#include <stdio.h>
-#include <iostream>
+
 void ToolKit::ArraytoVector(double ** a, int n, int m, vector<vector<double>>& v, bool Transpose)
 {
 	v.clear();
@@ -114,7 +113,7 @@ bool ToolKit::Inv_Cholesky(Eigen::MatrixXd & Ori_Matrix, Eigen::MatrixXd & Inv_M
 	Eigen::MatrixXd IdentityMatrix(Ori_Matrix.rows(), Ori_Matrix.cols());
 	IdentityMatrix.setIdentity();
 	LDLT.compute(Ori_Matrix);
-	if (!Ori_Matrix.isApprox(Ori_Matrix.transpose()) || LDLT.info() == Eigen::NumericalIssue)
+	if (LDLT.info() == Eigen::NumericalIssue)
 	{
 		return false;
 	}

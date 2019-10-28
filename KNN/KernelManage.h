@@ -1,6 +1,11 @@
 #pragma once
 #include <iostream>
 #include <vector>
+#include <fstream>
+#include <boost/algorithm/string.hpp>
+#include <map>
+#include "KernelManage.h"
+#include <iomanip>
 #include "CommonFunc.h"
 class KernelReader
 {

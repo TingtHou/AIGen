@@ -7,13 +7,15 @@
 #include <map>
 #include <set>
 #include <string>
-#include <Eigen/dense>
+#include <Eigen/Dense>
 #include "ToolKit.h"
 #include <boost/algorithm/string.hpp>
 #include <boost/exception/all.hpp>
 #include <exception>
 #include <vector>
 #include "CommonFunc.h"
+#include "Random.h"
+#include <iomanip>
 class PlinkReader
 {
 

@@ -1,11 +1,13 @@
 #pragma once
-#include <Eigen/dense>
+#include <Eigen/Dense>
 #include "CommonFunc.h"
 #include <vector>
 #include "PlinkReader.h"
 #include "CommonFunc.h"
 #include "ToolKit.h"
 #include "KernelManage.h"
+#include <cmath>
+#include <fstream>
 class KernelGenerator
 {
 public:

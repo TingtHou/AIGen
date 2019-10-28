@@ -1,8 +1,8 @@
-
+#pragma once
 #include <boost/random.hpp>
 #include <boost/random/random_device.hpp>
 #include <time.h>
-#pragma once
+
 class Random
 {
 public:

@@ -1,6 +1,8 @@
 #pragma once
 #include <vector>
 #include <Eigen/Dense>
+#include <stdio.h>
+#include <iostream>
 #define EIGEN_USE_MKL_ALL
 using namespace std;
 class ToolKit
