@@ -99,11 +99,16 @@ void Options::boostProgramOptionsRoutine(int argc, const char * const argv[])
 		("inverse", po::value<std::string>()->value_name("mode"), "The matrix decomposition.\n"
 			"mode 0: Cholesky decomposition; mode 1: LU decomposition; mode 2: QR decomposition; mode 3: SVD decomposition.\n")
 		("pseudo", po::value<bool>()->value_name("true/fasle"), "The pseudo will be used if the matrix is not invertible.\n"
-				"default to True.\n"
-				"If this option is set, the inverse mode should be mode 2 or mode 3.\n")
+			"default to True.\n"
+			"If this option is set, the inverse mode should be mode 2 or mode 3.\n")
 		("ginverse", po::value<std::string>()->value_name("mode"), "The alternative matrix decomposition if the matrix is not invertible and the pseudo inverse is allowed.\n"
 				"Only mode 2, QR decomposition and mode 3, SVD decomposition are available.\n"
-				"Default to mode 3.\n");
+				"Default to mode 3.\n")
+		("alphaKNN", po::value<int>()->value_name("degree"), "Adopt 2-layer KNN with 1 latent feature h and order alpha polynomial kernels.\n")
+		("batch", po::value<int>()->value_name("num"), "Split a super-large kernels into 'num' smaller batch to analysis.\n")
+		("seed", po::value<int>()->value_name("num"), "Set seed for random process.\n")
+		("echo", po::value<bool>()->value_name("True/False"), "Print the results at each iterate or not")
+		("thread", po::value<int>()->value_name("num"), "Set a 'num' size thread pool for multi-thread analysis.\n");
 	po::options_description optsComputerDevice("Computing Device Options");
 	optsComputerDevice.add_options()
 		("GPU", " Use CPU for computation.\n")
