@@ -4,12 +4,6 @@
     <Natvis Include="eigen.natvis" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="CheckMode.cpp">
-      <Filter>Source</Filter>
-    </ClCompile>
-    <ClCompile Include="clog.cpp">
-      <Filter>Source</Filter>
-    </ClCompile>
     <ClCompile Include="CommonFunc.cpp">
       <Filter>Source</Filter>
     </ClCompile>
@@ -52,14 +46,17 @@
     <ClCompile Include="ToolKit.cpp">
       <Filter>Source</Filter>
     </ClCompile>
+    <ClCompile Include="KernelExpansion.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Batch.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="logger.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="CheckMode.h">
-      <Filter>Header</Filter>
-    </ClInclude>
-    <ClInclude Include="cLog.h">
-      <Filter>Header</Filter>
-    </ClInclude>
     <ClInclude Include="CommonFunc.h">
       <Filter>Header</Filter>
     </ClInclude>
@@ -99,9 +96,19 @@
     <ClInclude Include="ToolKit.h">
       <Filter>Header</Filter>
     </ClInclude>
+    <ClInclude Include="KernelExpansion.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="Batch.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="logger.h">
+      <Filter>Header</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="eigen_autoexp_part.dat" />
+    <None Include="cpp.hint" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Header">
