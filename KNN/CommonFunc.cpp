@@ -1,7 +1,6 @@
 #include "pch.h"
 #include "CommonFunc.h"
-#include "ToolKit.h"
-#include <boost/algorithm/string.hpp>
+
 int Inverse(Eigen::MatrixXd & Ori_Matrix, Eigen::MatrixXd & Inv_Matrix, int DecompositionMode, int AltDecompositionMode, bool allowPseudoInverse)
 {
 	int status = 0;
@@ -171,5 +170,24 @@ void set_difference(boost::bimap<int, std::string>& map1, boost::bimap<int, std:
 		{
 			overlap.push_back(it->second);
 		}
+	}
+}
+
+void GetSubMatrix(Eigen::MatrixXd & oMatrix, Eigen::MatrixXd & subMatrix, std::vector<int> rowIds, std::vector<int> colIDs)
+{
+	for (int i=0;i<rowIds.size();i++)
+	{
+		for (int j=0;j<colIDs.size();j++)
+		{
+			subMatrix(i, j) = oMatrix(rowIds[i], colIDs[j]);
+		}
+	}
+}
+
+void GetSubVector(Eigen::VectorXd & oVector, Eigen::VectorXd & subVector, std::vector<int> IDs)
+{
+	for (int i=0;i<IDs.size();i++)
+	{
+		subVector(i) = oVector(IDs[i]);
 	}
 }
