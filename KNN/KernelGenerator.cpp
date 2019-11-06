@@ -161,7 +161,8 @@ void KernelGenerator::getCAR(Eigen::MatrixXd & Geno, Eigen::VectorXd &weights, E
 	double gamma = cor.mean();
 	Eigen::MatrixXd Va = D - gamma * S;
 //	std::cout << Va << std::endl;
-	Inverse(Va, kernel, 0, 3, true);
+	Inverse(Va, 0, 3, true);
+	kernel = Va;
 }
 
 void KernelGenerator::getIdentity(Eigen::MatrixXd & Geno, Eigen::MatrixXd & kernel)
