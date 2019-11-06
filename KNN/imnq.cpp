@@ -3,10 +3,10 @@
 
 void imnq::estimate()
 {
-	int nProcessors = omp_get_max_threads();
-
-	std::cout << nProcessors << std::endl;
-	omp_set_num_threads(nProcessors);
+// 	int nProcessors = omp_get_max_threads();
+// 
+// 	std::cout << nProcessors << std::endl;
+// 	omp_set_num_threads(nProcessors);
 	Iterate();
 }
 

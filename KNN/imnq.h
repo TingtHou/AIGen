@@ -1,4 +1,5 @@
 #pragma once
+#define EIGEN_USE_MKL_ALL
 #include "MinqueBase.h"
 #include "CommonFunc.h"
 #include "LinearRegression.h"
@@ -7,7 +8,6 @@
 #include <iomanip>
 #include <thread>
 #include "logger.h"
-#define EIGEN_USE_MKL_ALL
 
 class imnq :
 	public MinqueBase
