@@ -124,6 +124,53 @@ bool ToolKit::Inv_Cholesky(Eigen::MatrixXd & Ori_Matrix, Eigen::MatrixXd & Inv_M
 	return a_solution_exists;
 }
 
+bool ToolKit::comput_inverse_logdet_LDLT_mkl(Eigen::MatrixXd &Vi, double &logdet)
+{
+	long i = 0, j = 0, n = Vi.cols();
+	double* Vi_mkl = new double[n * n];
+	//float* Vi_mkl=new float[n*n];
+
+#pragma omp parallel for private(j)
+	for (i = 0; i < n; i++) {
+		for (j = 0; j < n; j++) {
+			Vi_mkl[i * n + j] = Vi(i, j);
+		}
+	}
+
+	// MKL's Cholesky decomposition
+	int info = 0, int_n = (int)n;
+	char uplo = 'L';
+	dpotrf(&uplo, &int_n, Vi_mkl, &int_n, &info);
+	//spotrf( &uplo, &n, Vi_mkl, &n, &info );
+	if (info < 0) throw ("Error: Cholesky decomposition failed. Invalid values found in the matrix.\n");
+	else if (info > 0) return false;
+	else {
+		logdet = 0.0;
+		for (i = 0; i < n; i++) {
+			double d_buf = Vi_mkl[i * n + i];
+			logdet += log(d_buf * d_buf);
+		}
+
+		// Calcualte V inverse
+		dpotri(&uplo, &int_n, Vi_mkl, &int_n, &info);
+		//spotri( &uplo, &n, Vi_mkl, &n, &info );
+		if (info < 0) throw ("Error: invalid values found in the varaince-covaraince (V) matrix.\n");
+		else if (info > 0) return false;
+		else {
+#pragma omp parallel for private(j)
+			for (j = 0; j < n; j++) {
+				for (i = 0; i <= j; i++) Vi(i, j) = Vi(j, i) = Vi_mkl[i * n + j];
+			}
+		}
+	}
+
+	// free memory
+	delete[] Vi_mkl;
+
+	return true;
+
+}
+
 bool ToolKit::Inv_LU(Eigen::MatrixXd & Ori_Matrix, Eigen::MatrixXd & Inv_Matrix)
 {
 	Eigen::PartialPivLU<Eigen::MatrixXd> LU(Ori_Matrix);
@@ -134,12 +181,64 @@ bool ToolKit::Inv_LU(Eigen::MatrixXd & Ori_Matrix, Eigen::MatrixXd & Inv_Matrix)
 	return a_solution_exists;
 }
 
-bool ToolKit::Inv_SVD(Eigen::MatrixXd & Ori_Matrix, Eigen::MatrixXd & Inv_Matrix, bool allowPseudoInverse)
+bool ToolKit::comput_inverse_logdet_LU_mkl(Eigen::MatrixXd &Vi, double &logdet)
+{
+	 long i = 0, j = 0, n = Vi.cols();
+	double* Vi_mkl = new double[n * n];
+
+#pragma omp parallel for private(j)
+	for (i = 0; i < n; i++) {
+		for (j = 0; j < n; j++) {
+			Vi_mkl[i * n + j] = Vi(i, j);
+		}
+	}
+
+	int N = (int)n;
+	int *IPIV = new int[n + 1];
+	int LWORK = N * N;
+	double *WORK = new double[n * n];
+	int INFO;
+	dgetrf(&N, &N, Vi_mkl, &N, IPIV, &INFO);
+	if (INFO < 0) throw ("Error: LU decomposition failed. Invalid values found in the matrix.\n");
+	else if (INFO > 0) {
+		delete[] Vi_mkl;
+		return false;
+	}
+	else {
+		logdet = 0.0;
+		for (i = 0; i < n; i++) {
+			double d_buf = Vi_mkl[i * n + i];
+			logdet += log(fabs(d_buf));
+		}
+
+		// Calcualte V inverse
+		dgetri(&N, Vi_mkl, &N, IPIV, WORK, &LWORK, &INFO);
+		if (INFO < 0) throw ("Error: invalid values found in the varaince-covaraince (V) matrix.\n");
+		else if (INFO > 0) return false;
+		else {
+#pragma omp parallel for private(j)
+			for (j = 0; j < n; j++) {
+				for (i = 0; i <= j; i++) Vi(i, j) = Vi(j, i) = Vi_mkl[i * n + j];
+			}
+		}
+	}
+
+	// free memory
+	delete[] Vi_mkl;
+	delete[] IPIV;
+	delete[] WORK;
+
+	return true;
+}
+
+
+bool ToolKit::Inv_SVD(Eigen::MatrixXd & Ori_Matrix, bool allowPseudoInverse)
 {
 
 	auto svd = Ori_Matrix.jacobiSvd(Eigen::ComputeFullU | Eigen::ComputeFullV);
 	const auto &singularValues = svd.singularValues();
 	Eigen::MatrixXd singularValuesInv(Ori_Matrix.cols(), Ori_Matrix.rows());
+	Eigen::MatrixXd Inv_Matrix(Ori_Matrix.cols(), Ori_Matrix.rows());
 	singularValuesInv.setZero();
 	double  pinvtoler = 1.e-20; // choose your tolerance wisely
 	bool singlar = false;
@@ -159,16 +258,17 @@ bool ToolKit::Inv_SVD(Eigen::MatrixXd & Ori_Matrix, Eigen::MatrixXd & Inv_Matrix
 		}
 	}
 	Inv_Matrix = svd.matrixV() * singularValuesInv * svd.matrixU().transpose();
-	bool a_solution_exists = (Ori_Matrix*Inv_Matrix*Ori_Matrix).isApprox(Ori_Matrix, 1e-10);
-	return a_solution_exists;
+	Ori_Matrix = Inv_Matrix;
+	return true;
 }
 
-bool ToolKit::Inv_QR(Eigen::MatrixXd & Ori_Matrix, Eigen::MatrixXd & Inv_Matrix, bool allowPseudoInverse)
+bool ToolKit::Inv_QR(Eigen::MatrixXd & Ori_Matrix, bool allowPseudoInverse)
 {
 	Eigen::CompleteOrthogonalDecomposition<Eigen::MatrixXd> QR;
 	Eigen::MatrixXd IdentityMatrix(Ori_Matrix.rows(), Ori_Matrix.cols());
 	IdentityMatrix.setIdentity();
 	QR.compute(Ori_Matrix);
+	Eigen::MatrixXd Inv_Matrix(Ori_Matrix.rows(), Ori_Matrix.cols());
 	if (!QR.isInvertible()&&!allowPseudoInverse)
 	{
 		return false;
@@ -181,7 +281,7 @@ bool ToolKit::Inv_QR(Eigen::MatrixXd & Ori_Matrix, Eigen::MatrixXd & Inv_Matrix,
 	{
 		Inv_Matrix = QR.pseudoInverse();
 	}
-	bool a_solution_exists = (Ori_Matrix*Inv_Matrix*Ori_Matrix).isApprox(Ori_Matrix, 1e-10);
-	return a_solution_exists;
+	Ori_Matrix = Inv_Matrix;
+	return true;
 }
 

@@ -38,6 +38,7 @@
 #include "KernelExpansion.h"
 #include "Batch.h"
 #include "logger.h"
+#include <mkl.h>
 void readAlgrithomParameter(boost::program_options::variables_map programOptions, MinqueOptions &minque)
 {
 	if (programOptions.count("iterate"))
@@ -547,6 +548,11 @@ void MINQUEAnalysis(boost::program_options::variables_map programOptions, DataMa
 			if (programOptions.count("echo"))
 			{
 				isecho = programOptions["echo"].as<bool>();
+			}
+			if (programOptions.count("thread"))
+			{
+				int nthread = programOptions["thread"].as<int>();
+				mkl_set_num_threads(nthread);
 			}
 			MINQUE(minopt, Kernels, phe, VarComp, iterateTimes,isecho);
 		}

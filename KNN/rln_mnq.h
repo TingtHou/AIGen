@@ -1,4 +1,5 @@
 #pragma once
+#define EIGEN_USE_MKL_ALL
 #include "pch.h"
 #include "MinqueBase.h"
 #include "CommonFunc.h"
@@ -7,7 +8,8 @@
 #include <fstream>
 #include <iomanip>
 #include "logger.h"
-#define EIGEN_USE_MKL_ALL
+#include <mkl.h>
+
 class rln_mnq :
 	public MinqueBase
 {

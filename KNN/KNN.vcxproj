@@ -130,7 +130,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>mkl_intel_ilp64.lib;mkl_intel_thread.lib;mkl_core.lib;libiomp5md.lib;cusolver.lib;cublas.lib;cuda.lib;cudadevrt.lib;cudart.lib;cudart_static.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>mkl_intel_ilp64.lib;mkl_intel_thread.lib;mkl_core.lib;libiomp5md.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <CudaCompile>
       <CodeGeneration>compute_35,sm_35</CodeGeneration>
@@ -176,7 +176,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>mkl_intel_ilp64.lib;mkl_intel_thread.lib;mkl_core.lib;libiomp5md.lib;cusolver.lib;cublas.lib;cuda.lib;cudadevrt.lib;cudart.lib;cudart_static.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>mkl_intel_lp64.lib;mkl_intel_thread.lib;mkl_core.lib;libiomp5md.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>

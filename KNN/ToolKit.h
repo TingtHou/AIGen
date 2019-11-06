@@ -1,9 +1,10 @@
 #pragma once
+#define EIGEN_USE_MKL_ALL
 #include <vector>
 #include <Eigen/Dense>
 #include <stdio.h>
 #include <iostream>
-#define EIGEN_USE_MKL_ALL
+#include <mkl.h>
 using namespace std;
 class ToolKit
 {
@@ -15,7 +16,9 @@ public:
 	static void dec2bin(int num, int *bin);
 	static bool Inv_Cholesky(Eigen::MatrixXd & Ori_Matrix, Eigen::MatrixXd & Inv_Matrix);
 	static bool Inv_LU(Eigen::MatrixXd & Ori_Matrix, Eigen::MatrixXd & Inv_Matrix);
-	static bool Inv_SVD(Eigen::MatrixXd & Ori_Matrix, Eigen::MatrixXd & Inv_Matrix, bool allowPseudoInverse);
-	static bool Inv_QR(Eigen::MatrixXd & Ori_Matrix, Eigen::MatrixXd & Inv_Matrix, bool allowPseudoInverse);
+	static bool Inv_SVD(Eigen::MatrixXd & Ori_Matrix,  bool allowPseudoInverse);
+	static bool Inv_QR(Eigen::MatrixXd & Ori_Matrix,  bool allowPseudoInverse);
+	static bool comput_inverse_logdet_LDLT_mkl(Eigen::MatrixXd &Vi, double &logdet);
+	static bool comput_inverse_logdet_LU_mkl(Eigen::MatrixXd &Vi, double &logdet);
 };
 
