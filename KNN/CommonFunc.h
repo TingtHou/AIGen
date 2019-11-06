@@ -1,4 +1,5 @@
 #pragma once
+#define EIGEN_USE_MKL_ALL
 #include "pch.h"
 #include <map>
 #include <string>
@@ -6,7 +7,7 @@
 #include <Eigen/Dense>
 #include "ToolKit.h"
 #include <boost/algorithm/string.hpp>
-#define EIGEN_USE_MKL_ALL
+
 
 #define RESET   "\033[0m"
 #define BLACK   "\033[30m"      /* Black */
@@ -76,7 +77,7 @@ struct GenoData
 };
 
 
-int Inverse(Eigen::MatrixXd & Ori_Matrix, Eigen::MatrixXd & Inv_Matrix,int DecompositionMode, int AltDecompositionMode, bool allowPseudoInverse);
+int Inverse(Eigen::MatrixXd & Ori_Matrix,int DecompositionMode, int AltDecompositionMode, bool allowPseudoInverse);
 double Variance(Eigen::VectorXd &Y);
 double mean(Eigen::VectorXd &Y);
 double isNum(std::string line);

@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "CommonFunc.h"
 
-int Inverse(Eigen::MatrixXd & Ori_Matrix, Eigen::MatrixXd & Inv_Matrix, int DecompositionMode, int AltDecompositionMode, bool allowPseudoInverse)
+int Inverse(Eigen::MatrixXd & Ori_Matrix, int DecompositionMode, int AltDecompositionMode, bool allowPseudoInverse)
 {
 	int status = 0;
 	bool statusInverse;
@@ -9,53 +9,57 @@ int Inverse(Eigen::MatrixXd & Ori_Matrix, Eigen::MatrixXd & Inv_Matrix, int Deco
 	{
 	case Cholesky:
 	{
-		statusInverse = ToolKit::Inv_Cholesky(Ori_Matrix, Inv_Matrix);
+		double det;
+		statusInverse = ToolKit::comput_inverse_logdet_LDLT_mkl(Ori_Matrix, det);
+	//	statusInverse = ToolKit::Inv_Cholesky(Ori_Matrix, Inv_Matrix);
 		status += !statusInverse;
-		if (!statusInverse&&allowPseudoInverse)
-		{
-			if (AltDecompositionMode == SVD)
-			{
-				statusInverse = ToolKit::Inv_SVD(Ori_Matrix, Inv_Matrix, allowPseudoInverse);
-			}
-			if (AltDecompositionMode == QR)
-			{
-				statusInverse = ToolKit::Inv_QR(Ori_Matrix, Inv_Matrix, allowPseudoInverse);
-			}
-			status += !statusInverse;
-		}
+// 		if (!statusInverse&&allowPseudoInverse)
+// 		{
+// 			if (AltDecompositionMode == SVD)
+// 			{
+// 				statusInverse = ToolKit::Inv_SVD(Ori_Matrix, Inv_Matrix, allowPseudoInverse);
+// 			}
+// 			if (AltDecompositionMode == QR)
+// 			{
+// 				statusInverse = ToolKit::Inv_QR(Ori_Matrix, Inv_Matrix, allowPseudoInverse);
+// 			}
+// 			status += !statusInverse;
+// 		}
 	}
 	break;
 	case LU:
 	{
-		statusInverse = ToolKit::Inv_LU(Ori_Matrix, Inv_Matrix);
+		double det;
+		statusInverse = ToolKit::comput_inverse_logdet_LU_mkl(Ori_Matrix, det);
+	//	statusInverse = ToolKit::Inv_LU(Ori_Matrix, Inv_Matrix);
 		status += !statusInverse;
-		if (!statusInverse&&allowPseudoInverse)
-		{
-			if (AltDecompositionMode == SVD)
-			{
-				statusInverse = ToolKit::Inv_SVD(Ori_Matrix, Inv_Matrix, allowPseudoInverse);
-			}
-			if (AltDecompositionMode == QR)
-			{
-				statusInverse = ToolKit::Inv_QR(Ori_Matrix, Inv_Matrix, allowPseudoInverse);
-			}
-			status += !statusInverse;
-		}
+// 		if (!statusInverse&&allowPseudoInverse)
+// 		{
+// 			if (AltDecompositionMode == SVD)
+// 			{
+// 				statusInverse = ToolKit::Inv_SVD(Ori_Matrix, Inv_Matrix, allowPseudoInverse);
+// 			}
+// 			if (AltDecompositionMode == QR)
+// 			{
+// 				statusInverse = ToolKit::Inv_QR(Ori_Matrix, Inv_Matrix, allowPseudoInverse);
+// 			}
+// 			status += !statusInverse;
+// 		}
 	}
 	break;
 	case QR:
 	{
-		statusInverse = ToolKit::Inv_QR(Ori_Matrix, Inv_Matrix, allowPseudoInverse);
+		statusInverse = ToolKit::Inv_QR(Ori_Matrix, allowPseudoInverse);
 		status += !statusInverse;
 	}
 	break;
 	case SVD:
 	{
-		statusInverse = ToolKit::Inv_SVD(Ori_Matrix, Inv_Matrix, allowPseudoInverse);
+		statusInverse = ToolKit::Inv_SVD(Ori_Matrix, allowPseudoInverse);
 		status += !statusInverse;
 	}
 	break;
-	}
+ 	}
 	return status;
 }
 //Sample variance
