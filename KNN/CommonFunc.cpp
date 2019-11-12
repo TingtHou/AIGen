@@ -10,52 +10,51 @@ int Inverse(Eigen::MatrixXd & Ori_Matrix, int DecompositionMode, int AltDecompos
 	case Cholesky:
 	{
 		double det;
-		statusInverse = ToolKit::comput_inverse_logdet_LDLT_mkl(Ori_Matrix, det);
-	//	statusInverse = ToolKit::Inv_Cholesky(Ori_Matrix, Inv_Matrix);
+		statusInverse = ToolKit::comput_inverse_logdet_LDLT_mkl(Ori_Matrix);
+	//	statusInverse = ToolKit::Inv_Cholesky(Ori_Matrix);
 		status += !statusInverse;
-// 		if (!statusInverse&&allowPseudoInverse)
-// 		{
-// 			if (AltDecompositionMode == SVD)
-// 			{
-// 				statusInverse = ToolKit::Inv_SVD(Ori_Matrix, Inv_Matrix, allowPseudoInverse);
-// 			}
-// 			if (AltDecompositionMode == QR)
-// 			{
-// 				statusInverse = ToolKit::Inv_QR(Ori_Matrix, Inv_Matrix, allowPseudoInverse);
-// 			}
-// 			status += !statusInverse;
-// 		}
+ 		if (!statusInverse&&allowPseudoInverse)
+ 		{
+			if (AltDecompositionMode == SVD)
+ 			{
+ 				statusInverse = ToolKit::comput_inverse_logdet_SVD_mkl(Ori_Matrix);
+ 			}
+ 			if (AltDecompositionMode == QR)
+ 			{
+ 				statusInverse = ToolKit::comput_inverse_logdet_QR_mkl(Ori_Matrix);
+ 			}
+ 			status += !statusInverse;
+ 		}
 	}
 	break;
 	case LU:
 	{
 		double det;
-		statusInverse = ToolKit::comput_inverse_logdet_LU_mkl(Ori_Matrix, det);
-	//	statusInverse = ToolKit::Inv_LU(Ori_Matrix, Inv_Matrix);
+		statusInverse = ToolKit::comput_inverse_logdet_LU_mkl(Ori_Matrix);
 		status += !statusInverse;
-// 		if (!statusInverse&&allowPseudoInverse)
-// 		{
-// 			if (AltDecompositionMode == SVD)
-// 			{
-// 				statusInverse = ToolKit::Inv_SVD(Ori_Matrix, Inv_Matrix, allowPseudoInverse);
-// 			}
-// 			if (AltDecompositionMode == QR)
-// 			{
-// 				statusInverse = ToolKit::Inv_QR(Ori_Matrix, Inv_Matrix, allowPseudoInverse);
-// 			}
-// 			status += !statusInverse;
-// 		}
+ 		if (!statusInverse&&allowPseudoInverse)
+ 		{
+			if (AltDecompositionMode == SVD)
+ 			{
+ 				statusInverse = ToolKit::comput_inverse_logdet_SVD_mkl(Ori_Matrix);
+ 			}
+			if (AltDecompositionMode == QR)
+			{
+ 				statusInverse = ToolKit::comput_inverse_logdet_QR_mkl(Ori_Matrix);
+ 			}
+ 			status += !statusInverse;
+ 		}
 	}
 	break;
 	case QR:
 	{
-		statusInverse = ToolKit::Inv_QR(Ori_Matrix, allowPseudoInverse);
+		statusInverse = ToolKit::comput_inverse_logdet_QR_mkl(Ori_Matrix);
 		status += !statusInverse;
 	}
 	break;
 	case SVD:
 	{
-		statusInverse = ToolKit::Inv_SVD(Ori_Matrix, allowPseudoInverse);
+		statusInverse = ToolKit::comput_inverse_logdet_SVD_mkl(Ori_Matrix);
 		status += !statusInverse;
 	}
 	break;

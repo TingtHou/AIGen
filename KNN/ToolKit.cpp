@@ -107,8 +107,9 @@ void ToolKit::dec2bin(int num, int *bin)
 	}
 }
 
-bool ToolKit::Inv_Cholesky(Eigen::MatrixXd & Ori_Matrix, Eigen::MatrixXd & Inv_Matrix)
+bool ToolKit::Inv_Cholesky(Eigen::MatrixXd & Ori_Matrix)
 {
+	Eigen::MatrixXd Inv_Matrix(Ori_Matrix.rows(), Ori_Matrix.cols());
  	Eigen::LDLT<Eigen::MatrixXd> LDLT;
 	Eigen::MatrixXd IdentityMatrix(Ori_Matrix.rows(), Ori_Matrix.cols());
 	IdentityMatrix.setIdentity();
@@ -118,54 +119,40 @@ bool ToolKit::Inv_Cholesky(Eigen::MatrixXd & Ori_Matrix, Eigen::MatrixXd & Inv_M
 		return false;
 	}
  	Inv_Matrix = LDLT.solve(IdentityMatrix);
+	Ori_Matrix = Inv_Matrix;
 //	std::cout << IdentityMatrix.isApprox(Ori_Matrix*Inv_Matrix) << std::endl;  // false
-	bool a_solution_exists = (Ori_Matrix*Inv_Matrix).isApprox(IdentityMatrix,1e-10);
 //	Inv_Matrix = Ori_Matrix.ldlt().solve(IdentityMatrix);
-	return a_solution_exists;
+	return true;
 }
 
-bool ToolKit::comput_inverse_logdet_LDLT_mkl(Eigen::MatrixXd &Vi, double &logdet)
+bool ToolKit::comput_inverse_logdet_LDLT_mkl(Eigen::MatrixXd &Vi)
 {
-	long i = 0, j = 0, n = Vi.cols();
-	double* Vi_mkl = new double[n * n];
-	//float* Vi_mkl=new float[n*n];
 
-#pragma omp parallel for private(j)
-	for (i = 0; i < n; i++) {
-		for (j = 0; j < n; j++) {
-			Vi_mkl[i * n + j] = Vi(i, j);
-		}
-	}
-
+	int n = Vi.cols();
+	double* Vi_mkl = Vi.data();
+//	mkl_domatcopy('c', 'n', n, n, 1.0, vi, n, Vi_mkl, n);
 	// MKL's Cholesky decomposition
 	int info = 0, int_n = (int)n;
 	char uplo = 'L';
-	dpotrf(&uplo, &int_n, Vi_mkl, &int_n, &info);
-	//spotrf( &uplo, &n, Vi_mkl, &n, &info );
+	info=LAPACKE_dpotrf(LAPACK_COL_MAJOR,uplo, int_n, Vi_mkl, int_n);
 	if (info < 0) throw ("Error: Cholesky decomposition failed. Invalid values found in the matrix.\n");
 	else if (info > 0) return false;
 	else {
-		logdet = 0.0;
-		for (i = 0; i < n; i++) {
-			double d_buf = Vi_mkl[i * n + i];
-			logdet += log(d_buf * d_buf);
-		}
-
 		// Calcualte V inverse
-		dpotri(&uplo, &int_n, Vi_mkl, &int_n, &info);
-		//spotri( &uplo, &n, Vi_mkl, &n, &info );
+		info=LAPACKE_dpotri(LAPACK_COL_MAJOR, uplo, int_n, Vi_mkl, int_n);
 		if (info < 0) throw ("Error: invalid values found in the varaince-covaraince (V) matrix.\n");
 		else if (info > 0) return false;
 		else {
-#pragma omp parallel for private(j)
-			for (j = 0; j < n; j++) {
-				for (i = 0; i <= j; i++) Vi(i, j) = Vi(j, i) = Vi_mkl[i * n + j];
+			#pragma omp parallel for
+			for (int i = 0; i < n; i++) //row
+			{
+				for (int j = i; j <n; j++) //col
+					Vi_mkl[j * n + i]=Vi_mkl[i * n + j];
 			}
 		}
 	}
-
 	// free memory
-	delete[] Vi_mkl;
+//	MKL_free(Vi_mkl);
 
 	return true;
 
@@ -181,53 +168,91 @@ bool ToolKit::Inv_LU(Eigen::MatrixXd & Ori_Matrix, Eigen::MatrixXd & Inv_Matrix)
 	return a_solution_exists;
 }
 
-bool ToolKit::comput_inverse_logdet_LU_mkl(Eigen::MatrixXd &Vi, double &logdet)
+bool ToolKit::comput_inverse_logdet_LU_mkl(Eigen::MatrixXd &Vi)
 {
-	 long i = 0, j = 0, n = Vi.cols();
-	double* Vi_mkl = new double[n * n];
-
-#pragma omp parallel for private(j)
-	for (i = 0; i < n; i++) {
-		for (j = 0; j < n; j++) {
-			Vi_mkl[i * n + j] = Vi(i, j);
-		}
-	}
+	int n = Vi.cols();
+	double* Vi_mkl = Vi.data();
 
 	int N = (int)n;
 	int *IPIV = new int[n + 1];
 	int LWORK = N * N;
-	double *WORK = new double[n * n];
-	int INFO;
-	dgetrf(&N, &N, Vi_mkl, &N, IPIV, &INFO);
+	int INFO=0;
+	INFO =LAPACKE_dgetrf(LAPACK_COL_MAJOR, N, N, Vi_mkl, N, IPIV);
 	if (INFO < 0) throw ("Error: LU decomposition failed. Invalid values found in the matrix.\n");
 	else if (INFO > 0) {
 		delete[] Vi_mkl;
 		return false;
 	}
 	else {
-		logdet = 0.0;
-		for (i = 0; i < n; i++) {
-			double d_buf = Vi_mkl[i * n + i];
-			logdet += log(fabs(d_buf));
-		}
-
 		// Calcualte V inverse
-		dgetri(&N, Vi_mkl, &N, IPIV, WORK, &LWORK, &INFO);
+		INFO=LAPACKE_dgetri(LAPACK_COL_MAJOR , N, Vi_mkl, N, IPIV);
 		if (INFO < 0) throw ("Error: invalid values found in the varaince-covaraince (V) matrix.\n");
 		else if (INFO > 0) return false;
-		else {
-#pragma omp parallel for private(j)
-			for (j = 0; j < n; j++) {
-				for (i = 0; i <= j; i++) Vi(i, j) = Vi(j, i) = Vi_mkl[i * n + j];
-			}
-		}
 	}
 
 	// free memory
-	delete[] Vi_mkl;
 	delete[] IPIV;
-	delete[] WORK;
+	return true;
+}
 
+bool ToolKit::comput_inverse_logdet_QR_mkl(Eigen::MatrixXd& Vi)
+{
+	int n = Vi.cols();
+	double* Vi_mkl = Vi.data();
+	Eigen::MatrixXd Rinv(n, n);
+	Eigen::MatrixXd Qt(n, n);
+	Rinv.setIdentity();
+	Qt.setIdentity();
+	double* pr_Rinv = Rinv.data();
+	double* pr_Qt = Qt.data();
+	double* tau = new double[n + 1];
+	int INFO = LAPACKE_dgeqrf(LAPACK_COL_MAJOR, n, n, Vi_mkl, n, tau);
+	if (INFO != 0) throw ("Error: QR decomposition failed. Invalid values found in the matrix.\n");
+	cblas_dtrsm(CblasColMajor, CblasLeft, CblasUpper, CblasNoTrans, CblasNonUnit, n, n, 1, Vi_mkl, n, pr_Rinv, n);
+	LAPACKE_dormqr(LAPACK_COL_MAJOR, 'L', 'T', n, n, n, Vi_mkl, n, tau, pr_Qt, n);
+	cblas_dgemm(CblasColMajor, CblasNoTrans, CblasNoTrans, n, n, n,1, pr_Rinv, n, pr_Qt, n, 0, Vi_mkl,n);
+	delete[] tau;
+	return true;
+}
+
+bool ToolKit::comput_inverse_logdet_SVD_mkl(Eigen::MatrixXd& Vi)
+{
+	int n = Vi.cols();
+	double* Vi_mkl = Vi.data();
+	MKL_INT  lwork;
+	MKL_INT info;
+	double wkopt;
+	double* work;
+	char jobu = 'S';
+	char jobvt = 'S';
+	double* s = (double*)malloc(n * sizeof(double));
+	double* u = (double*)malloc(n * n * sizeof(double));
+	double* vt = (double*)malloc(n * n * sizeof(double));
+	lwork = -1;
+	dgesvd(&jobu, &jobvt, &n, &n, Vi_mkl, &n, s, u, &n, vt, &n, &wkopt, &lwork, &info);
+	lwork = (MKL_INT)wkopt;
+	work = (double*)malloc(lwork * sizeof(double));
+	dgesvd(&jobu, &jobvt, &n, &n, Vi_mkl, &n, s, u, &n, vt, &n, work, &lwork, &info);
+	if (info > 0) throw ("The algorithm computing SVD failed to converge.\n");
+	//u=(s^-1)*U
+	MKL_INT incx = 1;
+	#pragma omp parallel for
+	for (int i = 0; i < n; i++)
+	{
+		double ss;
+		if (s[i] > 1.0e-9)
+			ss = 1.0 / s[i];
+		else
+			ss = s[i];
+		dscal(&n, &ss, &u[i * n], &incx);
+	}
+	//inv(A)=(Vt)^T *u^T
+	double alpha = 1.0, beta = 0.0;
+	MKL_INT ld_inva = n;
+	dgemm("T", "T", &n, &n, &n, &alpha, vt, &n, u, &n, &beta, Vi_mkl, &ld_inva);
+	free(s);
+	free(u);
+	free(vt);
 	return true;
 }
 
