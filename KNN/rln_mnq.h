@@ -9,7 +9,7 @@
 #include <iomanip>
 #include "logger.h"
 #include <mkl.h>
-
+#include <thread>
 class rln_mnq :
 	public MinqueBase
 {
@@ -21,5 +21,8 @@ private:
 	int Decomp = 0;
 	int altDecomp = 0;
 	bool allowPseudoInverse = true;
+
+	void CheckInverseStatus(int status);
+	static void Calc(double* vi, double* rvi, double* inv_vw_mkl, double* p_mkl, int nind);
 };
 
