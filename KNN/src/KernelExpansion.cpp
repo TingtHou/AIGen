@@ -1,5 +1,4 @@
-#include "pch.h"
-#include "KernelExpansion.h"
+#include "../include/KernelExpansion.h"
 
 
 KernelExpansion::KernelExpansion(std::vector<Eigen::MatrixXd> &MatrixHList, int dimension)

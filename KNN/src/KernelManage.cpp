@@ -1,5 +1,4 @@
-#include "pch.h"
-#include "KernelManage.h"
+#include "../include/KernelManage.h"
 
 
 

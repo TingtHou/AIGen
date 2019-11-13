@@ -1,5 +1,4 @@
-#include "pch.h"
-#include "KernelGenerator.h"
+#include "../include/KernelGenerator.h"
 
 
 KernelGenerator::KernelGenerator(GenoData & gd, int KernelName, Eigen::VectorXd &weights,  double scale, double constant, double deg, double sigmma)

@@ -7,8 +7,8 @@
 ///////
 ////////////////////////////////////////////////////////////////////////////
 
-#include "pch.h"
-#include "Random.h"
+
+#include "../include/Random.h"
 using namespace boost;
 
 Random::Random()

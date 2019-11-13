@@ -1,5 +1,4 @@
-#include "pch.h"
-#include "rln_mnq.h"
+#include "../include/rln_mnq.h"
 
 
 rln_mnq::rln_mnq(int DecompositionMode, int altDecompositionMode, bool allowPseudoInverse)

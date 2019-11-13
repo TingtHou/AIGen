@@ -1,25 +1,25 @@
 // MINQUE.cpp : This file contains the 'main' function. Program execution begins and ends there.
 
-#include "pch.h"
+
 #include <iostream>
-#include "ToolKit.h"
+#include "include/ToolKit.h"
 #include <string>
 #include <fstream>
 #include <Eigen/Dense>
 #include <time.h>
 #include <iomanip>
 #include <random>
-#include "LinearRegression.h"
-#include "Random.h"
-#include "PlinkReader.h"
+#include "include/LinearRegression.h"
+#include "include/Random.h"
+#include "include/PlinkReader.h"
 #include <vector>
 #include <stdio.h>
-#include "Options.h"
+#include "include/Options.h"
 #include <iostream>
-#include "CommonFunc.h"
-#include "KernelManage.h"
-#include "DataManager.h"
-#include "imnq.h"
+#include "include/CommonFunc.h"
+#include "include/KernelManage.h"
+#include "include/DataManager.h"
+#include "include/imnq.h"
 #include <boost/algorithm/string.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/xml_oarchive.hpp>
@@ -27,6 +27,7 @@
 #include <boost/serialization/binary_object.hpp>
 #include <boost/serialization/serialization.hpp>
 #include <boost/serialization/nvp.hpp>
+#include <boost/date_time.hpp>
 #include <sstream>
 #include <fstream>
 #include <iomanip>
@@ -34,10 +35,10 @@
 #include <map>
 #include <boost/serialization/map.hpp>
 #include <boost/serialization/split_member.hpp>
-#include "KernelGenerator.h"
-#include "KernelExpansion.h"
-#include "Batch.h"
-#include "logger.h"
+#include "include/KernelGenerator.h"
+#include "include/KernelExpansion.h"
+#include "include/Batch.h"
+#include "include/logger.h"
 #include <mkl.h>
 void readAlgrithomParameter(boost::program_options::variables_map programOptions, MinqueOptions &minque)
 {
@@ -372,11 +373,8 @@ int main(int argc, const char *const argv[])
 		logger::record(logger::Level::Error) << "Unknown Error";	
 	}
 	//get now time
-	time_t now = time(0);
-	//format time to string;
-	char dt[256];
-	ctime_s(dt,256, &now);
-	std::cout << "\n\nAnalysis finished: " << dt << std::endl;
+	boost::posix_time::ptime timeLocal = boost::posix_time::second_clock::local_time();
+	std::cout << "\n\nAnalysis finished: " << timeLocal << std::endl;
 	std::cout << "Total elapse Time : " << (clock() - t1) * 1.0 / CLOCKS_PER_SEC * 1000 << " ms" << std::endl;
 	return 1;
 }

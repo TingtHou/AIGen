@@ -1,5 +1,4 @@
-#include "pch.h"
-#include "ToolKit.h"
+#include "../include/ToolKit.h"
 
 void ToolKit::ArraytoVector(double ** a, int n, int m, vector<vector<double>>& v, bool Transpose)
 {

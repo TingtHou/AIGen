@@ -1,5 +1,4 @@
-#include "pch.h"
-#include "LinearRegression.h"
+#include "../include/LinearRegression.h"
 
 LinearRegression::~LinearRegression()
 {

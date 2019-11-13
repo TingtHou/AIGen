@@ -8,7 +8,6 @@
 
 #ifndef PCH_H
 #define PCH_H
-#define EIGEN_USE_MKL_ALL
 // TODO: add headers that you want to pre-compile here
 
 #endif //PCH_H

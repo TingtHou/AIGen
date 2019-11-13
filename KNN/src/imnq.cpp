@@ -1,5 +1,4 @@
-#include "pch.h"
-#include "imnq.h"
+#include "../include/imnq.h"
 
 void imnq::estimate()
 {

@@ -1,5 +1,4 @@
-#include "pch.h"
-#include "MinqueBase.h"
+#include "../include/MinqueBase.h"
 
 
 void MinqueBase::importY(Eigen::VectorXd Y)

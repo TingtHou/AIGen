@@ -1,5 +1,4 @@
-#include "pch.h"
-#include "CommonFunc.h"
+#include "../include/CommonFunc.h"
 
 int Inverse(Eigen::MatrixXd & Ori_Matrix, int DecompositionMode, int AltDecompositionMode, bool allowPseudoInverse)
 {

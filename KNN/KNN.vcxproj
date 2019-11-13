@@ -164,7 +164,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -190,53 +190,46 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="Batch.h" />
-    <ClInclude Include="CommonFunc.h" />
-    <ClInclude Include="DataManager.h" />
-    <ClInclude Include="imnq.h" />
-    <ClInclude Include="KernelExpansion.h" />
-    <ClInclude Include="KernelGenerator.h" />
-    <ClInclude Include="KernelManage.h" />
-    <ClInclude Include="LinearRegression.h" />
-    <ClInclude Include="logger.h" />
-    <ClInclude Include="MinqueBase.h" />
-    <ClInclude Include="Options.h" />
-    <ClInclude Include="pch.h" />
-    <ClInclude Include="PlinkReader.h" />
-    <ClInclude Include="Random.h" />
-    <ClInclude Include="rln_mnq.h" />
-    <ClInclude Include="ToolKit.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="Batch.cpp" />
-    <ClCompile Include="CommonFunc.cpp" />
-    <ClCompile Include="DataManager.cpp" />
-    <ClCompile Include="imnq.cpp" />
-    <ClCompile Include="KernelExpansion.cpp" />
-    <ClCompile Include="KernelGenerator.cpp" />
-    <ClCompile Include="KernelManage.cpp" />
-    <ClCompile Include="LinearRegression.cpp" />
-    <ClCompile Include="logger.cpp" />
-    <ClCompile Include="MinqueBase.cpp" />
-    <ClCompile Include="Options.cpp" />
-    <ClCompile Include="PlinkReader.cpp" />
-    <ClCompile Include="Random.cpp" />
-    <ClCompile Include="rln_mnq.cpp" />
-    <ClCompile Include="ToolKit.cpp" />
     <ClCompile Include="Main.cpp" />
-    <ClCompile Include="pch.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
-    </ClCompile>
+    <ClCompile Include="src\Batch.cpp" />
+    <ClCompile Include="src\CommonFunc.cpp" />
+    <ClCompile Include="src\DataManager.cpp" />
+    <ClCompile Include="src\imnq.cpp" />
+    <ClCompile Include="src\KernelExpansion.cpp" />
+    <ClCompile Include="src\KernelGenerator.cpp" />
+    <ClCompile Include="src\KernelManage.cpp" />
+    <ClCompile Include="src\LinearRegression.cpp" />
+    <ClCompile Include="src\logger.cpp" />
+    <ClCompile Include="src\MinqueBase.cpp" />
+    <ClCompile Include="src\Options.cpp" />
+    <ClCompile Include="src\PlinkReader.cpp" />
+    <ClCompile Include="src\Random.cpp" />
+    <ClCompile Include="src\rln_mnq.cpp" />
+    <ClCompile Include="src\ToolKit.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="eigen.natvis" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="cpp.hint" />
     <None Include="eigen_autoexp_part.dat" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="include\Batch.h" />
+    <ClInclude Include="include\CommonFunc.h" />
+    <ClInclude Include="include\DataManager.h" />
+    <ClInclude Include="include\imnq.h" />
+    <ClInclude Include="include\KernelExpansion.h" />
+    <ClInclude Include="include\KernelGenerator.h" />
+    <ClInclude Include="include\KernelManage.h" />
+    <ClInclude Include="include\LinearRegression.h" />
+    <ClInclude Include="include\logger.h" />
+    <ClInclude Include="include\MinqueBase.h" />
+    <ClInclude Include="include\Options.h" />
+    <ClInclude Include="include\pch.h" />
+    <ClInclude Include="include\PlinkReader.h" />
+    <ClInclude Include="include\Random.h" />
+    <ClInclude Include="include\rln_mnq.h" />
+    <ClInclude Include="include\ToolKit.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />

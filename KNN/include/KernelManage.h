@@ -4,9 +4,9 @@
 #include <fstream>
 #include <boost/algorithm/string.hpp>
 #include <map>
-#include "KernelManage.h"
+#include "../include/KernelManage.h"
 #include <iomanip>
-#include "CommonFunc.h"
+#include "../include/CommonFunc.h"
 class KernelReader
 {
 public:

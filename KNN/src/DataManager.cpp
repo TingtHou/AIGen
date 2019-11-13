@@ -1,5 +1,4 @@
-#include "pch.h"
-#include "DataManager.h"
+#include "../include/DataManager.h"
 
 DataManager::DataManager()
 {

@@ -1,5 +1,4 @@
-#include "pch.h"
-#include "Batch.h"
+#include "../include/Batch.h"
 
 
 Batch::Batch(std::vector<Eigen::MatrixXd>& kernels, Eigen::VectorXd &phe, int splitnum, int seed, bool isclear)

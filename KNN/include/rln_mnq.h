@@ -1,13 +1,13 @@
 #pragma once
 #define EIGEN_USE_MKL_ALL
-#include "pch.h"
-#include "MinqueBase.h"
-#include "CommonFunc.h"
-#include "ToolKit.h"
+
+#include "../include/MinqueBase.h"
+#include "../include/CommonFunc.h"
+#include "../include/ToolKit.h"
 #include <iostream>
 #include <fstream>
 #include <iomanip>
-#include "logger.h"
+#include "../include/logger.h"
 #include <mkl.h>
 #include <thread>
 class rln_mnq :

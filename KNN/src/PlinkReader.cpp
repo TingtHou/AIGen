@@ -1,5 +1,4 @@
-#include "pch.h"
-#include "PlinkReader.h"
+#include "../include/PlinkReader.h"
 
 // PlinkReader::PlinkReader(std::string pedfile, std::string mapfile)
 // {
