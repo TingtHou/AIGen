@@ -38,8 +38,13 @@
 #include "include/KernelGenerator.h"
 #include "include/KernelExpansion.h"
 #include "include/Batch.h"
-#include "include/logger.h"
 #include <mkl.h>
+#include "include/easylogging++.h"
+
+INITIALIZE_EASYLOGGINGPP
+
+
+
 void readAlgrithomParameter(boost::program_options::variables_map programOptions, MinqueOptions &minque)
 {
 	if (programOptions.count("iterate"))
@@ -185,7 +190,6 @@ void TryMain(int argc, const char *const argv[])
 		return;
 
 	}
-
 	string result= "result.txt";
 	std::string logfile="result.log";
 	if (programOptions.count("out"))
@@ -202,8 +206,13 @@ void TryMain(int argc, const char *const argv[])
 		logfile = programOptions["log"].as < std::string >();
 		programOptions.erase("log");
 	}
+//////init logger
+	el::Configurations conf;
+	conf.setToDefault();
+	conf.parseFromText(("*GLOBAL:\n  FILENAME = " + logfile+"\n  To_Standard_Output = false"));
+	el::Loggers::reconfigureLogger("default", conf);
 	std::cout << opt.print() << std::endl;
-	logger::record(logger::Level::Info) << opt.print();
+	LOG(INFO) << opt.print();
 	DataManager dm;
 	ReadData(programOptions, dm);
 	std::vector<KernelData> kernelList; 
@@ -231,7 +240,7 @@ void TryMain(int argc, const char *const argv[])
 		{
 			auto it = kernelPool.right.find(kerneltype);
 			std::cout << "Generate a " + it->second + " kernel from input genotype"<< std::endl;
-			logger::record(logger::Level::Info) << "Generate a " + it->second + " kernel from input genotype";
+			LOG(INFO) << "Generate a " + it->second + " kernel from input genotype";
 		}
 		else
 		{
@@ -241,7 +250,7 @@ void TryMain(int argc, const char *const argv[])
 		if (programOptions.count("std"))
 		{
 			std::cout <<"Standardize the genotype matrix" << std::endl;
-			logger::record(logger::Level::Info) << "Standardize the genotype matrix";
+			LOG(INFO) << "Standardize the genotype matrix";
 			stdSNPmv(gd.Geno);
 		}
 		Eigen::VectorXd weight(gd.Geno.cols());
@@ -360,17 +369,17 @@ int main(int argc, const char *const argv[])
 	catch (string &e)
 	{
 		std::cout << e << std::endl;
-		logger::record(logger::Level::Error) << e;
+		LOG(ERROR) << e;
 	}
 	catch (const std::exception &err)
 	{
 		std::cout << err.what() << std::endl;
-		logger::record(logger::Level::Error) << err.what();
+		LOG(ERROR) << err.what();
 	}
 	catch (...)
 	{
 		std::cout << "Unknown Error" << std::endl;
-		logger::record(logger::Level::Error) << "Unknown Error";	
+		LOG(ERROR) << "Unknown Error";
 	}
 	//get now time
 	boost::posix_time::ptime timeLocal = boost::posix_time::second_clock::local_time();
@@ -387,37 +396,37 @@ void ReadData(boost::program_options::variables_map programOptions, DataManager 
 	{
 		std::string reponsefile = programOptions["phe"].as < std::string >();
 		std::cout << "Reading Phenotype from [" + reponsefile + "]." << std::endl;
-		logger::record(logger::Level::Info) << "Reading Phenotype from [" + reponsefile + "].";
+		LOG(INFO) << "Reading Phenotype from [" + reponsefile + "].";
 		clock_t t1 = clock();
 		dm.readPhe(reponsefile);
 		std::stringstream ss;
 		ss << "Read Phenotype Elapse Time : " << (clock() - t1) * 1.0 / CLOCKS_PER_SEC * 1000 << " ms";
 		std::cout <<ss.str() << std::endl;
-		logger::record(logger::Level::Info) << ss.str();
+		LOG(INFO) << ss.str();
 	}
 	if (programOptions.count("kernel"))
 	{
 		std::string kernelfiles = programOptions["kernel"].as<std::string >();
 		std::cout << "Reading kernel list from [" + kernelfiles + "]." << std::endl;
-		logger::record(logger::Level::Info) << "Reading kernel list from [" + kernelfiles + "].";
+		LOG(INFO) << "Reading kernel list from [" + kernelfiles + "].";
 		clock_t t1 = clock();
 		dm.readKernel(kernelfiles);
 		std::stringstream ss;
 		ss << "Read kernel file Elapse Time : " << (clock() - t1) * 1.0 / CLOCKS_PER_SEC * 1000 << " ms";
 		std::cout << ss.str() << std::endl;
-		logger::record(logger::Level::Info) << ss.str();
+		LOG(INFO) << ss.str();
 	}
 	if (programOptions.count("mkernel"))
 	{
 		std::string mkernelfile = programOptions["mkernel"].as<std::string >();
 		std::cout << "Reading kernel list from [" + mkernelfile + "]." << std::endl;
-		logger::record(logger::Level::Info) << "Reading kernel list from [" + mkernelfile + "].";
+		LOG(INFO) << "Reading kernel list from [" + mkernelfile + "].";
 		clock_t t1 = clock();
 		dm.readmKernel(mkernelfile);
 		std::stringstream ss;
 		ss << "Read multi-kernel Elapse Time : " << (clock() - t1) * 1.0 / CLOCKS_PER_SEC * 1000 << " ms";
 		std::cout << ss.str() << std::endl;
-		logger::record(logger::Level::Info) << ss.str();
+		LOG(INFO) << ss.str();
 	}
 	if (programOptions.count("bfile"))
 	{
@@ -468,7 +477,7 @@ void ReadData(boost::program_options::variables_map programOptions, DataManager 
 		std::stringstream ss;
 		ss << "Read Genotype Elapse Time : " << (clock() - t1) * 1.0 / CLOCKS_PER_SEC * 1000 << " ms";
 		std::cout << ss.str() << std::endl;
-		logger::record(logger::Level::Info) << ss.str() << std::endl;
+		LOG(INFO) << ss.str() << std::endl;
 	}
 	
 }
@@ -558,9 +567,9 @@ void MINQUEAnalysis(boost::program_options::variables_map programOptions, DataMa
 	}
 	ofstream out;
 	out.open(result, ios::out);
-	logger::record(logger::Level::Info) << "---Result----";
+	LOG(INFO) << "---Result----";
 	out << "Source\tVariance" << std::endl;
-	logger::record(logger::Level::Info) << "Source\tVariance";
+	LOG(INFO) << "Source\tVariance";
 //	std::cout << fixed << setprecision(4) << "Estimated Variances: ";
 	int i = 0;
 	double VG = 0;
@@ -574,7 +583,7 @@ void MINQUEAnalysis(boost::program_options::variables_map programOptions, DataMa
 		ss << "V(G" << index << ")\t" << VarComp.at(i);
 		out << ss.str() << std::endl;
 		std::cout << ss.str() << std::endl;
-		logger::record(logger::Level::Info) << ss.str();
+		LOG(INFO) << ss.str();
 		VG += VarComp.at(i);
 	}
 	VP = VG;
@@ -582,13 +591,13 @@ void MINQUEAnalysis(boost::program_options::variables_map programOptions, DataMa
 	ss << "V(e)\t" << VarComp.at(i);
 	out << ss.str() << std::endl;
 	std::cout << ss.str() << std::endl;
-	logger::record(logger::Level::Info) << ss.str();
+	LOG(INFO) << ss.str();
 	VP += VarComp.at(i);
 	ss.str("");
 	ss << "Vp\t" << VP;
 	out << ss.str() << std::endl;
 	std::cout << ss.str() << std::endl;
-	logger::record(logger::Level::Info) << ss.str();
+	LOG(INFO) << ss.str();
 	for (i = 0; i < VarComp.size() - 1; i++)
 	{
 		int index = i + 1;
@@ -596,18 +605,18 @@ void MINQUEAnalysis(boost::program_options::variables_map programOptions, DataMa
 		ss << "V(G" << index << ")/Vp\t" << VarComp.at(i) / VP;
 		out << ss.str() << std::endl;
 		std::cout << ss.str() << std::endl;
-		logger::record(logger::Level::Info) << ss.str();
+		LOG(INFO) << ss.str();
 	}
 	ss.str("");
 	ss << "Sum of V(G)/Vp\t" << VG / VP;
 	out << ss.str() << std::endl;
 	std::cout << ss.str() << std::endl;
-	logger::record(logger::Level::Info) << ss.str();
+	LOG(INFO) << ss.str();
 	ss.str("");
 	ss << "Iterate Times:\t" << iterateTimes;
 	out << ss.str() << std::endl;
 	std::cout << ss.str() << std::endl;
-	logger::record(logger::Level::Info) << ss.str();
+	LOG(INFO) << ss.str();
 	out.close();
 }
 
@@ -631,7 +640,7 @@ void BatchMINQUE(MinqueOptions &minque, std::vector<Eigen::MatrixXd>& Kernels, P
 	{
 		clock_t t1 = clock();
 		printf("Starting CPU-based analysis on thread %d\n", i);
-		logger::record(logger::Level::Info) << "Starting CPU-based analysis on thread " << i;
+		LOG(INFO) << "Starting CPU-based analysis on thread " << i;
 		imnq varest;
 		varest.isEcho(isecho);
 		varest.setThreadId(i);
@@ -653,14 +662,14 @@ void BatchMINQUE(MinqueOptions &minque, std::vector<Eigen::MatrixXd>& Kernels, P
 			time[i] = varest.getIterateTimes();
 			double elapse = (clock() - t1) * 1.0 / CLOCKS_PER_SEC * 1000;
 			printf("The thread %d is finished, elapse time %.3f ms\n", i, elapse);
-			logger::record(logger::Level::Info) << "The thread " << i << " is finished, elapse time " << elapse << " ms";
+			LOG(INFO) << "The thread " << i << " is finished, elapse time " << elapse << " ms";
 		}
 		catch (const std::exception& err)
 		{
 			stringstream ss;
 			ss << YELLOW << "[Warning]:" << WHITE << "The thread " << i << " is interrupt, because " << err.what();
 			printf("%s\n", ss.str().c_str());
-			logger::record(logger::Level::Warning) << ss.str();
+			LOG(WARNING)<< ss.str();
 			varsBatch[i].resize(nkernel + 1);
 			varsBatch[i][0] = -999;
 		}
@@ -674,7 +683,7 @@ void BatchMINQUE(MinqueOptions &minque, std::vector<Eigen::MatrixXd>& Kernels, P
 		{
 			ss <<  varsBatch[i][j] << "\t";
 		}
-		logger::record(logger::Level::Info) << ss.str();
+		LOG(INFO) << ss.str();
 	}
 	auto it = varsBatch.begin();
 	while (it != varsBatch.end())
