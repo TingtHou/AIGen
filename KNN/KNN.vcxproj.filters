@@ -31,9 +31,6 @@
     <ClCompile Include="src\LinearRegression.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="src\logger.cpp">
-      <Filter>Source</Filter>
-    </ClCompile>
     <ClCompile Include="src\MinqueBase.cpp">
       <Filter>Source</Filter>
     </ClCompile>
@@ -50,6 +47,9 @@
       <Filter>Source</Filter>
     </ClCompile>
     <ClCompile Include="src\ToolKit.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="src\easylogging++.cc">
       <Filter>Source</Filter>
     </ClCompile>
   </ItemGroup>
@@ -89,16 +89,10 @@
     <ClInclude Include="include\LinearRegression.h">
       <Filter>Header</Filter>
     </ClInclude>
-    <ClInclude Include="include\logger.h">
-      <Filter>Header</Filter>
-    </ClInclude>
     <ClInclude Include="include\MinqueBase.h">
       <Filter>Header</Filter>
     </ClInclude>
     <ClInclude Include="include\Options.h">
-      <Filter>Header</Filter>
-    </ClInclude>
-    <ClInclude Include="include\pch.h">
       <Filter>Header</Filter>
     </ClInclude>
     <ClInclude Include="include\PlinkReader.h">
@@ -111,6 +105,9 @@
       <Filter>Header</Filter>
     </ClInclude>
     <ClInclude Include="include\ToolKit.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="include\easylogging++.h">
       <Filter>Header</Filter>
     </ClInclude>
   </ItemGroup>

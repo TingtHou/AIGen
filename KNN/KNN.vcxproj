@@ -120,7 +120,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
@@ -132,7 +132,7 @@
       <LanguageStandard>Default</LanguageStandard>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <OpenMPSupport>true</OpenMPSupport>
-      <AdditionalOptions>/Zc:twoPhase- %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/Zc:twoPhase-  -DELPP_NO_DEFAULT_LOG_FILE -DELPP_THREAD_SAFE %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -177,7 +177,7 @@
       <SupportJustMyCode>true</SupportJustMyCode>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <OpenMPSupport>true</OpenMPSupport>
-      <AdditionalOptions>/Zc:twoPhase- %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/Zc:twoPhase-  -DELPP_NO_DEFAULT_LOG_FILE -DELPP_THREAD_SAFE %(AdditionalOptions)</AdditionalOptions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OpenMP>GenerateParallelCode</OpenMP>
     </ClCompile>
@@ -194,12 +194,12 @@
     <ClCompile Include="src\Batch.cpp" />
     <ClCompile Include="src\CommonFunc.cpp" />
     <ClCompile Include="src\DataManager.cpp" />
+    <ClCompile Include="src\easylogging++.cc" />
     <ClCompile Include="src\imnq.cpp" />
     <ClCompile Include="src\KernelExpansion.cpp" />
     <ClCompile Include="src\KernelGenerator.cpp" />
     <ClCompile Include="src\KernelManage.cpp" />
     <ClCompile Include="src\LinearRegression.cpp" />
-    <ClCompile Include="src\logger.cpp" />
     <ClCompile Include="src\MinqueBase.cpp" />
     <ClCompile Include="src\Options.cpp" />
     <ClCompile Include="src\PlinkReader.cpp" />
@@ -217,15 +217,14 @@
     <ClInclude Include="include\Batch.h" />
     <ClInclude Include="include\CommonFunc.h" />
     <ClInclude Include="include\DataManager.h" />
+    <ClInclude Include="include\easylogging++.h" />
     <ClInclude Include="include\imnq.h" />
     <ClInclude Include="include\KernelExpansion.h" />
     <ClInclude Include="include\KernelGenerator.h" />
     <ClInclude Include="include\KernelManage.h" />
     <ClInclude Include="include\LinearRegression.h" />
-    <ClInclude Include="include\logger.h" />
     <ClInclude Include="include\MinqueBase.h" />
     <ClInclude Include="include\Options.h" />
-    <ClInclude Include="include\pch.h" />
     <ClInclude Include="include\PlinkReader.h" />
     <ClInclude Include="include\Random.h" />
     <ClInclude Include="include\rln_mnq.h" />
