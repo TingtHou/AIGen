@@ -4,7 +4,7 @@
 #include <algorithm>
 #include <random>
 #include <iomanip>
-#include "../include/CommonFunc.h"
+#include "CommonFunc.h"
 class Batch
 {
 public:

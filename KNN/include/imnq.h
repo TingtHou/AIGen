@@ -1,13 +1,13 @@
 #pragma once
 #define EIGEN_USE_MKL_ALL
-#include "../include/MinqueBase.h"
-#include "../include/CommonFunc.h"
-#include "../include/LinearRegression.h"
-#include "../include/rln_mnq.h"
+#include "MinqueBase.h"
+#include "CommonFunc.h"
+#include "LinearRegression.h"
+#include "rln_mnq.h"
 #include <sstream>
 #include <iomanip>
 #include <thread>
-#include "../include/logger.h"
+#include "easylogging++.h"
 
 class imnq :
 	public MinqueBase

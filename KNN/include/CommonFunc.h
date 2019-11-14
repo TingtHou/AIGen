@@ -4,7 +4,7 @@
 #include <string>
 #include <boost/bimap.hpp>
 #include <Eigen/Dense>
-#include "../include/ToolKit.h"
+#include "ToolKit.h"
 #include <boost/algorithm/string.hpp>
 
 

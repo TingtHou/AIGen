@@ -3,7 +3,7 @@
 #include <vector>
 #include <iostream>
 #include <algorithm>
-#include "../include/CommonFunc.h"
+#include "CommonFunc.h"
 class KernelExpansion
 {
 public:

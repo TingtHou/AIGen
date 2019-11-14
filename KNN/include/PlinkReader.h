@@ -8,13 +8,13 @@
 #include <set>
 #include <string>
 #include <Eigen/Dense>
-#include "../include/ToolKit.h"
+#include "ToolKit.h"
 #include <boost/algorithm/string.hpp>
 #include <boost/exception/all.hpp>
 #include <exception>
 #include <vector>
-#include "../include/CommonFunc.h"
-#include "../include/Random.h"
+#include "CommonFunc.h"
+#include "Random.h"
 #include <iomanip>
 class PlinkReader
 {
@@ -37,7 +37,7 @@ private:
 	static const int HOMOZYGOTE_SECOND = 3;
 	static const int HETEROZYGOTE = 2;
 	static const int MISSING = 1;
-	static const int MISSINGcode = -9;
+	const int MISSINGcode = -9;
 	bool isImpute;
 private:
 	std::string bimfile;
