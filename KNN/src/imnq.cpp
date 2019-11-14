@@ -74,7 +74,7 @@ void imnq::Iterate()
 	rln_mnq *mnq=nullptr;
 //	printf("Starting Iterate MINQUE Algorithm.\n");
 //	logfile->write("Starting Iterate MINQUE Algorithm",true);
-	logger::record(logger::Level::Info) << "Starting Iterate MINQUE Algorithm at thread "<<ThreadId;
+	LOG(INFO) << "Starting Iterate MINQUE Algorithm at thread "<<ThreadId;
 	while (initIterate <itr)
 	{
 	//	clock_t t1 = clock();
@@ -102,7 +102,7 @@ void imnq::Iterate()
 		{
 			printf("%s\n", ss.str().c_str());
 		}
-		logger::record(logger::Level::Info) << ss.str();
+		LOG(INFO) << ss.str();
 // 		logfile->write(ss.str(),true);
 		vc0 = vc1;
 		initIterate++;

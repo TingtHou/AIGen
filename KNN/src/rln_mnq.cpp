@@ -172,7 +172,7 @@ void rln_mnq::CheckInverseStatus(int status)
 				<< "\tCalculating inverse matrix is failed, using pseudo inverse matrix instead\n";
 			printf("%s", ss.str().c_str());
 			//			logfile->write("Calculating inverse matrix is failed, using pseudo inverse matrix instead", false);
-			logger::record(logger::Level::Warning) << "Thread ID: " << ThreadId << "\tCalculating inverse matrix is failed, using pseudo inverse matrix instead";
+			LOG(WARNING)<< "Thread ID: " << ThreadId << "\tCalculating inverse matrix is failed, using pseudo inverse matrix instead";
 		}
 		else
 		{
