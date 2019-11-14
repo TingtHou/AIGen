@@ -160,10 +160,8 @@ void DataManager::match(PhenoData &phenotype, KernelData &kernel)
 // 	{
 // 		throw ("Error: the number of individuals in phenotype file cannot match the kernel file.\n");
 // 	}
-	if (phenotype.fid_iid.size()==kernel.fid_iid.size() 
-		&& std::equal(phenotype.fid_iid.begin(), 
-						phenotype.fid_iid.end(),
-						kernel.fid_iid.begin()))
+	
+	if (phenotype.fid_iid.size() == kernel.fid_iid.size())
 	{
 		return;
 	}
