@@ -2,24 +2,22 @@
 
 
 #include <iostream>
-#include "include/ToolKit.h"
+#include <mkl.h>
+#include <map>
+#include <sstream>
+#include <fstream>
+#include <iomanip>
+#include <ctime>
 #include <string>
 #include <fstream>
 #include <Eigen/Dense>
 #include <time.h>
 #include <iomanip>
 #include <random>
-#include "include/LinearRegression.h"
-#include "include/Random.h"
-#include "include/PlinkReader.h"
 #include <vector>
 #include <stdio.h>
-#include "include/Options.h"
 #include <iostream>
-#include "include/CommonFunc.h"
-#include "include/KernelManage.h"
-#include "include/DataManager.h"
-#include "include/imnq.h"
+#include <boost/date_time.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/xml_oarchive.hpp>
@@ -27,137 +25,27 @@
 #include <boost/serialization/binary_object.hpp>
 #include <boost/serialization/serialization.hpp>
 #include <boost/serialization/nvp.hpp>
-#include <boost/date_time.hpp>
-#include <sstream>
-#include <fstream>
-#include <iomanip>
-#include <ctime>
-#include <map>
 #include <boost/serialization/map.hpp>
 #include <boost/serialization/split_member.hpp>
 #include "include/KernelGenerator.h"
 #include "include/KernelExpansion.h"
 #include "include/Batch.h"
-#include <mkl.h>
 #include "include/easylogging++.h"
+#include "include/ToolKit.h"
+#include "include/LinearRegression.h"
+#include "include/Random.h"
+#include "include/PlinkReader.h"
+#include "include/Options.h"
+#include "include/CommonFunc.h"
+#include "include/KernelManage.h"
+#include "include/DataManager.h"
+#include "include/imnq.h"
+
 
 INITIALIZE_EASYLOGGINGPP
 
+void readAlgrithomParameter(boost::program_options::variables_map programOptions, MinqueOptions& minque);
 
-
-void readAlgrithomParameter(boost::program_options::variables_map programOptions, MinqueOptions &minque)
-{
-	if (programOptions.count("iterate"))
-	{
-		minque.iterate = programOptions["iterate"].as<int>();
-	}
-	if (programOptions.count("tolerance"))
-	{
-		minque.tolerance = programOptions["tolerance"].as<double>();
-	}
-	if (programOptions.count("pseudo"))
-	{
-		minque.allowPseudoInverse = programOptions["pseudo"].as<bool>();
-	}
-	if (programOptions.count("inverse"))
-	{
-		std::string Decomposition = programOptions["inverse"].as < std::string >();
-		boost::to_lower(Decomposition);
-		if (isNum(Decomposition))
-		{
-			int number;
-			std::istringstream iss(Decomposition);
-			iss >> number;
-			switch (number)
-			{
-			case 0:
-				minque.MatrixDecomposition = 0;
-				break;
-			case 1:
-				minque.MatrixDecomposition = 1;
-				break;
-			case 2:
-				minque.MatrixDecomposition = 2;
-				break;
-			case 3:
-				minque.MatrixDecomposition = 3;
-				break;
-			default:
-			{
-				logic_error emsg("The parameter inverse is not correct, please check it. More detail --help");
-				throw std::exception(emsg);
-				break;
-			}		
-			}
-		}
-		else
-		{
-			if (Decomposition == "cholesky")
-			{
-				minque.MatrixDecomposition = 0;
-			}
-			else if (Decomposition == "lu")
-			{
-				minque.MatrixDecomposition = 1;
-			}
-			else if (Decomposition == "qr")
-			{
-				minque.MatrixDecomposition = 2;
-
-			}
-			else if (Decomposition == "svd")
-			{
-				minque.MatrixDecomposition = 3;
-			}
-			else
-			{
-				logic_error emsg("The parameter inverse is not correct, please check it. More detail --help");
-				throw std::exception(emsg);
-			}
-		}
-		
-		
-	}
-	if (programOptions.count("ginverse"))
-	{
-		std::string Decomposition = programOptions["ginverse"].as < std::string >();
-		boost::to_lower(Decomposition);
-		if (isNum(Decomposition))
-		{
-			int number;
-			std::istringstream iss(Decomposition);
-			iss >> number;
-			switch (number)
-			{
-			case 2:
-				minque.altMatrixDecomposition = 2;
-				break;
-			case 3:
-				minque.altMatrixDecomposition = 3;
-				break;
-			default:
-				throw std::exception(logic_error("The parameter ginverse is not correct, please check it. More detail --help"));
-				break;
-			}
-		}
-		else
-		{
-			if (Decomposition == "qr")
-			{
-				minque.altMatrixDecomposition = 2;
-
-			}
-			else if (Decomposition == "svd")
-			{
-				minque.altMatrixDecomposition = 3;
-			}
-			else
-			{
-				throw std::exception(logic_error("The parameter ginverse is not correct, please check it. More detail --help"));
-			}
-		}
-	}
-}
 void ReadData(boost::program_options::variables_map programOptions, DataManager &dm);
 
 void MINQUEAnalysis(boost::program_options::variables_map programOptions, DataManager &dm, std::string &out);
@@ -217,6 +105,12 @@ void TryMain(int argc, const char *const argv[])
 	ReadData(programOptions, dm);
 	std::vector<KernelData> kernelList; 
 		//generate a built-in kernel or not
+	if (programOptions.count("thread"))
+	{
+		int nthread = programOptions["thread"].as<int>();
+		mkl_set_num_threads(nthread);
+		omp_set_num_threads(nthread);
+	}
 	if (programOptions.count("make-kernel"))
 	{
 		int kerneltype=-1;
@@ -556,11 +450,7 @@ void MINQUEAnalysis(boost::program_options::variables_map programOptions, DataMa
 			{
 				isecho = programOptions["echo"].as<bool>();
 			}
-			if (programOptions.count("thread"))
-			{
-				int nthread = programOptions["thread"].as<int>();
-				mkl_set_num_threads(nthread);
-			}
+			
 			MINQUE(minopt, Kernels, phe, VarComp, iterateTimes,isecho);
 		}
 		
@@ -667,7 +557,7 @@ void BatchMINQUE(MinqueOptions &minque, std::vector<Eigen::MatrixXd>& Kernels, P
 		catch (const std::exception& err)
 		{
 			stringstream ss;
-			ss << YELLOW << "[Warning]:" << WHITE << "The thread " << i << " is interrupt, because " << err.what();
+			ss << "[Warning]: The thread " << i << " is interrupt, because " << err.what();
 			printf("%s\n", ss.str().c_str());
 			LOG(WARNING)<< ss.str();
 			varsBatch[i].resize(nkernel + 1);
@@ -732,4 +622,118 @@ void MINQUE(MinqueOptions & minque, std::vector<Eigen::MatrixXd>& Kernels, Pheno
 	variances.resize(varest.getvcs().size());
 	Eigen::VectorXd::Map(&variances[0], varest.getvcs().size()) = varest.getvcs();
 	iterateTimes = varest.getIterateTimes();
+}
+
+void readAlgrithomParameter(boost::program_options::variables_map programOptions, MinqueOptions& minque)
+{
+	if (programOptions.count("iterate"))
+	{
+		minque.iterate = programOptions["iterate"].as<int>();
+	}
+	if (programOptions.count("tolerance"))
+	{
+		minque.tolerance = programOptions["tolerance"].as<double>();
+	}
+	if (programOptions.count("pseudo"))
+	{
+		minque.allowPseudoInverse = programOptions["pseudo"].as<bool>();
+	}
+	if (programOptions.count("inverse"))
+	{
+		std::string Decomposition = programOptions["inverse"].as < std::string >();
+		boost::to_lower(Decomposition);
+		if (isNum(Decomposition))
+		{
+			int number;
+			std::istringstream iss(Decomposition);
+			iss >> number;
+			switch (number)
+			{
+			case 0:
+				minque.MatrixDecomposition = 0;
+				break;
+			case 1:
+				minque.MatrixDecomposition = 1;
+				break;
+			case 2:
+				minque.MatrixDecomposition = 2;
+				break;
+			case 3:
+				minque.MatrixDecomposition = 3;
+				break;
+			default:
+			{
+				logic_error emsg("The parameter inverse is not correct, please check it. More detail --help");
+				throw std::exception(emsg);
+				break;
+			}
+			}
+		}
+		else
+		{
+			if (Decomposition == "cholesky")
+			{
+				minque.MatrixDecomposition = 0;
+			}
+			else if (Decomposition == "lu")
+			{
+				minque.MatrixDecomposition = 1;
+			}
+			else if (Decomposition == "qr")
+			{
+				minque.MatrixDecomposition = 2;
+
+			}
+			else if (Decomposition == "svd")
+			{
+				minque.MatrixDecomposition = 3;
+			}
+			else
+			{
+				logic_error emsg("The parameter inverse is not correct, please check it. More detail --help");
+				throw std::exception(emsg);
+			}
+		}
+
+
+	}
+	if (programOptions.count("ginverse"))
+	{
+		std::string Decomposition = programOptions["ginverse"].as < std::string >();
+		boost::to_lower(Decomposition);
+		if (isNum(Decomposition))
+		{
+			int number;
+			std::istringstream iss(Decomposition);
+			iss >> number;
+			switch (number)
+			{
+			case 2:
+				minque.altMatrixDecomposition = 2;
+				break;
+			case 3:
+				minque.altMatrixDecomposition = 3;
+				break;
+			default:
+				throw std::exception(logic_error("The parameter ginverse is not correct, please check it. More detail --help"));
+				break;
+			}
+		}
+		else
+		{
+			if (Decomposition == "qr")
+			{
+				minque.altMatrixDecomposition = 2;
+
+			}
+			else if (Decomposition == "svd")
+			{
+				minque.altMatrixDecomposition = 3;
+			}
+			else
+			{
+				throw std::exception(logic_error("The parameter ginverse is not correct, please check it. More detail --help"));
+			}
+		}
+	}
 }

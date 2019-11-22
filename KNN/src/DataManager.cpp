@@ -77,7 +77,7 @@ void DataManager::readGeno(std::vector<std::string> filelist, bool isImpute)
 		break;
 	default:
 		std::stringstream ss;
-		ss <<RED <<"[Error]: "<<WHITE<< "Cannot open genotype files, ";
+		ss  <<"[Error]: Cannot open genotype files, ";
 		for (int i=0; i<filelist.size();i++)
 		{
 			ss << "[" << filelist[i] << "], ";

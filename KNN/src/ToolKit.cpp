@@ -129,19 +129,20 @@ bool ToolKit::comput_inverse_logdet_LDLT_mkl(Eigen::MatrixXd &Vi)
 
 	int n = Vi.cols();
 	double* Vi_mkl = Vi.data();
-//	mkl_domatcopy('c', 'n', n, n, 1.0, vi, n, Vi_mkl, n);
 	// MKL's Cholesky decomposition
 	int info = 0, int_n = (int)n;
 	char uplo = 'L';
 	info=LAPACKE_dpotrf(LAPACK_COL_MAJOR,uplo, int_n, Vi_mkl, int_n);
-	if (info < 0) throw ("Error: Cholesky decomposition failed. Invalid values found in the matrix.\n");
-	else if (info > 0) return false;
+	if (info != 0) return false;
 	else {
 		// Calcualte V inverse
 		info=LAPACKE_dpotri(LAPACK_COL_MAJOR, uplo, int_n, Vi_mkl, int_n);
-		if (info < 0) throw ("Error: invalid values found in the varaince-covaraince (V) matrix.\n");
-		else if (info > 0) return false;
-		else {
+		if (info != 0)
+		{
+			return false;
+		}
+		else 
+		{
 			#pragma omp parallel for
 			for (int i = 0; i < n; i++) //row
 			{
@@ -150,9 +151,6 @@ bool ToolKit::comput_inverse_logdet_LDLT_mkl(Eigen::MatrixXd &Vi)
 			}
 		}
 	}
-	// free memory
-//	MKL_free(Vi_mkl);
-
 	return true;
 
 }
@@ -177,18 +175,16 @@ bool ToolKit::comput_inverse_logdet_LU_mkl(Eigen::MatrixXd &Vi)
 	int LWORK = N * N;
 	int INFO=0;
 	INFO =LAPACKE_dgetrf(LAPACK_COL_MAJOR, N, N, Vi_mkl, N, IPIV);
-	if (INFO < 0) throw ("Error: LU decomposition failed. Invalid values found in the matrix.\n");
-	else if (INFO > 0) {
-		delete[] Vi_mkl;
+	if (INFO!=0) {
+		delete[] IPIV;
 		return false;
 	}
 	else {
 		// Calcualte V inverse
 		INFO=LAPACKE_dgetri(LAPACK_COL_MAJOR , N, Vi_mkl, N, IPIV);
-		if (INFO < 0) throw ("Error: invalid values found in the varaince-covaraince (V) matrix.\n");
-		else if (INFO > 0) return false;
+		if (INFO != 0)
+			return false;
 	}
-
 	// free memory
 	delete[] IPIV;
 	return true;
@@ -206,7 +202,11 @@ bool ToolKit::comput_inverse_logdet_QR_mkl(Eigen::MatrixXd& Vi)
 	double* pr_Qt = Qt.data();
 	double* tau = new double[n + 1];
 	int INFO = LAPACKE_dgeqrf(LAPACK_COL_MAJOR, n, n, Vi_mkl, n, tau);
-	if (INFO != 0) throw ("Error: QR decomposition failed. Invalid values found in the matrix.\n");
+	if (INFO != 0)
+	{
+		delete[] tau;
+		throw ("Error: QR decomposition failed. Invalid values found in the matrix.\n");
+	}
 	cblas_dtrsm(CblasColMajor, CblasLeft, CblasUpper, CblasNoTrans, CblasNonUnit, n, n, 1, Vi_mkl, n, pr_Rinv, n);
 	LAPACKE_dormqr(LAPACK_COL_MAJOR, 'L', 'T', n, n, n, Vi_mkl, n, tau, pr_Qt, n);
 	cblas_dgemm(CblasColMajor, CblasNoTrans, CblasNoTrans, n, n, n,1, pr_Rinv, n, pr_Qt, n, 0, Vi_mkl,n);
@@ -232,7 +232,20 @@ bool ToolKit::comput_inverse_logdet_SVD_mkl(Eigen::MatrixXd& Vi)
 	lwork = (MKL_INT)wkopt;
 	work = (double*)malloc(lwork * sizeof(double));
 	dgesvd(&jobu, &jobvt, &n, &n, Vi_mkl, &n, s, u, &n, vt, &n, work, &lwork, &info);
-	if (info > 0) throw ("The algorithm computing SVD failed to converge.\n");
+	if (info > 0)
+	{
+		free(s);
+		free(u);
+		free(vt);
+		throw ("The algorithm computing SVD failed to converge.\n");
+	}
+	if (info < 0)
+	{
+		free(s);
+		free(u);
+		free(vt);
+		throw ("Error: SVD decomposition failed. Invalid values found in the matrix.\n");
+	}
 	//u=(s^-1)*U
 	MKL_INT incx = 1;
 	#pragma omp parallel for

@@ -77,7 +77,7 @@ void imnq::Iterate()
 	LOG(INFO) << "Starting Iterate MINQUE Algorithm at thread "<<ThreadId;
 	while (initIterate <itr)
 	{
-	//	clock_t t1 = clock();
+//		clock_t t1 = clock();
 		mnq = new rln_mnq(Decomposition,altDecomposition,allowpseudoinverse);
 		mnq->importY(Y);
 		for (int i=0;i<nVi;i++)
@@ -89,11 +89,12 @@ void imnq::Iterate()
 			mnq->puskback_X(X,false);
 		}
 		mnq->pushback_W(vc0);
-//		mnq->setLogfile(logfile);
 		mnq->setThreadId(ThreadId);
+	//	std::cout << "prepare: " << (clock() - t1) * 1.0 / CLOCKS_PER_SEC * 1000 << " ms" << std::endl;
+	//	t1 = clock();
 		mnq->estimate();
+	//	std::cout << "estimate: " << (clock() - t1) * 1.0 / CLOCKS_PER_SEC * 1000 << " ms" << std::endl;
 		vc1=mnq->getvcs();
-	//	diff = (vc1 - vc0).cwiseAbs().maxCoeff();
 	    diff = (vc1 - vc0).squaredNorm() / vc0.squaredNorm();
 		std::stringstream ss;
 		ss << std::fixed << "Thread ID: " << ThreadId << std::setprecision(3) << "\tIt: " << initIterate << "\t" << vc1.transpose() << "\tdiff: ";
@@ -103,7 +104,6 @@ void imnq::Iterate()
 			printf("%s\n", ss.str().c_str());
 		}
 		LOG(INFO) << ss.str();
-// 		logfile->write(ss.str(),true);
 		vc0 = vc1;
 		initIterate++;
 		if (diff<tol)
@@ -111,8 +111,7 @@ void imnq::Iterate()
 
 			break;
 		}
-	
-	//	std::cout << "Iterate Time : " << (clock() - t1) * 1.0 / CLOCKS_PER_SEC * 1000 << " ms" << std::endl;
+
 	}
 	vcs = mnq->getvcs();
 	fix = mnq->getfix();

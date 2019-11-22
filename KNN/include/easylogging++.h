@@ -25,7 +25,7 @@
 #endif  // __cplusplus >= 201103L
 #if (defined(__GNUC__))
 #  define ELPP_COMPILER_GCC 1
-#else
+#elsecd 
 #  define ELPP_COMPILER_GCC 0
 #endif
 #if ELPP_COMPILER_GCC
