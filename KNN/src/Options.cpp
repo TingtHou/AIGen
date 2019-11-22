@@ -33,7 +33,7 @@ std::string Options::print()
 			buffer << *v;
 		else if (auto v = boost::any_cast<bool>(&value))
 			buffer << *v;
-		else if (auto v = boost::any_cast<double>(&value))
+		else if (auto v = boost::any_cast<float>(&value))
 			buffer << *v;
 		buffer << std::endl;
 	}
@@ -77,7 +77,7 @@ void Options::boostProgramOptionsRoutine(int argc, const char * const argv[])
 		("recode", po::value<std::string>()->value_name("[filename]"),
 				"Recode the binary kernel file to text format.\n")
 		("precision", po::value<int>()->value_name("precision"),
-				"Set precision for output kernel file (binary format); 0 for double, 1 for float.\n")
+				"Set precision for output kernel file (binary format); 0 for float, 1 for float.\n")
 		("make-bin", po::value<std::string>()->value_name("{prefix}"),
 				"Generate .grm.bin + .grm.N.bin + .grm.id (GCTA triangular binary relationship matrix).\n");
 	po::options_description optsKernelGenr("Kernel Parameters");
@@ -87,14 +87,14 @@ void Options::boostProgramOptionsRoutine(int argc, const char * const argv[])
 		("std", "Standardize SNP data.\n")
 		("weight", po::value<std::string>()->value_name("[filename]"), "Specify full name of weight vector file.\n")
 		("scale", po::value<bool>()->value_name("True/False"), "The weight value will be scaled.\n")
-		("constant", po::value<double>()->value_name("value"), "The constant value used for polynomial kernel calculating.\n")
-		("deg", po::value<double>()->value_name("value"), "The degree value used for polynomial kernel calculating.\n")
-		("sigma", po::value<double>()->value_name("value"), "The standard deviation used for Gaussian kernel.\n");
+		("constant", po::value<float>()->value_name("value"), "The constant value used for polynomial kernel calculating.\n")
+		("deg", po::value<float>()->value_name("value"), "The degree value used for polynomial kernel calculating.\n")
+		("sigma", po::value<float>()->value_name("value"), "The standard deviation used for Gaussian kernel.\n");
 	po::options_description optsAlgorithm("Algorithm Parameters");
 	optsAlgorithm.add_options()
 		("skip", "Skip estimation process.\n")
 		("iterate", po::value<int>()->value_name("times"), "The iterate times used in iterate minque method.\nDefault to 100.\n")
-		("tolerance", po::value<double>()->value_name("value"), "The threshold value used in iterate minque method.\nDefault to 1e-6.\n")
+		("tolerance", po::value<float>()->value_name("value"), "The threshold value used in iterate minque method.\nDefault to 1e-6.\n")
 		("inverse", po::value<std::string>()->value_name("mode"), "The matrix decomposition.\n"
 			"mode 0: Cholesky decomposition; mode 1: LU decomposition; mode 2: QR decomposition; mode 3: SVD decomposition.\n")
 		("pseudo", po::value<bool>()->value_name("true/fasle"), "The pseudo will be used if the matrix is not invertible.\n"

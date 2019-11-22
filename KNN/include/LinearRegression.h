@@ -6,36 +6,36 @@ class LinearRegression
 {
 public:
 	~LinearRegression();
-//	LinearRegression(double ** y, double ** x, bool intercept, int yrows, int xrows, int xcols);
-//	LinearRegression(double * y, double ** x, bool intercept, int yrows, int xrows, int xcols);
-	LinearRegression(Eigen::VectorXd &Y, Eigen::MatrixXd &X, bool intercept);
-	Eigen::VectorXd GetB();
+//	LinearRegression(float ** y, float ** x, bool intercept, int yrows, int xrows, int xcols);
+//	LinearRegression(float * y, float ** x, bool intercept, int yrows, int xrows, int xcols);
+	LinearRegression(Eigen::VectorXf &Y, Eigen::MatrixXf &X, bool intercept);
+	Eigen::VectorXf GetB();
 	void MLE();
-	double GetMSE();
+	float GetMSE();
 private:
- 	Eigen::VectorXd Matrix_Y;
-// 	Eigen::VectorXd P;
- 	Eigen::MatrixXd X;
-	Eigen::MatrixXd Matrix_X;
-// 	Eigen::MatrixXd Fisher;
-// 	Eigen::VectorXd T_statistic;
- 	Eigen::VectorXd B;
- 	Eigen::VectorXd fitted;
- 	Eigen::VectorXd res;
-// 	double *Y;
-// 	double **X;
-//	double **Fisher;
-	//double *B;
+ 	Eigen::VectorXf Matrix_Y;
+// 	Eigen::VectorXf P;
+ 	Eigen::MatrixXf X;
+	Eigen::MatrixXf Matrix_X;
+// 	Eigen::MatrixXf Fisher;
+// 	Eigen::VectorXf T_statistic;
+ 	Eigen::VectorXf B;
+ 	Eigen::VectorXf fitted;
+ 	Eigen::VectorXf res;
+// 	float *Y;
+// 	float **X;
+//	float **Fisher;
+	//float *B;
 	bool intercept;
-// 	double *fitted;
-// 	double *res;
+// 	float *fitted;
+// 	float *res;
 	int ynrow = 0;
 	int yncol = 0;
 	int xnrow = 0;
 	int xncol = 0;
-	double mse=0;
-//	void initial(double **x, bool intercept);
+	float mse=0;
+//	void initial(float **x, bool intercept);
 
-	void initial(Eigen::MatrixXd &x);
+	void initial(Eigen::MatrixXf &x);
 	
 };

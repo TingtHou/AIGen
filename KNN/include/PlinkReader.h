@@ -65,8 +65,8 @@ private:
 	std::vector<std::string> major_allele;					//corresponding to set bits in .bed; usually major
 	std::multimap<int, std::string> chr_marker; //pair<int,std::string>(chr[i],marker_name[i])
 	std::map<std::string, int> marker_index;            //pair<std::string, int>(marker[i],id)
-	std::vector<double> minor_freq;            //pair<std::string, int>(marker[i],id)
-//	std::vector<double> major_freq;
+	std::vector<float> minor_freq;            //pair<std::string, int>(marker[i],id)
+//	std::vector<float> major_freq;
 	int nmarker = 0;
 	std::vector<bool> MissinginSNP;
 	////////////////////////Marker Data//////////////////////////////////////////

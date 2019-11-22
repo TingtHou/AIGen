@@ -1,7 +1,7 @@
 #include "../include/KernelExpansion.h"
 
 
-KernelExpansion::KernelExpansion(std::vector<Eigen::MatrixXd> &MatrixHList, int dimension)
+KernelExpansion::KernelExpansion(std::vector<Eigen::MatrixXf> &MatrixHList, int dimension)
 {
 	this->OriKernelList = MatrixHList;
 	this->dimension = dimension;
@@ -30,15 +30,15 @@ KernelExpansion::~KernelExpansion()
 
 void KernelExpansion::test()
 {
-	double a[] = { 1,2,3,4,5,6,7,8,11,12 };
-	double b[] = { 5,6,7,8,9,0,1,2, 9,10 };
-	Eigen::MatrixXd A = Eigen::Map<Eigen::MatrixXd>(a, 3, 3);
-	Eigen::MatrixXd B= Eigen::Map<Eigen::MatrixXd>(b, 3, 3);
-	std::vector<Eigen::MatrixXd> vlist;
+	float a[] = { 1,2,3,4,5,6,7,8,11,12 };
+	float b[] = { 5,6,7,8,9,0,1,2, 9,10 };
+	Eigen::MatrixXf A = Eigen::Map<Eigen::MatrixXf>(a, 3, 3);
+	Eigen::MatrixXf B= Eigen::Map<Eigen::MatrixXf>(b, 3, 3);
+	std::vector<Eigen::MatrixXf> vlist;
 	vlist.push_back(A);
 	vlist.push_back(B);
 	KernelExpansion elist(vlist, 3);
-	std::vector<Eigen::MatrixXd> ex = elist.GetExtendMatrix();
+	std::vector<Eigen::MatrixXf> ex = elist.GetExtendMatrix();
 	std::cout << "Matrix a:\n" <<A << std::endl;
 	std::cout << "\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\" << std::endl;
 	std::cout << "Matrix b:\n" << B << std::endl;
@@ -101,7 +101,7 @@ void KernelExpansion::GetUniqueIndex(std::vector<std::vector<int>>& Comb, std::v
 		}
 	}
 }
-void KernelExpansion::Expanse(int degree,  std::vector<Eigen::MatrixXd> &EMatrix)
+void KernelExpansion::Expanse(int degree,  std::vector<Eigen::MatrixXf> &EMatrix)
 {
 	std::vector<std::vector<int>> ExpansedIndex;
 	for (int i=1;i<=degree;i++)
@@ -116,7 +116,7 @@ void KernelExpansion::Expanse(int degree,  std::vector<Eigen::MatrixXd> &EMatrix
 	}
 	for (int i = 0; i < ExpansedIndex.size(); i++)
 	{
-		Eigen::MatrixXd exMatrix(nrow,ncol);
+		Eigen::MatrixXf exMatrix(nrow,ncol);
 		exMatrix.setOnes();
 		for (int j=0;j<ExpansedIndex[i].size();j++)
 		{

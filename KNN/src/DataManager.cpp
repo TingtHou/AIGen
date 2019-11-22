@@ -93,7 +93,7 @@ void DataManager::readResponse(std::string resopnsefile, PhenoData & phe)
 {
 	std::ifstream infile;
 	
-	std::vector<double> yvector;
+	std::vector<float> yvector;
 	yvector.clear();
 	//	std::cout << "Reading Phenotype from " << resopnsefile << std::endl;
 	infile.open(resopnsefile);
@@ -118,12 +118,12 @@ void DataManager::readResponse(std::string resopnsefile, PhenoData & phe)
 		std::vector<std::string> strVec;
 		boost::algorithm::split(strVec, str, boost::algorithm::is_any_of(" \t"));
 		phe.fid_iid.insert({ id++,strVec[0] + "_" + strVec[1] });
-		yvector.push_back(stod(strVec[2]));
+		yvector.push_back(stof(strVec[2]));
 	}
 	infile.close();
 	int nind = yvector.size();
 	std::cout << nind << " Total" << std::endl;
-	phe.Phenotype = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(yvector.data(), yvector.size());
+	phe.Phenotype = Eigen::Map<Eigen::VectorXf, Eigen::Unaligned>(yvector.data(), yvector.size());
 	//	std::cout << "Reading Phenotype Elapse Time : " << (clock() - t1) * 1.0 / CLOCKS_PER_SEC * 1000 << " ms" << std::endl;
 }
 

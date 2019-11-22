@@ -7,13 +7,13 @@ class Random
 {
 public:
 	Random();
-	Random(double seed);
+	Random(float seed);
 	boost::mt19937 *engine;
 	~Random();
 public:
-	double Uniform();
-	double Uniform(double min, double max);
-	double Normal();
-	double Normal(double mean, double sd);
+	float Uniform();
+	float Uniform(float min, float max);
+	float Normal();
+	float Normal(float mean, float sd);
 };
 

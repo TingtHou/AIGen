@@ -1,7 +1,7 @@
 #include "../include/Batch.h"
 
 
-Batch::Batch(std::vector<Eigen::MatrixXd>& kernels, Eigen::VectorXd &phe, int splitnum, int seed, bool isclear)
+Batch::Batch(std::vector<Eigen::MatrixXf>& kernels, Eigen::VectorXf &phe, int splitnum, int seed, bool isclear)
 {
 	this->kernels = kernels;
 	this->splitnum = splitnum;
@@ -21,12 +21,12 @@ void Batch::start()
 	}
 }
 
-void Batch::GetBatchKernels(std::vector<std::vector<Eigen::MatrixXd>>& BatchedKernel)
+void Batch::GetBatchKernels(std::vector<std::vector<Eigen::MatrixXf>>& BatchedKernel)
 {
 	BatchedKernel = KernelBatched;
 }
 
-void Batch::GetBatchPhe(std::vector<Eigen::VectorXd>& phe)
+void Batch::GetBatchPhe(std::vector<Eigen::VectorXf>& phe)
 {
 	phe = pheBatched;
 }
@@ -75,15 +75,15 @@ void Batch::shuffle()
 //	#pragma omp parallel for
 	for (int i=0;i< IDinEach.size();i++)
 	{
-		std::vector<Eigen::MatrixXd> KerneleachBatch;
+		std::vector<Eigen::MatrixXf> KerneleachBatch;
 		for (int j=0;j<nkernels;j++)
 		{
-			Eigen::MatrixXd subMatrx(IDinEach[i].size(), IDinEach[i].size());
+			Eigen::MatrixXf subMatrx(IDinEach[i].size(), IDinEach[i].size());
 			GetSubMatrix(kernels[j], subMatrx, IDinEach[i], IDinEach[i]);
 			KerneleachBatch.push_back(subMatrx);
 			
 		}
-		Eigen::VectorXd subVector(IDinEach[i].size());
+		Eigen::VectorXf subVector(IDinEach[i].size());
 		GetSubVector(phe, subVector, IDinEach[i]);
 		pheBatched[i]=(subVector);
 		KernelBatched[i]=(KerneleachBatch);

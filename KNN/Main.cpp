@@ -50,9 +50,9 @@ void ReadData(boost::program_options::variables_map programOptions, DataManager 
 
 void MINQUEAnalysis(boost::program_options::variables_map programOptions, DataManager &dm, std::string &out);
 
-void BatchMINQUE(MinqueOptions &minque, std::vector<Eigen::MatrixXd>& Kernels, PhenoData & phe, std::vector<double>& variances, double & iterateTimes, int nsplit, int seed, int nthread, bool isecho);
+void BatchMINQUE(MinqueOptions &minque, std::vector<Eigen::MatrixXf>& Kernels, PhenoData & phe, std::vector<float>& variances, float & iterateTimes, int nsplit, int seed, int nthread, bool isecho);
 
-void MINQUE(MinqueOptions &minque, std::vector<Eigen::MatrixXd> &Kernels, PhenoData &phe, std::vector<double> &variances, double &iterateTimes,bool isecho);
+void MINQUE(MinqueOptions &minque, std::vector<Eigen::MatrixXf> &Kernels, PhenoData &phe, std::vector<float> &variances, float &iterateTimes,bool isecho);
 
 void TryMain(int argc, const char *const argv[])
 {
@@ -147,7 +147,7 @@ void TryMain(int argc, const char *const argv[])
 			LOG(INFO) << "Standardize the genotype matrix";
 			stdSNPmv(gd.Geno);
 		}
-		Eigen::VectorXd weight(gd.Geno.cols());
+		Eigen::VectorXf weight(gd.Geno.cols());
 		weight.setOnes();
 		// read weight vector from specific file. If the file is not settled, the weight will be identity vector.
 		if (programOptions.count("weight"))
@@ -179,16 +179,16 @@ void TryMain(int argc, const char *const argv[])
 				}
 			}
 		}
-		double constant = 1;
-		double deg = 2;
-		double sigmma = 1;
+		float constant = 1;
+		float deg = 2;
+		float sigmma = 1;
 		bool scale = false;
 		if (programOptions.count("constant"))
-			constant=programOptions["constant"].as < double >();
+			constant=programOptions["constant"].as < float >();
 		if (programOptions.count("deg"))
-			deg = programOptions["deg"].as < double >();
+			deg = programOptions["deg"].as < float >();
 		if (programOptions.count("sigma"))
-			sigmma = programOptions["sigma"].as < double >();
+			sigmma = programOptions["sigma"].as < float >();
 		if (programOptions.count("scale"))
 			scale = programOptions["scale"].as < bool >();
 		KernelGenerator kernelGenr(gd, kerneltype, weight,scale, constant, deg, sigmma);
@@ -387,8 +387,8 @@ void MINQUEAnalysis(boost::program_options::variables_map programOptions, DataMa
 	std::vector<KernelData> kd = dm.GetKernel();
 	MinqueOptions minopt;
 	readAlgrithomParameter(programOptions, minopt);
-	std::vector<double> VarComp;
-	double iterateTimes = 0;
+	std::vector<float> VarComp;
+	float iterateTimes = 0;
 	bool isecho;
 	if (GPU)
 	{
@@ -409,7 +409,7 @@ void MINQUEAnalysis(boost::program_options::variables_map programOptions, DataMa
 	}
 	else
 	{
-		std::vector<Eigen::MatrixXd> Kernels;
+		std::vector<Eigen::MatrixXf> Kernels;
 		if (programOptions.count("alphaKNN"))
 		{
 			int alpha = programOptions["alphaKNN"].as<int>();
@@ -462,8 +462,8 @@ void MINQUEAnalysis(boost::program_options::variables_map programOptions, DataMa
 	LOG(INFO) << "Source\tVariance";
 //	std::cout << fixed << setprecision(4) << "Estimated Variances: ";
 	int i = 0;
-	double VG = 0;
-	double VP = 0;
+	float VG = 0;
+	float VP = 0;
 	std::stringstream ss;
 	for (; i < VarComp.size() - 1; i++)
 	{
@@ -510,18 +510,18 @@ void MINQUEAnalysis(boost::program_options::variables_map programOptions, DataMa
 	out.close();
 }
 
-void BatchMINQUE(MinqueOptions &minque, std::vector<Eigen::MatrixXd>& Kernels, PhenoData & phe, std::vector<double>& variances, double & iterateTimes, int nsplit,int seed, int nthread, bool isecho)
+void BatchMINQUE(MinqueOptions &minque, std::vector<Eigen::MatrixXf>& Kernels, PhenoData & phe, std::vector<float>& variances, float & iterateTimes, int nsplit,int seed, int nthread, bool isecho)
 {
     int nkernel = Kernels.size();
 	variances.clear();
 	Batch b = Batch(Kernels, phe.Phenotype, nsplit, seed, true);
 	b.start();
-	std::vector<std::vector<Eigen::MatrixXd>> KernelsBatch;
-	std::vector<Eigen::VectorXd> PheBatch;
+	std::vector<std::vector<Eigen::MatrixXf>> KernelsBatch;
+	std::vector<Eigen::VectorXf> PheBatch;
 	b.GetBatchKernels(KernelsBatch);
 	b.GetBatchPhe(PheBatch);
-	std::vector<double> time(KernelsBatch.size());
-	std::vector<std::vector<double>> varsBatch(KernelsBatch.size());
+	std::vector<float> time(KernelsBatch.size());
+	std::vector<std::vector<float>> varsBatch(KernelsBatch.size());
 	std::cout << "starting CPU MINQUE" << std::endl;
 	clock_t time_total = clock();
 	omp_set_num_threads(nthread);
@@ -537,7 +537,7 @@ void BatchMINQUE(MinqueOptions &minque, std::vector<Eigen::MatrixXd>& Kernels, P
 		varest.setOptions(minque);
 		//		varest.setLogfile(logout);
 		varest.importY(PheBatch[i]);
-		Eigen::MatrixXd e(PheBatch[i].size(), PheBatch[i].size());
+		Eigen::MatrixXf e(PheBatch[i].size(), PheBatch[i].size());
 		e.setIdentity();
 		for (int j = 0; j < KernelsBatch[i].size(); j++)
 		{
@@ -548,9 +548,9 @@ void BatchMINQUE(MinqueOptions &minque, std::vector<Eigen::MatrixXd>& Kernels, P
 		{
 			varest.estimate();
 			varsBatch[i].resize(varest.getvcs().size());
-			Eigen::VectorXd::Map(&varsBatch[i][0], varest.getvcs().size()) = varest.getvcs();
+			Eigen::VectorXf::Map(&varsBatch[i][0], varest.getvcs().size()) = varest.getvcs();
 			time[i] = varest.getIterateTimes();
-			double elapse = (clock() - t1) * 1.0 / CLOCKS_PER_SEC * 1000;
+			float elapse = (clock() - t1) * 1.0 / CLOCKS_PER_SEC * 1000;
 			printf("The thread %d is finished, elapse time %.3f ms\n", i, elapse);
 			LOG(INFO) << "The thread " << i << " is finished, elapse time " << elapse << " ms";
 		}
@@ -578,7 +578,7 @@ void BatchMINQUE(MinqueOptions &minque, std::vector<Eigen::MatrixXd>& Kernels, P
 	auto it = varsBatch.begin();
 	while (it != varsBatch.end())
 	{
-		auto itzero = std::find_if((*it).cbegin(), (*it).cend(), [](double i) {return i < -999; });
+		auto itzero = std::find_if((*it).cbegin(), (*it).cend(), [](float i) {return i < -999; });
 		if (itzero != (*it).end())
 		{
 			it = varsBatch.erase(it);
@@ -590,17 +590,17 @@ void BatchMINQUE(MinqueOptions &minque, std::vector<Eigen::MatrixXd>& Kernels, P
 	}
 	for (int i = 0; i < nkernel + 1; i++)
 	{
-		double sum = 0;
+		float sum = 0;
 		for (int j = 0; j < varsBatch.size(); j++)
 		{
 			sum += varsBatch[j][i];
 		}
-		variances.push_back(sum / double(varsBatch.size()));
+		variances.push_back(sum / float(varsBatch.size()));
 	}
 	iterateTimes = accumulate(time.begin(), time.end(), 0.0) / time.size(); ;
 }
 
-void MINQUE(MinqueOptions & minque, std::vector<Eigen::MatrixXd>& Kernels, PhenoData & phe, std::vector<double>& variances, double & iterateTimes,bool isecho)
+void MINQUE(MinqueOptions & minque, std::vector<Eigen::MatrixXf>& Kernels, PhenoData & phe, std::vector<float>& variances, float & iterateTimes,bool isecho)
 {
 	imnq varest;
 	varest.setOptions(minque);
@@ -611,7 +611,7 @@ void MINQUE(MinqueOptions & minque, std::vector<Eigen::MatrixXd>& Kernels, Pheno
 	{
 		varest.pushback_Vi(Kernels[i]);
 	}
-	Eigen::MatrixXd e(phe.fid_iid.size(), phe.fid_iid.size());
+	Eigen::MatrixXf e(phe.fid_iid.size(), phe.fid_iid.size());
 	e.setIdentity();
 	varest.pushback_Vi(e);
 	std::cout << "starting CPU MINQUE " << std::endl;
@@ -620,7 +620,7 @@ void MINQUE(MinqueOptions & minque, std::vector<Eigen::MatrixXd>& Kernels, Pheno
 	std::cout << " --- Completed" << std::endl;
 	std::cout << "CPU Elapse Time : " << (clock() - t1) * 1.0 / CLOCKS_PER_SEC * 1000 << " ms" << std::endl;
 	variances.resize(varest.getvcs().size());
-	Eigen::VectorXd::Map(&variances[0], varest.getvcs().size()) = varest.getvcs();
+	Eigen::VectorXf::Map(&variances[0], varest.getvcs().size()) = varest.getvcs();
 	iterateTimes = varest.getIterateTimes();
 }
 
@@ -632,7 +632,7 @@ void readAlgrithomParameter(boost::program_options::variables_map programOptions
 	}
 	if (programOptions.count("tolerance"))
 	{
-		minque.tolerance = programOptions["tolerance"].as<double>();
+		minque.tolerance = programOptions["tolerance"].as<float>();
 	}
 	if (programOptions.count("pseudo"))
 	{

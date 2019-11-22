@@ -424,7 +424,7 @@ void PlinkReader::buildMAF()
 		}
 		//calculate the allele 2
 		int minor= 2*std::count(SNPper.begin(), SNPper.end(), 0)+ std::count(SNPper.begin(), SNPper.end(), 1);
-		double freq = double(minor) / (2*double(nind - missnind));
+		float freq = float(minor) / (2*float(nind - missnind));
 		if (freq>0.5)
 		{
 			minor_freq[i] = 1 - freq; 
@@ -454,7 +454,7 @@ void PlinkReader::Impute()
 			#pragma omp parallel for
 			for (int j = 0; j < nind; j++)
 			{
-				if ((Marker[j][i] + 9) <= 1e-10) //if marker[j][i]=-9, avoid double bias
+				if ((Marker[j][i] + 9) <= 1e-10) //if marker[j][i]=-9, avoid float bias
 				{
 					std::string allele1 = major_allele[i];
 					std::string allele2 = major_allele[i];

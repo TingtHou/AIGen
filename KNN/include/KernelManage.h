@@ -47,7 +47,7 @@ private:
 	std::string IDfileName;  //*.grm.id
 	std::string prefix;
 	KernelData Kernels; //store kernel data
-	int precision =1 ;  //0 for double; 1 for float;
+	int precision =1 ;  //0 for float; 1 for float;
 	int nind=0;
 private:
 	void IDfileWriter(std::ofstream &fin, KernelData &kdata);   // read *.grm.id

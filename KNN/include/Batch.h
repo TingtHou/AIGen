@@ -8,16 +8,16 @@
 class Batch
 {
 public:
-	Batch(std::vector<Eigen::MatrixXd> &kernels, Eigen::VectorXd &phe, int splitnum, int seed, bool isclear);
+	Batch(std::vector<Eigen::MatrixXf> &kernels, Eigen::VectorXf &phe, int splitnum, int seed, bool isclear);
 	void start();
-	void GetBatchKernels(std::vector< std::vector<Eigen::MatrixXd>> &BatchedKernel);
-	void GetBatchPhe(std::vector< Eigen::VectorXd>  &phe);
+	void GetBatchKernels(std::vector< std::vector<Eigen::MatrixXf>> &BatchedKernel);
+	void GetBatchPhe(std::vector< Eigen::VectorXf>  &phe);
 	~Batch();
 private:
-	std::vector<Eigen::MatrixXd> kernels;
-	std::vector< std::vector<Eigen::MatrixXd>>  KernelBatched;
-	std::vector< Eigen::VectorXd>  pheBatched;
-	Eigen::VectorXd phe;
+	std::vector<Eigen::MatrixXf> kernels;
+	std::vector< std::vector<Eigen::MatrixXf>>  KernelBatched;
+	std::vector< Eigen::VectorXf>  pheBatched;
+	Eigen::VectorXf phe;
 	int nInd = 0;
 	int splitnum;
 	int nkernels;

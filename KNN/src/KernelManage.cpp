@@ -54,15 +54,15 @@ void KernelReader::BinFileReader(std::ifstream &fin, KernelData & kdata)
 	{
 		throw ("Error: the size of the [" + BinFileName + "] file is incomplete?");
 	}
-	char *f_buf = new char[bytesize];// (char*)malloc(bytesize * sizeof(char));  //set bytesize bits buffer for data, 4bits for float and 8bits for double
+	char *f_buf = new char[bytesize];// (char*)malloc(bytesize * sizeof(char));  //set bytesize bits buffer for data, 4bits for float and 8bits for float
 	for (int i = 0; i < nind; i++)
 	{
 		for (int j = 0; j <= i; j++)
 		{
 			if (!fin.read(f_buf, bytesize)) throw ("Error: the size of the [" + BinFileName + "] file is incomplete?");
-// 			double a= bytesize==4?*(float *)f_buf: *(double *)f_buf; 
+// 			float a= bytesize==4?*(float *)f_buf: *(float *)f_buf; 
 // 			std::cout << a << std::endl;
-			kdata.kernelMatrix(j, i) = kdata.kernelMatrix(i, j) = bytesize == 4 ? *(float *)f_buf : *(double *)f_buf;
+			kdata.kernelMatrix(j, i) = kdata.kernelMatrix(i, j) = bytesize == 4 ? *(float *)f_buf : *(float *)f_buf;
 		}
 	}
 
@@ -81,14 +81,14 @@ void KernelReader::NfileReader(std::ifstream &fin, KernelData & kdata)
 	{
 		throw ("Error: the size of the [" + NfileName + "] file is incomplete?");
 	}
-	char *f_buf = new char[bytesize];//set bytesize bits buffer for data, 4bits for float and 8bits for double
+	char *f_buf = new char[bytesize];//set bytesize bits buffer for data, 4bits for float and 8bits for float
 	//char *f_buf = (char*)malloc(bytesize * sizeof(char));  
 	for (int i = 0; i < nind; i++)
 	{
 		for (int j = 0; j <= i; j++)
 		{
 			if (!fin.read(f_buf, bytesize)) throw ("Error: the size of the [" + NfileName + "] file is incomplete?");
-			kdata.VariantCountMatrix(j, i) = kdata.VariantCountMatrix(i, j) = bytesize == 4 ? *(float *)f_buf : *(double *)f_buf;
+			kdata.VariantCountMatrix(j, i) = kdata.VariantCountMatrix(i, j) = bytesize == 4 ? *(float *)f_buf : *(float *)f_buf;
 		}
 	}
 	delete [] f_buf;
@@ -294,7 +294,7 @@ void KernelWriter::BinFileWriter(std::ofstream & fin, KernelData & kdata)
 			}
 			else
 			{
-				double f_buf = kdata.kernelMatrix(i, j);
+				float f_buf = kdata.kernelMatrix(i, j);
 				fin.write((char *)&f_buf, bytesize);
 			}
 	//		fin.write((char *) &(!precision ? kdata.kernelMatrix(i, j) : (float)kdata.kernelMatrix(i, j), bytesize);
@@ -320,7 +320,7 @@ void KernelWriter::NfileWriter(std::ofstream & fin, KernelData & kdata)
 			}
 			else
 			{
-				double f_buf = kdata.VariantCountMatrix(i, j);
+				float f_buf = kdata.VariantCountMatrix(i, j);
 				fin.write((char *)&f_buf, bytesize);
 			}
 		}

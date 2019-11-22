@@ -4,32 +4,32 @@ LinearRegression::~LinearRegression()
 {
 }
 
-// LinearRegression::LinearRegression(double ** y, double ** x, bool intercept)
+// LinearRegression::LinearRegression(float ** y, float ** x, bool intercept)
 // {
 // 	ynrow = sizeof(y) / sizeof(y[0]);
 // 	yncol = sizeof(y[0]) / sizeof(y[0][0]);
 // 	xnrow = sizeof(x) / sizeof(x[0]);
 // 	xncol = sizeof(x[0]) / sizeof(x[0][0]);
-// 	Y = new double[ynrow];
+// 	Y = new float[ynrow];
 // 	for (int i = 0; i < ynrow; i++) {
 // 		Y[i] = y[i][0];
 // 	}
 // 	initial(x, intercept);
 // }
 
-// LinearRegression::LinearRegression(double * y, double ** x, bool intercept, int yrows,int xrows,int xcols)
+// LinearRegression::LinearRegression(float * y, float ** x, bool intercept, int yrows,int xrows,int xcols)
 // {
 // 	ynrow = yrows;
 // 	xnrow = xrows;
 // 	xncol = xcols;
-// 	Y = new double[ynrow];
+// 	Y = new float[ynrow];
 // 	for (int i = 0; i < ynrow; i++) {
 // 		Y[i] = y[i];
 // 	}
 // 	initial(x, intercept);
 // }
 
-LinearRegression::LinearRegression(Eigen::VectorXd &Y, Eigen::MatrixXd &X, bool intercept)
+LinearRegression::LinearRegression(Eigen::VectorXf &Y, Eigen::MatrixXf &X, bool intercept)
 {
 	Matrix_Y = Y;
 	this->intercept = intercept;
@@ -37,15 +37,15 @@ LinearRegression::LinearRegression(Eigen::VectorXd &Y, Eigen::MatrixXd &X, bool 
 	xnrow = X.rows();
 	xncol = X.cols();
 	initial(X);
-// 	this->Y = new double[ynrow];
+// 	this->Y = new float[ynrow];
 // 	for (int i = 0; i < ynrow; i++) {
 // 		this->Y[i] = Y[i];
 // 	}
-// 	double **x;
-// 	x = (double**)calloc(xnrow, sizeof(double*));
+// 	float **x;
+// 	x = (float**)calloc(xnrow, sizeof(float*));
 // 	for (int i=0;i<xnrow;i++)
 // 	{
-// 		x[i] = (double*)calloc(xncol, sizeof(double));
+// 		x[i] = (float*)calloc(xncol, sizeof(float));
 // 		for (int j=0;j<xncol;j++)
 // 		{
 // 			x[i][j] = X(i, j);
@@ -59,18 +59,18 @@ LinearRegression::LinearRegression(Eigen::VectorXd &Y, Eigen::MatrixXd &X, bool 
 // 	delete x;
 }
 
-Eigen::VectorXd LinearRegression::GetB()
+Eigen::VectorXf LinearRegression::GetB()
 {
 	return B;
 }
 // 
-// void LinearRegression::initial(double ** x, bool intercept)
+// void LinearRegression::initial(float ** x, bool intercept)
 // {
 // 	this->intercept = intercept;
 // 	int u = intercept ? 1 : 0;
-// 	X = (double**)calloc(xnrow, sizeof(double*));
+// 	X = (float**)calloc(xnrow, sizeof(float*));
 // 	for (int i = 0; i < xnrow; i++) {
-// 		X[i] = new double[xncol + u];
+// 		X[i] = new float[xncol + u];
 // 		if (intercept) {
 // 			X[i][0] = u;
 // 		}
@@ -79,16 +79,16 @@ Eigen::VectorXd LinearRegression::GetB()
 // 		X[i][j + u] = x[i][j];
 // 	}
 // 	}
-// 	B = new double[xncol + u];
+// 	B = new float[xncol + u];
 // }
 
-void LinearRegression::initial(Eigen::MatrixXd & x)
+void LinearRegression::initial(Eigen::MatrixXf & x)
 {
 	int u = intercept ? 1 : 0;
 	Matrix_X.resize(xnrow, xncol + u);
 	if (intercept)
 	{
-		Eigen::MatrixXd ones(xnrow, 1);
+		Eigen::MatrixXf ones(xnrow, 1);
 		ones.setOnes();
 		Matrix_X << ones, x;
 	}
@@ -103,8 +103,8 @@ void LinearRegression::initial(Eigen::MatrixXd & x)
 void LinearRegression::MLE()
 {
 	using namespace Eigen;
-// 	VectorXd Matrix_Y(ynrow);
-// 	MatrixXd Matrix_X(xnrow,xncol+(intercept?1:0));
+// 	VectorXf Matrix_Y(ynrow);
+// 	MatrixXf Matrix_X(xnrow,xncol+(intercept?1:0));
 // 	for (int i = 0; i < Matrix_X.rows(); i++)
 // 	{
 // 		for (int j = 0; j < Matrix_X.cols(); j++)
@@ -113,11 +113,11 @@ void LinearRegression::MLE()
 // 		}
 // 		Matrix_Y[i] = Y[i];
 // 	}
-	MatrixXd Matrix_XT = Matrix_X.transpose();
-	MatrixXd Matrix_XT_X = Matrix_XT * Matrix_X;
-	//JacobiSVD<MatrixXd> svd(Matrix_XT_X, ComputeThinU | ComputeThinV);
-	MatrixXd Matrix_XT_X_Ivt = Matrix_XT_X.inverse();
-	MatrixXd Matrix_XT_X_Ivt_XT = Matrix_XT_X_Ivt * Matrix_XT;
+	MatrixXf Matrix_XT = Matrix_X.transpose();
+	MatrixXf Matrix_XT_X = Matrix_XT * Matrix_X;
+	//JacobiSVD<MatrixXf> svd(Matrix_XT_X, ComputeThinU | ComputeThinV);
+	MatrixXf Matrix_XT_X_Ivt = Matrix_XT_X.inverse();
+	MatrixXf Matrix_XT_X_Ivt_XT = Matrix_XT_X_Ivt * Matrix_XT;
 	B = Matrix_XT_X_Ivt_XT * Matrix_Y;
 	fitted= Matrix_X * B;
 	res = Matrix_Y - fitted;
@@ -127,12 +127,12 @@ void LinearRegression::MLE()
 	}
 	mse /= Matrix_Y.size() - Matrix_X.cols();
 /*
-	MatrixXd Matrix_Fisher = Matrix_XT_X_Ivt*mse;
+	MatrixXf Matrix_Fisher = Matrix_XT_X_Ivt*mse;
 	int Matrix_Fisher_rows = Matrix_Fisher.rows();
-	Fisher = (double**)malloc(sizeof(double*)*Matrix_Fisher_rows);
+	Fisher = (float**)malloc(sizeof(float*)*Matrix_Fisher_rows);
 	for (int i=0;i<Matrix_Fisher_rows;i++)
 	{
-		Fisher[i] = new double[Matrix_Fisher_rows];
+		Fisher[i] = new float[Matrix_Fisher_rows];
 	}
 	for (int i=0;i<Matrix_Fisher_rows;i++)
 	{
@@ -143,26 +143,26 @@ void LinearRegression::MLE()
 	}*/
 }
 
-double LinearRegression::GetMSE()
+float LinearRegression::GetMSE()
 {
 	return mse;
 }
 
 // void main() 
 // {
-// 	Eigen::VectorXd Y(20);
-// 	Eigen::MatrixXd X = Eigen::MatrixXd::Random(20, 3);
+// 	Eigen::VectorXf Y(20);
+// 	Eigen::MatrixXf X = Eigen::MatrixXf::Random(20, 3);
 // 	X.col(0).setOnes();
-// 	Eigen::VectorXd a(3);
+// 	Eigen::VectorXf a(3);
 // 	a << 1, 0.5, 1;
-// 	Eigen::MatrixXd Xi(20, 2);
+// 	Eigen::MatrixXf Xi(20, 2);
 // 	Xi << X.col(1), X.col(2);
 // 	std::cout << "X: \n" << X << std::endl;
 // 	std::cout << "Theta: " << a.transpose() << std::endl;
 // 	Y = X * a;
 // 	LinearRegression LR(Y, Xi, true);
 // 	LR.MLE();
-// 	Eigen::VectorXd ahat = LR.GetB();
+// 	Eigen::VectorXf ahat = LR.GetB();
 // 	std::cout << ahat << std::endl;
 // 
 // }

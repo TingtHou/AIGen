@@ -1,6 +1,6 @@
 #include "../include/ToolKit.h"
 
-void ToolKit::ArraytoVector(double ** a, int n, int m, vector<vector<double>>& v, bool Transpose)
+void ToolKit::ArraytoVector(float ** a, int n, int m, vector<vector<float>>& v, bool Transpose)
 {
 	v.clear();
 	if (Transpose)
@@ -31,7 +31,7 @@ void ToolKit::ArraytoVector(double ** a, int n, int m, vector<vector<double>>& v
 }
 
 
-void ToolKit::Array2toArrat1(double **a, int n, int m, double *b, bool Colfirst)
+void ToolKit::Array2toArrat1(float **a, int n, int m, float *b, bool Colfirst)
 {
 	int k = 0;
 	if (Colfirst)
@@ -56,7 +56,7 @@ void ToolKit::Array2toArrat1(double **a, int n, int m, double *b, bool Colfirst)
 	}
 }
 
-void ToolKit::Vector2toArray1(vector<vector<double>>& v, double * b, bool Colfirst)
+void ToolKit::Vector2toArray1(vector<vector<float>>& v, float * b, bool Colfirst)
 {
 	int n = v.size();
 	int m = v[0].size();
@@ -106,11 +106,11 @@ void ToolKit::dec2bin(int num, int *bin)
 	}
 }
 
-bool ToolKit::Inv_Cholesky(Eigen::MatrixXd & Ori_Matrix)
+bool ToolKit::Inv_Cholesky(Eigen::MatrixXf & Ori_Matrix)
 {
-	Eigen::MatrixXd Inv_Matrix(Ori_Matrix.rows(), Ori_Matrix.cols());
- 	Eigen::LDLT<Eigen::MatrixXd> LDLT;
-	Eigen::MatrixXd IdentityMatrix(Ori_Matrix.rows(), Ori_Matrix.cols());
+	Eigen::MatrixXf Inv_Matrix(Ori_Matrix.rows(), Ori_Matrix.cols());
+ 	Eigen::LDLT<Eigen::MatrixXf> LDLT;
+	Eigen::MatrixXf IdentityMatrix(Ori_Matrix.rows(), Ori_Matrix.cols());
 	IdentityMatrix.setIdentity();
 	LDLT.compute(Ori_Matrix);
 	if (LDLT.info() == Eigen::NumericalIssue)
@@ -124,19 +124,19 @@ bool ToolKit::Inv_Cholesky(Eigen::MatrixXd & Ori_Matrix)
 	return true;
 }
 
-bool ToolKit::comput_inverse_logdet_LDLT_mkl(Eigen::MatrixXd &Vi)
+bool ToolKit::comput_inverse_logdet_LDLT_mkl(Eigen::MatrixXf &Vi)
 {
 
 	int n = Vi.cols();
-	double* Vi_mkl = Vi.data();
+	float* Vi_mkl = Vi.data();
 	// MKL's Cholesky decomposition
 	int info = 0, int_n = (int)n;
 	char uplo = 'L';
-	info=LAPACKE_dpotrf(LAPACK_COL_MAJOR,uplo, int_n, Vi_mkl, int_n);
+	info=LAPACKE_spotrf(LAPACK_COL_MAJOR,uplo, int_n, Vi_mkl, int_n);
 	if (info != 0) return false;
 	else {
 		// Calcualte V inverse
-		info=LAPACKE_dpotri(LAPACK_COL_MAJOR, uplo, int_n, Vi_mkl, int_n);
+		info=LAPACKE_spotri(LAPACK_COL_MAJOR, uplo, int_n, Vi_mkl, int_n);
 		if (info != 0)
 		{
 			return false;
@@ -155,33 +155,33 @@ bool ToolKit::comput_inverse_logdet_LDLT_mkl(Eigen::MatrixXd &Vi)
 
 }
 
-bool ToolKit::Inv_LU(Eigen::MatrixXd & Ori_Matrix, Eigen::MatrixXd & Inv_Matrix)
+bool ToolKit::Inv_LU(Eigen::MatrixXf & Ori_Matrix, Eigen::MatrixXf & Inv_Matrix)
 {
-	Eigen::PartialPivLU<Eigen::MatrixXd> LU(Ori_Matrix);
-	Eigen::MatrixXd IdentityMatrix(Ori_Matrix.rows(), Ori_Matrix.cols());
+	Eigen::PartialPivLU<Eigen::MatrixXf> LU(Ori_Matrix);
+	Eigen::MatrixXf IdentityMatrix(Ori_Matrix.rows(), Ori_Matrix.cols());
 	IdentityMatrix.setIdentity();
 	Inv_Matrix = LU.inverse();
 	bool a_solution_exists = (Ori_Matrix*Inv_Matrix).isApprox(IdentityMatrix, 1e-10);
 	return a_solution_exists;
 }
 
-bool ToolKit::comput_inverse_logdet_LU_mkl(Eigen::MatrixXd &Vi)
+bool ToolKit::comput_inverse_logdet_LU_mkl(Eigen::MatrixXf &Vi)
 {
 	int n = Vi.cols();
-	double* Vi_mkl = Vi.data();
+	float* Vi_mkl = Vi.data();
 
 	int N = (int)n;
 	int *IPIV = new int[n + 1];
 	int LWORK = N * N;
 	int INFO=0;
-	INFO =LAPACKE_dgetrf(LAPACK_COL_MAJOR, N, N, Vi_mkl, N, IPIV);
+	INFO =LAPACKE_sgetrf(LAPACK_COL_MAJOR, N, N, Vi_mkl, N, IPIV);
 	if (INFO!=0) {
 		delete[] IPIV;
 		return false;
 	}
 	else {
 		// Calcualte V inverse
-		INFO=LAPACKE_dgetri(LAPACK_COL_MAJOR , N, Vi_mkl, N, IPIV);
+		INFO=LAPACKE_sgetri(LAPACK_COL_MAJOR , N, Vi_mkl, N, IPIV);
 		if (INFO != 0)
 			return false;
 	}
@@ -190,48 +190,48 @@ bool ToolKit::comput_inverse_logdet_LU_mkl(Eigen::MatrixXd &Vi)
 	return true;
 }
 
-bool ToolKit::comput_inverse_logdet_QR_mkl(Eigen::MatrixXd& Vi)
+bool ToolKit::comput_inverse_logdet_QR_mkl(Eigen::MatrixXf& Vi)
 {
 	int n = Vi.cols();
-	double* Vi_mkl = Vi.data();
-	Eigen::MatrixXd Rinv(n, n);
-	Eigen::MatrixXd Qt(n, n);
+	float* Vi_mkl = Vi.data();
+	Eigen::MatrixXf Rinv(n, n);
+	Eigen::MatrixXf Qt(n, n);
 	Rinv.setIdentity();
 	Qt.setIdentity();
-	double* pr_Rinv = Rinv.data();
-	double* pr_Qt = Qt.data();
-	double* tau = new double[n + 1];
-	int INFO = LAPACKE_dgeqrf(LAPACK_COL_MAJOR, n, n, Vi_mkl, n, tau);
+	float* pr_Rinv = Rinv.data();
+	float* pr_Qt = Qt.data();
+	float* tau = new float[n + 1];
+	int INFO = LAPACKE_sgeqrf(LAPACK_COL_MAJOR, n, n, Vi_mkl, n, tau);
 	if (INFO != 0)
 	{
 		delete[] tau;
 		throw ("Error: QR decomposition failed. Invalid values found in the matrix.\n");
 	}
-	cblas_dtrsm(CblasColMajor, CblasLeft, CblasUpper, CblasNoTrans, CblasNonUnit, n, n, 1, Vi_mkl, n, pr_Rinv, n);
-	LAPACKE_dormqr(LAPACK_COL_MAJOR, 'L', 'T', n, n, n, Vi_mkl, n, tau, pr_Qt, n);
-	cblas_dgemm(CblasColMajor, CblasNoTrans, CblasNoTrans, n, n, n,1, pr_Rinv, n, pr_Qt, n, 0, Vi_mkl,n);
+	cblas_strsm(CblasColMajor, CblasLeft, CblasUpper, CblasNoTrans, CblasNonUnit, n, n, 1, Vi_mkl, n, pr_Rinv, n);
+	LAPACKE_sormqr(LAPACK_COL_MAJOR, 'L', 'T', n, n, n, Vi_mkl, n, tau, pr_Qt, n);
+	cblas_sgemm(CblasColMajor, CblasNoTrans, CblasNoTrans, n, n, n,1, pr_Rinv, n, pr_Qt, n, 0, Vi_mkl,n);
 	delete[] tau;
 	return true;
 }
 
-bool ToolKit::comput_inverse_logdet_SVD_mkl(Eigen::MatrixXd& Vi)
+bool ToolKit::comput_inverse_logdet_SVD_mkl(Eigen::MatrixXf& Vi)
 {
 	int n = Vi.cols();
-	double* Vi_mkl = Vi.data();
+	float* Vi_mkl = Vi.data();
 	MKL_INT  lwork;
 	MKL_INT info;
-	double wkopt;
-	double* work;
+	float wkopt;
+	float* work;
 	char jobu = 'S';
 	char jobvt = 'S';
-	double* s = (double*)malloc(n * sizeof(double));
-	double* u = (double*)malloc(n * n * sizeof(double));
-	double* vt = (double*)malloc(n * n * sizeof(double));
+	float* s = (float*)malloc(n * sizeof(float));
+	float* u = (float*)malloc(n * n * sizeof(float));
+	float* vt = (float*)malloc(n * n * sizeof(float));
 	lwork = -1;
-	dgesvd(&jobu, &jobvt, &n, &n, Vi_mkl, &n, s, u, &n, vt, &n, &wkopt, &lwork, &info);
+	sgesvd(&jobu, &jobvt, &n, &n, Vi_mkl, &n, s, u, &n, vt, &n, &wkopt, &lwork, &info);
 	lwork = (MKL_INT)wkopt;
-	work = (double*)malloc(lwork * sizeof(double));
-	dgesvd(&jobu, &jobvt, &n, &n, Vi_mkl, &n, s, u, &n, vt, &n, work, &lwork, &info);
+	work = (float*)malloc(lwork * sizeof(float));
+	sgesvd(&jobu, &jobvt, &n, &n, Vi_mkl, &n, s, u, &n, vt, &n, work, &lwork, &info);
 	if (info > 0)
 	{
 		free(s);
@@ -251,17 +251,17 @@ bool ToolKit::comput_inverse_logdet_SVD_mkl(Eigen::MatrixXd& Vi)
 	#pragma omp parallel for
 	for (int i = 0; i < n; i++)
 	{
-		double ss;
+		float ss;
 		if (s[i] > 1.0e-9)
 			ss = 1.0 / s[i];
 		else
 			ss = s[i];
-		dscal(&n, &ss, &u[i * n], &incx);
+		sscal(&n, &ss, &u[i * n], &incx);
 	}
 	//inv(A)=(Vt)^T *u^T
-	double alpha = 1.0, beta = 0.0;
+	float alpha = 1.0, beta = 0.0;
 	MKL_INT ld_inva = n;
-	dgemm("T", "T", &n, &n, &n, &alpha, vt, &n, u, &n, &beta, Vi_mkl, &ld_inva);
+	sgemm("T", "T", &n, &n, &n, &alpha, vt, &n, u, &n, &beta, Vi_mkl, &ld_inva);
 	free(s);
 	free(u);
 	free(vt);
@@ -269,28 +269,28 @@ bool ToolKit::comput_inverse_logdet_SVD_mkl(Eigen::MatrixXd& Vi)
 }
 
 
-bool ToolKit::Inv_SVD(Eigen::MatrixXd & Ori_Matrix, bool allowPseudoInverse)
+bool ToolKit::Inv_SVD(Eigen::MatrixXf & Ori_Matrix, bool allowPseudoInverse)
 {
 
 	auto svd = Ori_Matrix.jacobiSvd(Eigen::ComputeFullU | Eigen::ComputeFullV);
 	const auto &singularValues = svd.singularValues();
-	Eigen::MatrixXd singularValuesInv(Ori_Matrix.cols(), Ori_Matrix.rows());
-	Eigen::MatrixXd Inv_Matrix(Ori_Matrix.cols(), Ori_Matrix.rows());
+	Eigen::MatrixXf singularValuesInv(Ori_Matrix.cols(), Ori_Matrix.rows());
+	Eigen::MatrixXf Inv_Matrix(Ori_Matrix.cols(), Ori_Matrix.rows());
 	singularValuesInv.setZero();
-	double  pinvtoler = 1.e-20; // choose your tolerance wisely
+	float  pinvtoler = 1.e-20; // choose your tolerance wisely
 	bool singlar = false;
 
 	for (unsigned int i = 0; i < singularValues.size(); ++i)
 	{
 		if (abs(singularValues(i)) > pinvtoler)
-			singularValuesInv(i, i) = (double)1.0 / singularValues(i);
+			singularValuesInv(i, i) = (float)1.0 / singularValues(i);
 		else
 		{
 			if (!allowPseudoInverse)
 			{
 				return false;
 			}
-			singularValuesInv(i, i) = (double)0.0;
+			singularValuesInv(i, i) = (float)0.0;
 //			singlar = true;
 		}
 	}
@@ -299,13 +299,13 @@ bool ToolKit::Inv_SVD(Eigen::MatrixXd & Ori_Matrix, bool allowPseudoInverse)
 	return true;
 }
 
-bool ToolKit::Inv_QR(Eigen::MatrixXd & Ori_Matrix, bool allowPseudoInverse)
+bool ToolKit::Inv_QR(Eigen::MatrixXf & Ori_Matrix, bool allowPseudoInverse)
 {
-	Eigen::CompleteOrthogonalDecomposition<Eigen::MatrixXd> QR;
-	Eigen::MatrixXd IdentityMatrix(Ori_Matrix.rows(), Ori_Matrix.cols());
+	Eigen::CompleteOrthogonalDecomposition<Eigen::MatrixXf> QR;
+	Eigen::MatrixXf IdentityMatrix(Ori_Matrix.rows(), Ori_Matrix.cols());
 	IdentityMatrix.setIdentity();
 	QR.compute(Ori_Matrix);
-	Eigen::MatrixXd Inv_Matrix(Ori_Matrix.rows(), Ori_Matrix.cols());
+	Eigen::MatrixXf Inv_Matrix(Ori_Matrix.rows(), Ori_Matrix.cols());
 	if (!QR.isInvertible()&&!allowPseudoInverse)
 	{
 		return false;

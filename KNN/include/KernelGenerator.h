@@ -11,7 +11,7 @@
 class KernelGenerator
 {
 public:
-	KernelGenerator(GenoData & gd, int KernelName, Eigen::VectorXd &weights, double scale, double constant = 1, double deg = 2, double sigmma = 1);
+	KernelGenerator(GenoData & gd, int KernelName, Eigen::VectorXf &weights, float scale, float constant = 1, float deg = 2, float sigmma = 1);
 	KernelGenerator();
 	void BuildBin(std::string prefix);
 	KernelData getKernel() { return kernels; };
@@ -20,10 +20,10 @@ public:
 private:
 	bool scale;
 	KernelData kernels;
-	void getCAR(Eigen::MatrixXd &Geno, Eigen::VectorXd &weights, Eigen::MatrixXd &kernel);
-	void getIdentity(Eigen::MatrixXd &Geno, Eigen::MatrixXd &kernel);
-	void getProduct(Eigen::MatrixXd &Geno, Eigen::VectorXd &weights, Eigen::MatrixXd &kernel);
-	void getPolynomial(Eigen::MatrixXd &Geno, Eigen::VectorXd &weights, double constant, double deg, Eigen::MatrixXd & kernel);
-	void getGaussian(Eigen::MatrixXd &Geno, Eigen::VectorXd &weights, double sigmma, Eigen::MatrixXd & kernel);
-	void getIBS(Eigen::MatrixXd & Geno, Eigen::VectorXd & weights, Eigen::MatrixXd & kernel);
+	void getCAR(Eigen::MatrixXf &Geno, Eigen::VectorXf &weights, Eigen::MatrixXf &kernel);
+	void getIdentity(Eigen::MatrixXf &Geno, Eigen::MatrixXf &kernel);
+	void getProduct(Eigen::MatrixXf &Geno, Eigen::VectorXf &weights, Eigen::MatrixXf &kernel);
+	void getPolynomial(Eigen::MatrixXf &Geno, Eigen::VectorXf &weights, float constant, float deg, Eigen::MatrixXf & kernel);
+	void getGaussian(Eigen::MatrixXf &Geno, Eigen::VectorXf &weights, float sigmma, Eigen::MatrixXf & kernel);
+	void getIBS(Eigen::MatrixXf & Geno, Eigen::VectorXf & weights, Eigen::MatrixXf & kernel);
 };

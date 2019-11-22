@@ -1,22 +1,22 @@
 #include "../include/MinqueBase.h"
 
 
-void MinqueBase::importY(Eigen::VectorXd Y)
+void MinqueBase::importY(Eigen::VectorXf Y)
 {
 	this->Y = Y;
 	nind = Y.size();
 	Vi.clear();
-	VW = Eigen::MatrixXd(nind, nind);
+	VW = Eigen::MatrixXf(nind, nind);
 	VW.setZero();
 }
 
-void MinqueBase::pushback_Vi(Eigen::MatrixXd vi)
+void MinqueBase::pushback_Vi(Eigen::MatrixXf vi)
 {
 	Vi.insert(Vi.end(), vi);
 	nVi++;
 }
 
-void MinqueBase::puskback_X(Eigen::MatrixXd X, bool intercept)
+void MinqueBase::puskback_X(Eigen::MatrixXf X, bool intercept)
 {
 	int nrows = X.rows();
 	int ncols = X.cols();
@@ -26,7 +26,7 @@ void MinqueBase::puskback_X(Eigen::MatrixXd X, bool intercept)
 		if (intercept)
 		{
 			this->X.resize(nind, ncols + 1);
-			Eigen::VectorXd IDt(nind);
+			Eigen::VectorXf IDt(nind);
 			IDt.setOnes();
 			this->X << IDt, X;
 		}
@@ -38,7 +38,7 @@ void MinqueBase::puskback_X(Eigen::MatrixXd X, bool intercept)
 	}
 	else
 	{
-		Eigen::MatrixXd tmpX = this->X;
+		Eigen::MatrixXf tmpX = this->X;
 		if (intercept)
 		{
 			this->X.resize(nind, ncov + ncols - 1);
@@ -55,7 +55,7 @@ void MinqueBase::puskback_X(Eigen::MatrixXd X, bool intercept)
 }
 
 
-void MinqueBase::pushback_W(Eigen::VectorXd W)
+void MinqueBase::pushback_W(Eigen::VectorXf W)
 {
 	int nelmt = W.size();
 	assert(nVi == nelmt);

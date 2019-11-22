@@ -1,7 +1,7 @@
 #include "../include/KernelGenerator.h"
 
 
-KernelGenerator::KernelGenerator(GenoData & gd, int KernelName, Eigen::VectorXd &weights,  double scale, double constant, double deg, double sigmma)
+KernelGenerator::KernelGenerator(GenoData & gd, int KernelName, Eigen::VectorXf &weights,  float scale, float constant, float deg, float sigmma)
 {
 	int nrow = gd.Geno.rows();
 	int ncol = gd.Geno.cols();
@@ -67,7 +67,7 @@ void KernelGenerator::test()
 	PlinkReader pk;
 	pk.read("../m20.ped", "../m20.map");
 	GenoData gd = pk.GetGeno();
-	Eigen::MatrixXd geno = gd.Geno;
+	Eigen::MatrixXf geno = gd.Geno;
 	ofstream genot("../genoC.txt", ios::out);
 	for (int i=0;i<geno.rows();i++)
 	{
@@ -94,8 +94,8 @@ void KernelGenerator::test()
 // 
 // 	ofo.close();
 
-	Eigen::MatrixXd kernel(nrow, nrow);
-	Eigen::VectorXd weight(ncol);
+	Eigen::MatrixXf kernel(nrow, nrow);
+	Eigen::VectorXf weight(ncol);
 	weight.setOnes();
 	getProduct(geno, weight, kernel);
 	ofstream of("../proC.txt", ios::out);
@@ -123,15 +123,15 @@ void KernelGenerator::test()
 //	std::cout << kernel << std::endl;
 }
 
-void KernelGenerator::getCAR(Eigen::MatrixXd & Geno, Eigen::VectorXd &weights, Eigen::MatrixXd & kernel)
+void KernelGenerator::getCAR(Eigen::MatrixXf & Geno, Eigen::VectorXf &weights, Eigen::MatrixXf & kernel)
 {
 	int nrow = Geno.rows();
 	int ncol = Geno.cols();
-	Eigen::MatrixXd IBS(nrow, nrow);
+	Eigen::MatrixXf IBS(nrow, nrow);
 	getIBS(Geno, weights, IBS);
-	Eigen::MatrixXd S = IBS / (2 * weights.sum());
+	Eigen::MatrixXf S = IBS / (2 * weights.sum());
 	S.diagonal().setZero();
-	Eigen::MatrixXd D(nrow, nrow);
+	Eigen::MatrixXf D(nrow, nrow);
 	D.setZero();
     #pragma omp parallel for
 	for (int i=0;i<nrow;i++)
@@ -140,46 +140,46 @@ void KernelGenerator::getCAR(Eigen::MatrixXd & Geno, Eigen::VectorXd &weights, E
 	}
 	//////////////////
 	//this is Covariance 
-	//Eigen::MatrixXd centered = Geno.rowwise() - Geno.colwise().mean();
-	//Eigen::MatrixXd cov = (centered.adjoint() * centered) ;
+	//Eigen::MatrixXf centered = Geno.rowwise() - Geno.colwise().mean();
+	//Eigen::MatrixXf cov = (centered.adjoint() * centered) ;
 	///////////////////////
-	Eigen::MatrixXd centered = Geno.rowwise() - Geno.colwise().mean();
-	Eigen::MatrixXd cor = (centered.transpose() * centered)/ double(nrow - 1);
+	Eigen::MatrixXf centered = Geno.rowwise() - Geno.colwise().mean();
+	Eigen::MatrixXf cor = (centered.transpose() * centered)/ float(nrow - 1);
 	#pragma omp parallel for
 	for (int i=0;i<ncol;i++)
 	{
 		for (int j=0;j<=i;j++)
 		{
-			Eigen::VectorXd Coli(nrow);
-			Eigen::VectorXd Colj(nrow);
+			Eigen::VectorXf Coli(nrow);
+			Eigen::VectorXf Colj(nrow);
 			Coli << Geno.col(i);
 			Colj << Geno.col(j);
 			cor(i, j) = cor(j, i) = cor(j, i)/(std::sqrt(Variance(Coli)*Variance(Colj)));
 		}
 	}
-	double gamma = cor.mean();
-	Eigen::MatrixXd Va = D - gamma * S;
+	float gamma = cor.mean();
+	Eigen::MatrixXf Va = D - gamma * S;
 //	std::cout << Va << std::endl;
 	Inverse(Va, 0, 3, true);
 	kernel = Va;
 }
 
-void KernelGenerator::getIdentity(Eigen::MatrixXd & Geno, Eigen::MatrixXd & kernel)
+void KernelGenerator::getIdentity(Eigen::MatrixXf & Geno, Eigen::MatrixXf & kernel)
 {
 	int nrow = Geno.rows();
 	kernel.resize(nrow, nrow);
 	kernel.setIdentity();
 }
 
-void KernelGenerator::getProduct(Eigen::MatrixXd & Geno, Eigen::VectorXd &weights, Eigen::MatrixXd & kernel)
+void KernelGenerator::getProduct(Eigen::MatrixXf & Geno, Eigen::VectorXf &weights, Eigen::MatrixXf & kernel)
 {
 	int ncol = Geno.cols();
 	int nrow = Geno.rows();
 	kernel.resize(nrow, nrow);
- 	Eigen::MatrixXd sqrtw=weights.asDiagonal();
+ 	Eigen::MatrixXf sqrtw=weights.asDiagonal();
 	sqrtw = sqrtw.cwiseSqrt();
- 	Eigen::MatrixXd Geno_sqetw = Geno * sqrtw;
-	kernel = (1 / double(ncol))*(Geno_sqetw*Geno_sqetw.transpose());
+ 	Eigen::MatrixXf Geno_sqetw = Geno * sqrtw;
+	kernel = (1 / float(ncol))*(Geno_sqetw*Geno_sqetw.transpose());
 	if (scale)
 	{
 		kernel = (1 / weights.sum())*kernel;
@@ -188,43 +188,43 @@ void KernelGenerator::getProduct(Eigen::MatrixXd & Geno, Eigen::VectorXd &weight
 	
 }
 
-void KernelGenerator::getPolynomial(Eigen::MatrixXd & Geno, Eigen::VectorXd & weights, double constant, double deg, Eigen::MatrixXd & kernel)
+void KernelGenerator::getPolynomial(Eigen::MatrixXf & Geno, Eigen::VectorXf & weights, float constant, float deg, Eigen::MatrixXf & kernel)
 {
 	int nrow = Geno.rows();
 	int ncol = Geno.cols();
 	kernel.resize(nrow, nrow);
-	Eigen::MatrixXd sqrtw = weights.asDiagonal();
+	Eigen::MatrixXf sqrtw = weights.asDiagonal();
 	sqrtw = sqrtw.cwiseSqrt();
-	Eigen::MatrixXd Geno_sqetw = Geno * sqrtw;
-	kernel = (1 / double(ncol))*(Geno_sqetw*Geno_sqetw.transpose());
+	Eigen::MatrixXf Geno_sqetw = Geno * sqrtw;
+	kernel = (1 / float(ncol))*(Geno_sqetw*Geno_sqetw.transpose());
 	if (scale)
 	{
 		kernel = (1 / weights.sum())*kernel;
 	}
-	kernel = (constant*Eigen::MatrixXd::Ones(nrow,nrow) + kernel).array().pow(deg);
+	kernel = (constant*Eigen::MatrixXf::Ones(nrow,nrow) + kernel).array().pow(deg);
 }
 
 
 
-void KernelGenerator::getGaussian(Eigen::MatrixXd & Geno, Eigen::VectorXd & weights, double sigmma, Eigen::MatrixXd & kernel)
+void KernelGenerator::getGaussian(Eigen::MatrixXf & Geno, Eigen::VectorXf & weights, float sigmma, Eigen::MatrixXf & kernel)
 {
 	int nrow = Geno.rows();
 	int ncol = Geno.cols();
 	kernel.resize(nrow, nrow);
-	Eigen::MatrixXd wtGeno = (Geno * weights.cwiseSqrt().asDiagonal());
-	Eigen::MatrixXd DistMat(nrow, nrow);
+	Eigen::MatrixXf wtGeno = (Geno * weights.cwiseSqrt().asDiagonal());
+	Eigen::MatrixXf DistMat(nrow, nrow);
 	//compute the euclidean distances between the rows of a data matrix.
 	for (int i=0;i<nrow;i++)
 	{
 		for (int j=0;j<=i;j++)
 		{
-			Eigen::VectorXd rowi_rowj(ncol);
+			Eigen::VectorXf rowi_rowj(ncol);
 			rowi_rowj = wtGeno.row(i) - wtGeno.row(j);
 			rowi_rowj=rowi_rowj.array().pow(2);
 			DistMat(j, i) = DistMat(i, j) = std::sqrt(rowi_rowj.sum());
 		}
 	}
-	kernel = -(1 / (2 * double(ncol) * sigmma))*(DistMat.array().pow(2));
+	kernel = -(1 / (2 * float(ncol) * sigmma))*(DistMat.array().pow(2));
 	if (scale)
 	{
 		kernel= (1 / weights.sum())*kernel;
@@ -234,11 +234,11 @@ void KernelGenerator::getGaussian(Eigen::MatrixXd & Geno, Eigen::VectorXd & weig
 }
 
 
-void KernelGenerator::getIBS(Eigen::MatrixXd & Geno, Eigen::VectorXd & weights, Eigen::MatrixXd & kernel)
+void KernelGenerator::getIBS(Eigen::MatrixXf & Geno, Eigen::VectorXf & weights, Eigen::MatrixXf & kernel)
 {
 	int nrow = Geno.rows();
 	int ncol = Geno.cols();
-	Eigen::MatrixXd gtemp1 = Geno, gtemp2 = Geno;
+	Eigen::MatrixXf gtemp1 = Geno, gtemp2 = Geno;
 	for (int i=0;i<nrow;i++)
 	{
 		for (int j=0;j<ncol;j++)
@@ -253,24 +253,24 @@ void KernelGenerator::getIBS(Eigen::MatrixXd & Geno, Eigen::VectorXd & weights, 
 			}
 		}
 	}
-	Eigen::MatrixXd gtemp(nrow, 2 * ncol);
+	Eigen::MatrixXf gtemp(nrow, 2 * ncol);
 	gtemp << gtemp1, gtemp2;
-	Eigen::VectorXd Weight(2 * ncol);
+	Eigen::VectorXf Weight(2 * ncol);
 	Weight<<weights,
 			weights;
-	Eigen::MatrixXd Inner = gtemp * Weight.asDiagonal()*gtemp.transpose();
-	Eigen::VectorXd InnerDiad = Inner.diagonal();
-	Eigen::MatrixXd X2(nrow, nrow), Y2(nrow, nrow);
+	Eigen::MatrixXf Inner = gtemp * Weight.asDiagonal()*gtemp.transpose();
+	Eigen::VectorXf InnerDiad = Inner.diagonal();
+	Eigen::MatrixXf X2(nrow, nrow), Y2(nrow, nrow);
 	for (int i=0;i<nrow;i++)
 	{
 		X2.col(i) = InnerDiad;
 		Y2.row(i) = InnerDiad;
 	}
-	Eigen::MatrixXd VWeights(1, ncol);
+	Eigen::MatrixXf VWeights(1, ncol);
 	VWeights.setOnes();
 	VWeights *= weights*2;
-	double Bound = VWeights.sum();
-	Eigen::MatrixXd Dis = X2 + Y2 - 2 * Inner;
+	float Bound = VWeights.sum();
+	Eigen::MatrixXf Dis = X2 + Y2 - 2 * Inner;
 	kernel = (-Dis).array() + Bound;
 }
 

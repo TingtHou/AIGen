@@ -31,7 +31,7 @@ void imnq::isEcho(bool isecho)
 
 
 
-Eigen::VectorXd imnq::initVCS()
+Eigen::VectorXf imnq::initVCS()
 {
 	if (ncov == 0)
 	{
@@ -41,15 +41,15 @@ Eigen::VectorXd imnq::initVCS()
 	}
 	LinearRegression lr(Y, X, false);
 	lr.MLE();
-	double mse = lr.GetMSE();
-	Eigen::VectorXd vc0(nVi);
+	float mse = lr.GetMSE();
+	Eigen::VectorXf vc0(nVi);
 	vc0.setZero();
 	if (W.size()==0)
 	{
 		
 		for (int i=0;i<nVi;i++)
 		{
-			vc0(i) = mse / (double)nVi;
+			vc0(i) = mse / (float)nVi;
 		}
 	}
 	else
@@ -60,7 +60,7 @@ Eigen::VectorXd imnq::initVCS()
 			vc0(j++) = W(i);
 		}
 	}
-	Eigen::VectorXd vc1(nVi);
+	Eigen::VectorXf vc1(nVi);
 	vc1.setZero();
 	vc1(0) = mse;
 	return vc0;
@@ -68,9 +68,9 @@ Eigen::VectorXd imnq::initVCS()
 
 void imnq::Iterate()
 {
-	Eigen::VectorXd vc0,vc1(nVi);
+	Eigen::VectorXf vc0,vc1(nVi);
 	vc0  = initVCS();
-	double diff = 0;
+	float diff = 0;
 	rln_mnq *mnq=nullptr;
 //	printf("Starting Iterate MINQUE Algorithm.\n");
 //	logfile->write("Starting Iterate MINQUE Algorithm",true);

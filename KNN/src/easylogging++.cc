@@ -1159,7 +1159,7 @@ void DateTime::gettimeofday(struct timeval* tv) {
 #  else
     const unsigned __int64 delta_ = 11644473600000000ULL;
 #  endif  // ELPP_COMPILER_MSVC || defined(_MSC_EXTENSIONS)
-    const double secOffSet = 0.000001;
+    const float secOffSet = 0.000001;
     const unsigned long usecOffSet = 1000000;
     FILETIME fileTime;
     GetSystemTimeAsFileTime(&fileTime);

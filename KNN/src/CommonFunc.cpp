@@ -1,6 +1,6 @@
 #include "../include/CommonFunc.h"
 
-int Inverse(Eigen::MatrixXd & Ori_Matrix, int DecompositionMode, int AltDecompositionMode, bool allowPseudoInverse)
+int Inverse(Eigen::MatrixXf & Ori_Matrix, int DecompositionMode, int AltDecompositionMode, bool allowPseudoInverse)
 {
 	int status = 0;
 	bool statusInverse;
@@ -8,7 +8,7 @@ int Inverse(Eigen::MatrixXd & Ori_Matrix, int DecompositionMode, int AltDecompos
 	{
 	case Cholesky:
 	{
-		double det;
+		float det;
 		statusInverse = ToolKit::comput_inverse_logdet_LDLT_mkl(Ori_Matrix);
 	//	statusInverse = ToolKit::Inv_Cholesky(Ori_Matrix);
 		status += !statusInverse;
@@ -28,7 +28,7 @@ int Inverse(Eigen::MatrixXd & Ori_Matrix, int DecompositionMode, int AltDecompos
 	break;
 	case LU:
 	{
-		double det;
+		float det;
 		statusInverse = ToolKit::comput_inverse_logdet_LU_mkl(Ori_Matrix);
 		status += !statusInverse;
  		if (!statusInverse&&allowPseudoInverse)
@@ -61,30 +61,30 @@ int Inverse(Eigen::MatrixXd & Ori_Matrix, int DecompositionMode, int AltDecompos
 	return status;
 }
 //Sample variance
-double Variance(Eigen::VectorXd & Y)
+float Variance(Eigen::VectorXf & Y)
 {
-	double meanY = mean(Y);
-	double variance = 0;
+	float meanY = mean(Y);
+	float variance = 0;
 	int nind = Y.size();
 	for (int i=0;i<nind;i++)
 	{
 		variance += (Y[i] - meanY)*(Y[i] - meanY);
 	}
-	variance /= (double)(nind-1);
+	variance /= (float)(nind-1);
 	return variance;
 }
 
-double mean(Eigen::VectorXd & Y)
+float mean(Eigen::VectorXf & Y)
 {
-	double sumY = Y.sum();
-	double nind = Y.size();
+	float sumY = Y.sum();
+	float nind = Y.size();
 	return sumY/nind;
 }
 
-double isNum(std::string line)
+float isNum(std::string line)
 {
 	stringstream sin(line);
-	double d;
+	float d;
 	char c;
 	if (!(sin >> d))
 		return false;
@@ -111,14 +111,14 @@ std::string GetParentPath(std::string pathname)
 }
 
 
-void stripSameCol(Eigen::MatrixXd & Geno)
+void stripSameCol(Eigen::MatrixXf & Geno)
 {
 	std::vector<int> repeatID;
 	repeatID.clear();
 	for (int i = 0; i < Geno.cols(); i++)
 	{
-		double *test = Geno.col(i).data();
-		std::vector<double> rowi(test, test + Geno.col(i).size());
+		float *test = Geno.col(i).data();
+		std::vector<float> rowi(test, test + Geno.col(i).size());
 		std::sort(rowi.begin(), rowi.end());
 		auto it = std::unique(rowi.begin(), rowi.end());
 		rowi.erase(it, rowi.end());
@@ -132,7 +132,7 @@ void stripSameCol(Eigen::MatrixXd & Geno)
 	{
 		return;
 	}
-	Eigen::MatrixXd tmpGeno = Geno;
+	Eigen::MatrixXf tmpGeno = Geno;
 	Geno.resize(tmpGeno.rows(), tmpGeno.cols() - repeatID.size());
 	int j = 0;
 	for (int i = 0; i < tmpGeno.cols(); i++)
@@ -146,19 +146,19 @@ void stripSameCol(Eigen::MatrixXd & Geno)
 
 }
 
-void stdSNPmv(Eigen::MatrixXd & Geno)
+void stdSNPmv(Eigen::MatrixXf & Geno)
 {
 	int ncol = Geno.cols();
 	int nrow = Geno.rows();
-	Eigen::MatrixXd tmpGeno = Geno;
+	Eigen::MatrixXf tmpGeno = Geno;
 	Geno.setZero();
 	for (int i = 0; i < ncol; i++)
 	{
-		Eigen::VectorXd Coli(nrow);
+		Eigen::VectorXf Coli(nrow);
 		Coli << tmpGeno.col(i);
-		double means = mean(Coli);
-		double sd = std::sqrt(Variance(Coli));
-		Coli -= means * Eigen::VectorXd::Ones(nrow);
+		float means = mean(Coli);
+		float sd = std::sqrt(Variance(Coli));
+		Coli -= means * Eigen::VectorXf::Ones(nrow);
 		Coli /= sd;
 		Geno.col(i) << Coli;
 	}
@@ -175,7 +175,7 @@ void set_difference(boost::bimap<int, std::string>& map1, boost::bimap<int, std:
 	}
 }
 
-void GetSubMatrix(Eigen::MatrixXd & oMatrix, Eigen::MatrixXd & subMatrix, std::vector<int> rowIds, std::vector<int> colIDs)
+void GetSubMatrix(Eigen::MatrixXf & oMatrix, Eigen::MatrixXf & subMatrix, std::vector<int> rowIds, std::vector<int> colIDs)
 {
 	for (int i=0;i<rowIds.size();i++)
 	{
@@ -186,7 +186,7 @@ void GetSubMatrix(Eigen::MatrixXd & oMatrix, Eigen::MatrixXd & subMatrix, std::v
 	}
 }
 
-void GetSubVector(Eigen::VectorXd & oVector, Eigen::VectorXd & subVector, std::vector<int> IDs)
+void GetSubVector(Eigen::VectorXf & oVector, Eigen::VectorXf & subVector, std::vector<int> IDs)
 {
 	for (int i=0;i<IDs.size();i++)
 	{
