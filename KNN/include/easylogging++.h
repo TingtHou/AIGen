@@ -13,7 +13,6 @@
 //  https://zuhd.org
 //  http://muflihun.com
 //
-
 #define ELPP_NO_DEFAULT_LOG_FILE 
 #define ELPP_THREAD_SAFE
 
@@ -25,7 +24,7 @@
 #endif  // __cplusplus >= 201103L
 #if (defined(__GNUC__))
 #  define ELPP_COMPILER_GCC 1
-#elsecd 
+#else
 #  define ELPP_COMPILER_GCC 0
 #endif
 #if ELPP_COMPILER_GCC
