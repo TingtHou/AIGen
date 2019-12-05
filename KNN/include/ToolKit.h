@@ -22,5 +22,9 @@ public:
 	static bool comput_inverse_logdet_LU_mkl(Eigen::MatrixXf &Vi);
 	static bool comput_inverse_logdet_QR_mkl(Eigen::MatrixXf& Vi);
 	static bool comput_inverse_logdet_SVD_mkl(Eigen::MatrixXf& Vi);
+	static bool comput_inverse_logdet_LDLT_mkl(Eigen::MatrixXd& Vi);
+	static bool comput_inverse_logdet_LU_mkl(Eigen::MatrixXd& Vi);
+	static bool comput_inverse_logdet_QR_mkl(Eigen::MatrixXd& Vi);
+	static bool comput_inverse_logdet_SVD_mkl(Eigen::MatrixXd& Vi);
 };
 

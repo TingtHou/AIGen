@@ -60,6 +60,66 @@ int Inverse(Eigen::MatrixXf & Ori_Matrix, int DecompositionMode, int AltDecompos
  	}
 	return status;
 }
+int Inverse(Eigen::MatrixXd & Ori_Matrix, int DecompositionMode, int AltDecompositionMode, bool allowPseudoInverse)
+{
+	int status = 0;
+	bool statusInverse;
+	switch (DecompositionMode)
+	{
+	case Cholesky:
+	{
+		float det;
+		statusInverse = ToolKit::comput_inverse_logdet_LDLT_mkl(Ori_Matrix);
+		//	statusInverse = ToolKit::Inv_Cholesky(Ori_Matrix);
+		status += !statusInverse;
+		if (!statusInverse && allowPseudoInverse)
+		{
+			if (AltDecompositionMode == SVD)
+			{
+				statusInverse = ToolKit::comput_inverse_logdet_SVD_mkl(Ori_Matrix);
+			}
+			if (AltDecompositionMode == QR)
+			{
+				statusInverse = ToolKit::comput_inverse_logdet_QR_mkl(Ori_Matrix);
+			}
+			status += !statusInverse;
+		}
+	}
+	break;
+	case LU:
+	{
+		float det;
+		statusInverse = ToolKit::comput_inverse_logdet_LU_mkl(Ori_Matrix);
+		status += !statusInverse;
+		if (!statusInverse && allowPseudoInverse)
+		{
+			if (AltDecompositionMode == SVD)
+			{
+				statusInverse = ToolKit::comput_inverse_logdet_SVD_mkl(Ori_Matrix);
+			}
+			if (AltDecompositionMode == QR)
+			{
+				statusInverse = ToolKit::comput_inverse_logdet_QR_mkl(Ori_Matrix);
+			}
+			status += !statusInverse;
+		}
+	}
+	break;
+	case QR:
+	{
+		statusInverse = ToolKit::comput_inverse_logdet_QR_mkl(Ori_Matrix);
+		status += !statusInverse;
+	}
+	break;
+	case SVD:
+	{
+		statusInverse = ToolKit::comput_inverse_logdet_SVD_mkl(Ori_Matrix);
+		status += !statusInverse;
+	}
+	break;
+	}
+	return status;
+}
 //Sample variance
 float Variance(Eigen::VectorXf & Y)
 {

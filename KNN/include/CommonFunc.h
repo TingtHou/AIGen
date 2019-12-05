@@ -58,6 +58,7 @@ struct GenoData
 
 
 int Inverse(Eigen::MatrixXf & Ori_Matrix,int DecompositionMode, int AltDecompositionMode, bool allowPseudoInverse);
+int Inverse(Eigen::MatrixXd & Ori_Matrix, int DecompositionMode, int AltDecompositionMode, bool allowPseudoInverse);
 float Variance(Eigen::VectorXf &Y);
 float mean(Eigen::VectorXf &Y);
 float isNum(std::string line);
