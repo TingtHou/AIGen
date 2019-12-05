@@ -88,19 +88,22 @@ void rln_mnq::estimate()
 	#pragma omp parallel for
 	for (int i = 0; i < nVi; i++)
 	{
-		Eigen::VectorXf Vi_Ry = Vi[i]*Ry;
-		u[i] = Ry.cwiseProduct(Vi_Ry).sum();
+		Eigen::VectorXd Ry_Vi_Ry = (Ry.cwiseProduct(Vi[i]*Ry)).cast<double>();
+		u[i] = (float)Ry_Vi_Ry.sum();
 	}
 	Eigen::MatrixXf F(nVi, nVi);
+	//Eigen::MatrixXf F_(nVi, nVi);
 	#pragma omp parallel for
 	for (int i = 0; i < nVi; i++)
 	{
 		for (int j=i;j<nVi;j++)
 		{
-			F(i, j) = RV[i].transpose().cwiseProduct(RV[j]).sum();
+			Eigen::MatrixXd RVij = (RV[i].transpose().cwiseProduct(RV[j])).cast<double>();
+			F(i, j) = (float)RVij.sum();
 			F(j, i) = F(i, j);
 		}
 	}
+
 	status = Inverse(F, Decomp, altDecomp, allowPseudoInverse);
 	CheckInverseStatus(status);
 	vcs = F * u;

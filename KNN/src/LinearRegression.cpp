@@ -121,11 +121,15 @@ void LinearRegression::MLE()
 	B = Matrix_XT_X_Ivt_XT * Matrix_Y;
 	fitted= Matrix_X * B;
 	res = Matrix_Y - fitted;
+	double mse_ = 0;
 	for (int i=0;i<ynrow;i++)
 	{
-		mse += res(i)*res(i);
+	//	mse += res(i)*res(i);
+		mse_+= res(i) * res(i);
 	}
-	mse /= Matrix_Y.size() - Matrix_X.cols();
+//	mse /= (float) (Matrix_Y.size() - Matrix_X.cols());
+	mse_ /= (double)(Matrix_Y.size() - Matrix_X.cols());
+	mse = (float)mse_;
 /*
 	MatrixXf Matrix_Fisher = Matrix_XT_X_Ivt*mse;
 	int Matrix_Fisher_rows = Matrix_Fisher.rows();
