@@ -4,9 +4,6 @@
     <Natvis Include="eigen.natvis" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Main.cpp">
-      <Filter>Source</Filter>
-    </ClCompile>
     <ClCompile Include="src\Batch.cpp">
       <Filter>Source</Filter>
     </ClCompile>
@@ -49,7 +46,10 @@
     <ClCompile Include="src\ToolKit.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="src\easylogging++.cc">
+    <ClCompile Include="src\easylogging++.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Main.cpp">
       <Filter>Source</Filter>
     </ClCompile>
   </ItemGroup>

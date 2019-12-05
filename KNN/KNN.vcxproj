@@ -190,16 +190,16 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Main.cpp" />
     <ClCompile Include="src\Batch.cpp" />
     <ClCompile Include="src\CommonFunc.cpp" />
     <ClCompile Include="src\DataManager.cpp" />
-    <ClCompile Include="src\easylogging++.cc" />
+    <ClCompile Include="src\easylogging++.cpp" />
     <ClCompile Include="src\imnq.cpp" />
     <ClCompile Include="src\KernelExpansion.cpp" />
     <ClCompile Include="src\KernelGenerator.cpp" />
     <ClCompile Include="src\KernelManage.cpp" />
     <ClCompile Include="src\LinearRegression.cpp" />
+    <ClCompile Include="src\Main.cpp" />
     <ClCompile Include="src\MinqueBase.cpp" />
     <ClCompile Include="src\Options.cpp" />
     <ClCompile Include="src\PlinkReader.cpp" />
