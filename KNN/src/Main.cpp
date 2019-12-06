@@ -48,7 +48,7 @@ void readAlgrithomParameter(boost::program_options::variables_map programOptions
 
 void ReadData(boost::program_options::variables_map programOptions, DataManager &dm);
 
-void MINQUEAnalysis(boost::program_options::variables_map programOptions, DataManager &dm, std::string &out);
+void MINQUEAnalysis(boost::program_options::variables_map programOptions, DataManager &dm, MinqueOptions &minopt,std::string &out);
 
 void BatchMINQUE(MinqueOptions &minque, std::vector<Eigen::MatrixXf>& Kernels, PhenoData & phe, std::vector<float>& variances, float & iterateTimes, int nsplit, int seed, int nthread, bool isecho);
 
@@ -65,6 +65,8 @@ void TryMain(int argc, const char *const argv[])
 	kernelPool.insert({ "ibs",IBS });
 
 	Options opt(argc, argv);
+	MinqueOptions minopt;
+
 	boost::program_options::variables_map programOptions = opt.GetOptions();
 	if (1 == argc || programOptions.count("help"))
 	{
@@ -101,6 +103,7 @@ void TryMain(int argc, const char *const argv[])
 	el::Loggers::reconfigureLogger("default", conf);
 	std::cout << opt.print() << std::endl;
 	LOG(INFO) << opt.print();
+	readAlgrithomParameter(programOptions, minopt);
 	DataManager dm;
 	ReadData(programOptions, dm);
 	std::vector<KernelData> kernelList; 
@@ -237,7 +240,7 @@ void TryMain(int argc, const char *const argv[])
 		dm.match();
 		if (!programOptions.count("skip"))
 		{
-			MINQUEAnalysis(programOptions, dm, result);
+			MINQUEAnalysis(programOptions, dm, minopt, result);
 		}
 
 	}
@@ -376,7 +379,7 @@ void ReadData(boost::program_options::variables_map programOptions, DataManager 
 	
 }
 
-void MINQUEAnalysis(boost::program_options::variables_map programOptions, DataManager &dm, std::string &result)
+void MINQUEAnalysis(boost::program_options::variables_map programOptions, DataManager &dm, MinqueOptions &minopt, std::string &result)
 {
 	bool GPU = false;
 	if (programOptions.count("GPU"))
@@ -385,8 +388,8 @@ void MINQUEAnalysis(boost::program_options::variables_map programOptions, DataMa
 	}
 	PhenoData phe = dm.getPhenotype();
 	std::vector<KernelData> kd = dm.GetKernel();
-	MinqueOptions minopt;
-	readAlgrithomParameter(programOptions, minopt);
+//	MinqueOptions minopt;
+//	readAlgrithomParameter(programOptions, minopt);
 	std::vector<float> VarComp;
 	float iterateTimes = 0;
 	bool isecho;
@@ -663,7 +666,7 @@ void readAlgrithomParameter(boost::program_options::variables_map programOptions
 				break;
 			default:
 			{
-				logic_error emsg("The parameter inverse is not correct, please check it. More detail --help");
+				logic_error emsg("The parameter \"--inverse "+ Decomposition+"\" is not correct, please check it. More detail --help");
 				throw std::exception(emsg);
 				break;
 			}
@@ -690,7 +693,7 @@ void readAlgrithomParameter(boost::program_options::variables_map programOptions
 			}
 			else
 			{
-				logic_error emsg("The parameter inverse is not correct, please check it. More detail --help");
+				logic_error emsg("The parameter \"--inverse " + Decomposition + "\" is not correct, please check it. More detail --help");
 				throw std::exception(emsg);
 			}
 		}
@@ -715,7 +718,7 @@ void readAlgrithomParameter(boost::program_options::variables_map programOptions
 				minque.altMatrixDecomposition = 3;
 				break;
 			default:
-				throw std::exception(logic_error("The parameter ginverse is not correct, please check it. More detail --help"));
+				throw std::exception(logic_error("The argument \"--ginverse " + Decomposition + "\" is not correct, please check it. More detail --help"));
 				break;
 			}
 		}
@@ -732,7 +735,7 @@ void readAlgrithomParameter(boost::program_options::variables_map programOptions
 			}
 			else
 			{
-				throw std::exception(logic_error("The parameter ginverse is not correct, please check it. More detail --help"));
+				throw std::exception(logic_error("The parameter \"--ginverse " + Decomposition + "\" is not correct, please check it. More detail --help"));
 			}
 		}
 	}
