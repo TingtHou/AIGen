@@ -106,6 +106,8 @@ void DataManager::readResponse(std::string resopnsefile, PhenoData & phe)
 	{
 		std::string str;
 		getline(infile, str);
+		if (!str.empty() && str.back() == 0x0D)
+			str.pop_back();
 		if (infile.fail())
 		{
 			continue;
@@ -116,8 +118,9 @@ void DataManager::readResponse(std::string resopnsefile, PhenoData & phe)
 			continue;
 		}
 		std::vector<std::string> strVec;
-		boost::algorithm::split(strVec, str, boost::algorithm::is_any_of(" \t"));
-		phe.fid_iid.insert({ id++,strVec[0] + "_" + strVec[1] });
+		boost::algorithm::split(strVec, str, boost::algorithm::is_any_of(" \t"), boost::token_compress_on);
+		std::string fid_iid = strVec[0] + "_" + strVec[1];
+		phe.fid_iid.insert({ id++, fid_iid });
 		yvector.push_back(stof(strVec[2]));
 	}
 	infile.close();
@@ -139,6 +142,8 @@ void DataManager::readmkernel(std::string mkernel)
 	{
 		std::string prefix;
 		getline(klistifstream, prefix);
+		if (!prefix.empty() && prefix.back() == 0x0D)
+			prefix.pop_back();
 		if (klistifstream.fail())
 		{
 			continue;
@@ -160,8 +165,8 @@ void DataManager::match(PhenoData &phenotype, KernelData &kernel)
 // 	{
 // 		throw ("Error: the number of individuals in phenotype file cannot match the kernel file.\n");
 // 	}
-	return;
-	if (phenotype.fid_iid.size() == kernel.fid_iid.size())
+//	return;
+	if (phenotype.fid_iid== kernel.fid_iid)
 	{
 		return;
 	}
@@ -200,5 +205,4 @@ void DataManager::match(PhenoData &phenotype, KernelData &kernel)
 		phenotype.fid_iid.insert({ i, rowID });
 		kernel.fid_iid.insert({ i, rowID });
 	}
-	std::cout<<phenotype.Phenotype<<std::endl;
 }

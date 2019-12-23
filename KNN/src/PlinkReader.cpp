@@ -100,6 +100,8 @@ void PlinkReader::readPedfile(std::string pedfile)
 		major_allele.push_back("2");
 	}
 	std::getline(Ped, str_buf);
+	if (!str_buf.empty() && str_buf.back() == 0x0D)
+		str_buf.pop_back();
 	int indtmp = 0;
 	while (str_buf!="")
 	{
@@ -153,6 +155,8 @@ void PlinkReader::readPedfile(std::string pedfile)
 		}
 		Marker.push_back(Gene);
 		std::getline(Ped, str_buf);
+		if (!str_buf.empty() && str_buf.back() == 0x0D)
+			str_buf.pop_back();
 		nind++;
 	}
 	Ped.close();

@@ -167,6 +167,8 @@ void TryMain(int argc, const char *const argv[])
 			{
 				std::string eleInVector;
 				getline(infile, eleInVector);
+				if (!eleInVector.empty() && eleInVector.back() == 0x0D)
+					eleInVector.pop_back();
 				if (infile.fail())
 				{
 					continue;

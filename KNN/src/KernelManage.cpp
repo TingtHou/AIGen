@@ -29,6 +29,8 @@ void KernelReader::IDfileReader(std::ifstream &fin, KernelData &kdata)
 	{
 		std::string line;
 		getline(fin, line);
+		if (!line.empty() && line.back() == 0x0D)
+			line.pop_back();
 		if (fin.fail())
 		{
 			continue;
