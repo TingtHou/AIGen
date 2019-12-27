@@ -64,3 +64,48 @@ float Random::Normal(float mean, float sd)
 	return rd;
 }
 
+rmvnorm::rmvnorm(int n, Eigen::VectorXf& mu, Eigen::MatrixXf& Sigma)
+{
+	this->mu = mu;
+	this->Sigma = Sigma;
+	this->n = n;
+	nind = mu.size();
+	Y.resize(nind, n);
+	generate();
+}
+
+Eigen::MatrixXf rmvnorm::getY()
+{
+	if (Y.size() == 0)
+	{
+		throw("Generate Multivariate Normal failed");
+	}
+	return Y;
+}
+
+void rmvnorm::generate()
+{
+	Eigen::LLT<Eigen::MatrixXf> llt(Sigma);
+	if (llt.info() != Eigen::Success)
+	{
+		throw("The variance covariance matrix is not positive definite.");
+	}
+	Eigen::MatrixXf Lower = llt.matrixL();
+	for (int i = 0; i < n; i++)
+	{
+		Y.col(i) = simulation(Lower);
+	}
+}
+
+Eigen::VectorXf rmvnorm::simulation(Eigen::MatrixXf& LowerMatrix)
+{
+	Eigen::VectorXf Z(nind);
+	Eigen::VectorXf tmpY(nind);
+	for (size_t i = 0; i < nind; i++)
+	{
+		Z(i) = rd.Normal();
+	}
+	tmpY = LowerMatrix * Z + mu;
+	return tmpY;
+}
+
