@@ -64,7 +64,7 @@ float Random::Normal(float mean, float sd)
 	return rd;
 }
 
-rmvnorm::rmvnorm(int n, Eigen::VectorXf& mu, Eigen::MatrixXf& Sigma)
+mvnorm::mvnorm(int n, Eigen::VectorXf& mu, Eigen::MatrixXf& Sigma)
 {
 	this->mu = mu;
 	this->Sigma = Sigma;
@@ -74,30 +74,32 @@ rmvnorm::rmvnorm(int n, Eigen::VectorXf& mu, Eigen::MatrixXf& Sigma)
 	generate();
 }
 
-Eigen::MatrixXf rmvnorm::getY()
+Eigen::MatrixXf mvnorm::rmvnorm()
 {
-	if (Y.size() == 0)
-	{
-		throw("Generate Multivariate Normal failed");
-	}
+	Y.setZero();
+	generate();
 	return Y;
 }
 
-void rmvnorm::generate()
+
+
+void mvnorm::generate()
 {
-	Eigen::LLT<Eigen::MatrixXf> llt(Sigma);
-	if (llt.info() != Eigen::Success)
+	auto svd = Sigma.jacobiSvd(Eigen::ComputeFullU | Eigen::ComputeFullV);
+	const auto& singularValues = svd.singularValues();
+	for (unsigned int i = 0; i < singularValues.size(); ++i)
 	{
-		throw("The variance covariance matrix is not positive definite.");
+		if (singularValues(i) < -10E-6)
+			throw("The variance covariance matrix is not positive definite.");
 	}
-	Eigen::MatrixXf Lower = llt.matrixL();
+	Eigen::MatrixXf Lower = svd.matrixU() * singularValues.cwiseSqrt().asDiagonal();
 	for (int i = 0; i < n; i++)
 	{
 		Y.col(i) = simulation(Lower);
 	}
 }
 
-Eigen::VectorXf rmvnorm::simulation(Eigen::MatrixXf& LowerMatrix)
+Eigen::VectorXf mvnorm::simulation(Eigen::MatrixXf& LowerMatrix)
 {
 	Eigen::VectorXf Z(nind);
 	Eigen::VectorXf tmpY(nind);

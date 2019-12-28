@@ -1,4 +1,5 @@
 #pragma once
+#define EIGEN_USE_MKL_ALL
 #include <boost/random.hpp>
 #include <boost/random/random_device.hpp>
 #include <time.h>
@@ -18,11 +19,11 @@ public:
 	float Normal(float mean, float sd);
 };
 
-class rmvnorm
+class mvnorm
 {
 public:
-	rmvnorm(int n, Eigen::VectorXf& mu, Eigen::MatrixXf& Sigma);
-	Eigen::MatrixXf getY();
+	mvnorm(int n, Eigen::VectorXf& mu, Eigen::MatrixXf& Sigma);
+	Eigen::MatrixXf rmvnorm();
 private:
 	Random rd;
 	int n = 0;
