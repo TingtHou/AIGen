@@ -63,6 +63,53 @@ void DataManager::readmKernel(std::string mkernelfilename)
 	readmkernel(mkernelfilename);
 }
 
+void DataManager::readCovariates(std::string covfilename)
+{
+	std::vector<std::vector<float>> covs;
+	std::ifstream infile;
+	infile.open(covfilename);
+	if (!infile.is_open())
+	{
+		throw  ("Error: Cannot open [" + covfilename + "] to read.");
+	}
+	while (!infile.eof())
+	{
+		std::string str;
+		getline(infile, str);
+		if (!str.empty() && str.back() == 0x0D)
+			str.pop_back();
+		if (infile.fail())
+		{
+			continue;
+		}
+		boost::algorithm::trim(str);
+		if (str.empty())
+		{
+			continue;
+		}
+		std::vector<std::string> strVec;
+		boost::algorithm::split(strVec, str, boost::algorithm::is_any_of(" \t"), boost::token_compress_on);
+		std::vector<float> floatVector;
+		floatVector.reserve(strVec.size());
+		transform(strVec.begin(), strVec.end(), back_inserter(floatVector),
+			[](string const& val) {return stof(val); });
+		covs.push_back(floatVector);
+	}
+	infile.close();
+	Covariates.resize(covs.size(), 1+covs[0].size());
+	#pragma omp parallel for
+	for (int i = 0; i < Covariates.rows(); i++)
+	{
+		Covariates(i, 0) = 1;
+		for (int j = 1; j < Covariates.cols(); j++)
+		{
+			Covariates(i, j) = covs[i][j];
+		}
+	}
+
+	
+}
+
 void DataManager::readGeno(std::vector<std::string> filelist, bool isImpute)
 {
 	PlinkReader preader;
@@ -127,6 +174,8 @@ void DataManager::readResponse(std::string resopnsefile, PhenoData & phe)
 	int nind = yvector.size();
 	std::cout << nind << " Total" << std::endl;
 	phe.Phenotype = Eigen::Map<Eigen::VectorXf, Eigen::Unaligned>(yvector.data(), yvector.size());
+	Covariates.resize(phe.fid_iid.size(),1);
+	Covariates.setOnes();
 	//	std::cout << "Reading Phenotype Elapse Time : " << (clock() - t1) * 1.0 / CLOCKS_PER_SEC * 1000 << " ms" << std::endl;
 }
 
@@ -166,6 +215,10 @@ void DataManager::match(PhenoData &phenotype, KernelData &kernel)
 // 		throw ("Error: the number of individuals in phenotype file cannot match the kernel file.\n");
 // 	}
 //	return;
+	if (phenotype.fid_iid.size()!=Covariates.rows())
+	{
+		throw ("Error: the number of individuals in phenotype file cannot match the covariates file.\n");
+	}
 	if (phenotype.fid_iid== kernel.fid_iid)
 	{
 		return;
