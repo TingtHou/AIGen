@@ -69,7 +69,9 @@ void Options::boostProgramOptionsRoutine(int argc, const char * const argv[])
 		("kernel", po::value<std::string>()->value_name("{prefix}"),
 			"Specify .grm.bin + .grm.N.bin + .grm.id (GCTA triangular binary relationship matrix) filename prefix.\n\n")
 	    ("mkernel", po::value<std::string>()->value_name("[filename]"),
-				"Input multiple kernel files in binary format.\n");
+				"Input multiple kernel files in binary format.\n"),
+		("covs", po::value<std::string>()->value_name("[filename]"),
+				"Specify full name of covariates file\n");
 		po::options_description optsFilesOperation("File Operations");
 		optsFilesOperation.add_options()
 		("impute", po::value<bool>()->value_name("True/False"),
