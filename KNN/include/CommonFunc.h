@@ -68,5 +68,24 @@ void stripSameCol(Eigen::MatrixXf &Geno);
 void stdSNPmv(Eigen::MatrixXf &Geno);
 void set_difference(boost::bimap<int, std::string> &map1, boost::bimap<int, std::string> &map2, std::vector<std::string> &overlap);
 void GetSubMatrix(Eigen::MatrixXf &oMatrix, Eigen::MatrixXf &subMatrix, std::vector<int> rowIds, std::vector<int> colIDs);
+void GetSubMatrix(Eigen::MatrixXf& oMatrix, Eigen::MatrixXf& subMatrix, std::vector<int> rowIds);
 void GetSubVector(Eigen::VectorXf &oVector, Eigen::VectorXf &subVector, std::vector<int> IDs);
-
+float Cor(Eigen::VectorXf& Y1, Eigen::VectorXf& Y2);
+class ROC
+{
+public:
+	ROC(Eigen::VectorXf& Response, Eigen::VectorXf& Predictor);
+	float GetAUC() { return auc; };
+private:
+	Eigen::VectorXf Response;    //a  vector of responses, typically encoded with 0 (controls) and 1 (cases)
+	Eigen::VectorXf Predictor;   //a numeric vector of the same length than response, containing the predicted value of each observation.
+	Eigen::VectorXf thresholds; //	the thresholds at which the sensitivitiesand specificities were computed.
+	Eigen::VectorXf Sensitivity;
+	Eigen::VectorXf Specificity;
+	int nind = 0;
+	float step = 0;
+	float auc = 0;
+	void init();
+	void Calc();
+	void AUC();
+};

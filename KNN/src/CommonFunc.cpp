@@ -246,6 +246,17 @@ void GetSubMatrix(Eigen::MatrixXf & oMatrix, Eigen::MatrixXf & subMatrix, std::v
 	}
 }
 
+void GetSubMatrix(Eigen::MatrixXf& oMatrix, Eigen::MatrixXf& subMatrix, std::vector<int> rowIds)
+{
+	for (int i = 0; i < rowIds.size(); i++)
+	{
+		for (int j = 0; j < oMatrix.cols(); j++)
+		{
+			subMatrix(i, j) = oMatrix(rowIds[i], j);
+		}
+	}
+}
+
 void GetSubVector(Eigen::VectorXf & oVector, Eigen::VectorXf & subVector, std::vector<int> IDs)
 {
 	for (int i=0;i<IDs.size();i++)
@@ -253,3 +264,101 @@ void GetSubVector(Eigen::VectorXf & oVector, Eigen::VectorXf & subVector, std::v
 		subVector(i) = oVector(IDs[i]);
 	}
 }
+
+float Cor(Eigen::VectorXf& Y1, Eigen::VectorXf& Y2)
+{
+	assert(Y1.size() == Y2.size());
+	int nind = Y1.size();
+	double upper = 0;
+	double lower = 0;
+	Eigen::VectorXd Y1_double = Y1.cast<double>();
+	Eigen::VectorXd Y2_double = Y2.cast<double>();
+	Eigen::VectorXd Y1_Y2 = Y1_double.cwiseProduct(Y2_double);
+	double Y1_sum = Y1_double.sum();
+	double Y2_sum = Y2_double.sum();
+	double Y1_squre_sum = Y1_double.cwiseProduct(Y1_double).sum();
+	double Y2_squre_sum = Y2_double.cwiseProduct(Y2_double).sum();
+	double Y1_Y2_sum = Y1_Y2.sum();
+	upper = nind * Y1_Y2_sum - Y1_sum * Y2_sum;
+	lower = std::sqrt(nind * Y1_squre_sum - Y1_sum * Y1_sum) * std::sqrt(nind * Y2_squre_sum - Y2_sum * Y2_sum);
+	float cor = (float)upper / lower;
+	return cor;
+}
+
+float AUC(Eigen::VectorXf& Response, Eigen::VectorXf& Predictor)
+{
+	return 0.0f;
+}
+
+ROC::ROC(Eigen::VectorXf& Response, Eigen::VectorXf& Predictor)
+{
+	this->Response = Response;
+	this->Predictor = Predictor;
+	assert(Response.size() == Predictor.size());
+	nind = Response.size();
+	init();
+	Calc();
+	AUC();
+}
+
+void ROC::init()
+{
+	thresholds.resize(502);
+	Specificity.resize(502);
+	Sensitivity.resize(502);
+	thresholds.setZero();
+	Specificity.setZero();
+	Sensitivity.setZero();
+	float mins = Predictor.minCoeff();
+	float maxs = Predictor.maxCoeff();
+	step = (maxs- mins) / 500;
+	for (int i = 1; i < thresholds.size()-1; i++)
+	{
+		thresholds[i] = mins + step * i;
+	}
+	thresholds[0]= -std::numeric_limits<double>::infinity();
+	thresholds[501] = std::numeric_limits<double>::infinity();
+}
+
+void ROC::Calc()
+{
+	for (int i = 0; i < thresholds.size(); i++)
+	{
+		
+		int TruePos = 0;
+		int FaslePos = 0;
+		int TrueNeg = 0;
+		int FasleNeg = 0;
+		for (int j = 0; j < nind; j++)
+		{
+			if (Predictor[j] < thresholds[i])
+			{
+				if (abs(Response[j]) < 1e-7)
+					TrueNeg++;
+				else
+					FasleNeg++;
+			}
+			else
+			{
+				if (Response[j] > 1e-7)
+					TruePos++;
+				else
+					FaslePos++;
+			}
+		}
+		Sensitivity[i] = (float)TruePos / (float)(TruePos+FasleNeg);
+		Specificity[i] = (float)TrueNeg / (float)(TrueNeg+FaslePos);
+	}
+}
+
+void ROC::AUC()
+{
+	double auc = 0;
+	for (size_t i = 1; i < Sensitivity.size(); i++)
+	{
+		double height = (Sensitivity[i] + Sensitivity[i-1])/2;
+		auc += height * abs(Specificity[i]- Specificity[i - 1]);
+	}
+	this->auc = auc;
+}
+
