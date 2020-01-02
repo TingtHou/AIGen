@@ -16,7 +16,7 @@ void MinqueBase::pushback_Vi(Eigen::MatrixXf vi)
 	nVi++;
 }
 
-void MinqueBase::puskback_X(Eigen::MatrixXf X, bool intercept)
+void MinqueBase::pushback_X(Eigen::MatrixXf X, bool intercept)
 {
 	int nrows = X.rows();
 	int ncols = X.cols();

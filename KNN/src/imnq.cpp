@@ -86,7 +86,7 @@ void imnq::Iterate()
 		}
 		if (ncov!=0)
 		{
-			mnq->puskback_X(X,false);
+			mnq->pushback_X(X,false);
 		}
 		mnq->pushback_W(vc0);
 		mnq->setThreadId(ThreadId);
