@@ -47,6 +47,8 @@ struct PhenoData
 {
 	boost::bimap<int, std::string> fid_iid;
 	Eigen::VectorXf Phenotype;
+	int missing=0;
+	bool isbinary = true;
 };
 
 struct GenoData

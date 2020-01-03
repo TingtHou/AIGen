@@ -409,6 +409,7 @@ void MINQUEAnalysis(boost::program_options::variables_map programOptions, DataMa
 	std::vector<float> fix;
 	float iterateTimes = 0;
 	bool isecho;
+	std::vector<Eigen::MatrixXf> Kernels;
 	if (GPU)
 	{
 		// 		cuMINQUE cuvarest;
@@ -428,7 +429,7 @@ void MINQUEAnalysis(boost::program_options::variables_map programOptions, DataMa
 	}
 	else
 	{
-		std::vector<Eigen::MatrixXf> Kernels;
+		
 		if (programOptions.count("alphaKNN"))
 		{
 			int alpha = programOptions["alphaKNN"].as<int>();
@@ -474,15 +475,12 @@ void MINQUEAnalysis(boost::program_options::variables_map programOptions, DataMa
 		}
 	//	Eigen::VectorXf cvs;
 	//	Eigen::VectorXf fixes;
-		Eigen::VectorXf cvs=Eigen::Map<Eigen::VectorXf>(VarComp.data(), VarComp.size());
-		Eigen::VectorXf fixes=Eigen::Map<Eigen::VectorXf>(fix.data(), fix.size());
-		Eigen::VectorXf Y = (phe.Phenotype);
-		Prediction pred(Y, Kernels, cvs, Covs, fixes);
-		std::cout << "MSE: " << pred.getMSE() << "\n" << "Cor: " << pred.getCor() << std::endl;
 	}
+	
 	ofstream out;
 	out.open(result, ios::out);
 	LOG(INFO) << "---Result----";
+	std::cout << "---Result----" << std::endl;
 	out << "Source\tVariance" << std::endl;
 	LOG(INFO) << "Source\tVariance";
 //	std::cout << fixed << setprecision(4) << "Estimated Variances: ";
@@ -532,7 +530,28 @@ void MINQUEAnalysis(boost::program_options::variables_map programOptions, DataMa
 	out << ss.str() << std::endl;
 	std::cout << ss.str() << std::endl;
 	LOG(INFO) << ss.str();
+	if (programOptions.count("predict"))
+	{
+		std::cout << "---Prediction----" << std::endl;
 
+		Eigen::VectorXf cvs = Eigen::Map<Eigen::VectorXf>(VarComp.data(), VarComp.size());
+		Eigen::VectorXf fixes = Eigen::Map<Eigen::VectorXf>(fix.data(), fix.size());
+		Prediction pred(phe.Phenotype, Kernels, cvs, Covs, fixes, phe.isbinary);
+		std::stringstream ss;
+		if (phe.isbinary)
+		{
+			ss << "misclassification error:\t" << pred.getMSE() << std::endl << "AUC:\t" << pred.getAUC() << std::endl;
+		}
+		else
+		{
+			ss << "MSE:\t" << pred.getMSE() << std::endl << "Correlation:\t" << pred.getCor() << std::endl;
+		}
+		std::cout << ss.str();
+		LOG(INFO) << ss.str();
+		out<<  ss.str();
+	}
+	
+	
 	out.close();
 }
 

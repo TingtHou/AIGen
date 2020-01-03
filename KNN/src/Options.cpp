@@ -105,6 +105,7 @@ void Options::boostProgramOptionsRoutine(int argc, const char * const argv[])
 		("ginverse", po::value<std::string>()->value_name("mode"), "The alternative matrix decomposition if the matrix is not invertible and the pseudo inverse is allowed.\n"
 				"Only mode 2, QR decomposition and mode 3, SVD decomposition are available.\n"
 				"Default to mode 3.\n")
+		("predict", "Prediction according to estimation results.\n")
 		("alphaKNN", po::value<int>()->value_name("degree"), "Adopt 2-layer KNN with 1 latent feature h and order alpha polynomial kernels.\n")
 		("batch", po::value<int>()->value_name("num"), "Split a super-large kernels into 'num' smaller batch to analysis.\n")
 		("seed", po::value<int>()->value_name("num"), "Set seed for random process.\n")

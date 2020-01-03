@@ -149,6 +149,7 @@ void DataManager::readResponse(std::string resopnsefile, PhenoData & phe)
 		throw  ("Error: Cannot open [" + resopnsefile + "] to read.");
 	}
 	int id = 0;
+	int missing = 0;
 	while (!infile.eof())
 	{
 		std::string str;
@@ -162,18 +163,35 @@ void DataManager::readResponse(std::string resopnsefile, PhenoData & phe)
 		boost::algorithm::trim(str);
 		if (str.empty())
 		{
+			missing++;
 			continue;
 		}
 		std::vector<std::string> strVec;
 		boost::algorithm::split(strVec, str, boost::algorithm::is_any_of(" \t"), boost::token_compress_on);
+		if (strVec[2]=="-9")
+		{
+			continue;
+		}
 		std::string fid_iid = strVec[0] + "_" + strVec[1];
 		phe.fid_iid.insert({ id++, fid_iid });
+		if (abs(stof(strVec[2])-0)>1e-7 && abs(stof(strVec[2]) - 1) > 1e-7)
+		{
+			phe.isbinary = false;
+		}
 		yvector.push_back(stof(strVec[2]));
 	}
 	infile.close();
 	int nind = yvector.size();
-	std::cout << nind << " Total" << std::endl;
+	std::stringstream ss;
+	if (phe.isbinary)
+	{
+		ss << "The Phenotype is considered as binary traits." << std::endl;
+	}
+	ss << "Reading "<< nind << " individuals, and missing "<< missing << std::endl;
+	std::cout << ss.str();
+	LOG(INFO) << ss.str();
 	phe.Phenotype = Eigen::Map<Eigen::VectorXf, Eigen::Unaligned>(yvector.data(), yvector.size());
+	phe.missing = missing;
 	Covariates.resize(phe.fid_iid.size(),1);
 	Covariates.setOnes();
 	//	std::cout << "Reading Phenotype Elapse Time : " << (clock() - t1) * 1.0 / CLOCKS_PER_SEC * 1000 << " ms" << std::endl;
@@ -219,7 +237,7 @@ void DataManager::match(PhenoData &phenotype, KernelData &kernel)
 	{
 		throw ("Error: the number of individuals in phenotype file cannot match the covariates file.\n");
 	}
-	if (phenotype.fid_iid== kernel.fid_iid)
+	if (phenotype.fid_iid == kernel.fid_iid)
 	{
 		return;
 	}

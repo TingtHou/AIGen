@@ -1,12 +1,13 @@
 #include "../include/Prediction.h"
 
-Prediction::Prediction(Eigen::VectorXf& Real_Y, std::vector<Eigen::MatrixXf>&  Kernels, Eigen::VectorXf& vcs, Eigen::MatrixXf& X, Eigen::VectorXf& fixed)
+Prediction::Prediction(Eigen::VectorXf& Real_Y, std::vector<Eigen::MatrixXf>&  Kernels, Eigen::VectorXf& vcs, Eigen::MatrixXf& X, Eigen::VectorXf& fixed, bool isbinary)
 {
 	this->Real_Y = Real_Y;
 	this->Kernels = Kernels;
 	this->vcs = vcs;
 	this->X = X;
 	this->fixed = fixed;
+	this->isbinary = isbinary;
 	nind = Real_Y.size();
 	ncvs = vcs.size();
 	Predict_Y.resize(nind);
@@ -27,29 +28,36 @@ float Prediction::getCor()
 	return cor;
 }
 
+float Prediction::getAUC()
+{
+	return auc;
+}
+
 
 
 void Prediction::GetpredictY()
 {
-	Predict_Y= X * fixed;
-	std::ofstream test("predictY.txt");
-	test << Predict_Y << std::endl;
-	test.close();
-/*
-	Eigen::VectorXf mu(nind);
-	mu.setZero();
-	mu = X * fixed;
-	for (int i = 0; i < ncvs; i++)
+	Eigen::VectorXf Fix(nind);
+	Eigen::VectorXf Random(nind);
+	Fix.setZero();
+	Random.setZero();
+	Fix = X * fixed;
+	Eigen::MatrixXf Sigma(nind, nind);
+	Eigen::MatrixXf G(nind, nind);
+	int i = 0;
+	for (; i < ncvs-1; i++)
 	{
-		Eigen::MatrixXf Sigma(nind, nind);
+		
 		Sigma = vcs[i] * Kernels[i];
-		mvnorm mvn(1, mu, Sigma);
-		Predict_Y += mvn.rmvnorm().col(0);
+		G = vcs[i] * Kernels[i];
 	}
-	std::ofstream test("predictY.txt");
-	test << Predict_Y << std::endl;
-	test.close();
-	*/
+	Sigma = vcs[i] * Kernels[i];
+	ToolKit::comput_inverse_logdet_LU_mkl(Sigma);
+	Random = Sigma * G * (Real_Y - Fix);
+	Predict_Y = Fix + Random;
+//	std::ofstream test("predictY.txt");
+//	test << Predict_Y << std::endl;
+//	test.close();
 }
 
 void Prediction::calc_mse()
@@ -64,30 +72,19 @@ void Prediction::calc_mse()
 	mse = (float)mse_tmp;
 }
 
-void Prediction::calc_cor()
-{
-	double meanRealY, meanPredY;
-	meanPredY = meanRealY = 0;
-	double upper = 0;
-	double lower = 0;
-	Eigen::VectorXd PredY_double = Predict_Y.cast<double>();
-	Eigen::VectorXd RealY_double = Real_Y.cast<double>();
-	Eigen::VectorXd RealY_PredY = RealY_double.cwiseProduct(PredY_double);
-	double PredY_sum = PredY_double.sum();
-	double RealY_sum = RealY_double.sum();
-	double RealY_squre_sum = RealY_double.cwiseProduct(RealY_double).sum();
-	double PredY_squre_sum = PredY_double.cwiseProduct(PredY_double).sum();
-	double RealY_PredY_sum = RealY_PredY.sum();
-	upper = nind * RealY_PredY_sum - RealY_sum * PredY_sum;
-	lower = std::sqrt(nind * RealY_squre_sum - RealY_sum * RealY_sum) * std::sqrt(nind * PredY_squre_sum - PredY_sum * PredY_sum);
-	cor = (float)upper / lower;
-	
-}
+
 
 void Prediction::calc()
 {
 	GetpredictY();
 	calc_mse();
-	calc_cor();
-
+	if (isbinary)
+	{
+		ROC roc(Real_Y, Predict_Y);
+		auc = roc.GetAUC();
+	}
+	else
+	{
+		cor = Cor(Real_Y, Predict_Y);
+	}
 }
