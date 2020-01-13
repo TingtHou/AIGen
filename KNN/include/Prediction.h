@@ -9,10 +9,12 @@
 class Prediction
 {
 public:
-	Prediction(Eigen::VectorXf& Real_Y, std::vector<Eigen::MatrixXf>& Kernels, Eigen::VectorXf& vcs, Eigen::MatrixXf& X, Eigen::VectorXf& fixed, bool isbinary);
+	Prediction(Eigen::VectorXf& Real_Y, std::vector<Eigen::MatrixXf>& Kernels, Eigen::VectorXf& vcs, Eigen::MatrixXf& X, Eigen::VectorXf& fixed, bool isbinary, int mode);
 	float getMSE();
 	float getCor();
 	float getAUC();
+	Eigen::VectorXf getSensitivity() { return Sensitivity; };
+	Eigen::VectorXf getSpecificity() { return Specificity; };
 private:
 	Eigen::VectorXf Real_Y;
 	Eigen::VectorXf Predict_Y;
@@ -20,14 +22,18 @@ private:
 	Eigen::VectorXf vcs;
 	Eigen::MatrixXf X;
 	Eigen::VectorXf fixed;
+	Eigen::VectorXf Sensitivity;
+	Eigen::VectorXf Specificity;
 	bool isbinary;
 	int nind=0;
 	int ncvs=0;
 	float mse=0;
 	float cor=0;
 	float auc = 0;
+	int mode=0;
 private:
 	void GetpredictY();
 	void calc_mse();
 	void calc();
+	void GetPredictYLOO();
 };

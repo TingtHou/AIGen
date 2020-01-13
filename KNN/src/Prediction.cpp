@@ -1,6 +1,6 @@
 #include "../include/Prediction.h"
 
-Prediction::Prediction(Eigen::VectorXf& Real_Y, std::vector<Eigen::MatrixXf>&  Kernels, Eigen::VectorXf& vcs, Eigen::MatrixXf& X, Eigen::VectorXf& fixed, bool isbinary)
+Prediction::Prediction(Eigen::VectorXf& Real_Y, std::vector<Eigen::MatrixXf>&  Kernels, Eigen::VectorXf& vcs, Eigen::MatrixXf& X, Eigen::VectorXf& fixed, bool isbinary, int mode)
 {
 	this->Real_Y = Real_Y;
 	this->Kernels = Kernels;
@@ -8,6 +8,7 @@ Prediction::Prediction(Eigen::VectorXf& Real_Y, std::vector<Eigen::MatrixXf>&  K
 	this->X = X;
 	this->fixed = fixed;
 	this->isbinary = isbinary;
+	this->mode = mode;
 	nind = Real_Y.size();
 	ncvs = vcs.size();
 	Predict_Y.resize(nind);
@@ -44,16 +45,18 @@ void Prediction::GetpredictY()
 	Fix = X * fixed;
 	Eigen::MatrixXf Sigma(nind, nind);
 	Eigen::MatrixXf G(nind, nind);
+	Sigma.setZero();
+	G.setZero();
 	int i = 0;
 	for (; i < ncvs-1; i++)
 	{
 		
-		Sigma = vcs[i] * Kernels[i];
-		G = vcs[i] * Kernels[i];
+		Sigma += vcs[i] * Kernels[i];
+		G += vcs[i] * Kernels[i];
 	}
-	Sigma = vcs[i] * Kernels[i];
+	Sigma += vcs[i] * Kernels[i];
 	ToolKit::comput_inverse_logdet_LU_mkl(Sigma);
-	Random = Sigma * G * (Real_Y - Fix);
+	Random = Sigma * G  * (Real_Y - Fix);
 	Predict_Y = Fix + Random;
 //	std::ofstream test("predictY.txt");
 //	test << Predict_Y << std::endl;
@@ -76,15 +79,46 @@ void Prediction::calc_mse()
 
 void Prediction::calc()
 {
-	GetpredictY();
+	if (mode)
+	{
+		GetPredictYLOO();
+	}
+	else
+	{
+		GetpredictY();
+	}
 	calc_mse();
 	if (isbinary)
 	{
-		ROC roc(Real_Y, Predict_Y);
-		auc = roc.GetAUC();
+		ROC Roc(Real_Y, Predict_Y);
+		Specificity = Roc.getSpecificity();
+		Sensitivity = Roc.getSensitivity();
+		auc = Roc.GetAUC();
 	}
 	else
 	{
 		cor = Cor(Real_Y, Predict_Y);
 	}
+}
+
+void Prediction::GetPredictYLOO()
+{
+	Eigen::VectorXf Fix(nind);
+	Eigen::VectorXf Random(nind);
+	Fix.setZero();
+	Random.setZero();
+	Fix = X * fixed;
+	Eigen::MatrixXf Sigma(nind, nind);
+	Sigma.setZero();
+	for (int i = 0; i < ncvs; i++)
+	{
+
+		Sigma += vcs[i] * Kernels[i];
+	}
+	ToolKit::comput_inverse_logdet_LU_mkl(Sigma);
+	Eigen::VectorXf Diag = Sigma.diagonal();
+	Random = (Sigma * (Real_Y - Fix));
+	Random = Random.cwiseQuotient(Diag);
+	Random = (Real_Y - Fix) - Random;
+	Predict_Y = Fix + Random;
 }
