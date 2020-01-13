@@ -17,6 +17,7 @@
 #include <vector>
 #include <stdio.h>
 #include <iostream>
+#include <chrono>
 #include <boost/date_time.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/archive/binary_oarchive.hpp>
@@ -111,7 +112,7 @@ void TryMain(int argc, const char *const argv[])
 	if (programOptions.count("thread"))
 	{
 		int nthread = programOptions["thread"].as<int>();
-		mkl_set_num_threads(nthread);
+	//	mkl_set_num_threads(nthread);
 		omp_set_num_threads(nthread);
 	}
 	if (programOptions.count("make-kernel"))
@@ -251,7 +252,7 @@ void TryMain(int argc, const char *const argv[])
 
 int main(int argc, const char *const argv[])
 {
-	clock_t t1 = clock();
+//	clock_t t1 = clock();
 	
 	/////////////////////////////////////////////////////////////////////
 	std::cout<<"\n"
@@ -261,6 +262,7 @@ int main(int argc, const char *const argv[])
 		"|    Statistical Genetics and Statistical Learning Group   |\n"
 		"@----------------------------------------------------------@\n"
 		"\n";
+	std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
 	try
 	{
 		TryMain(argc, argv);
@@ -283,7 +285,10 @@ int main(int argc, const char *const argv[])
 	//get now time
 	boost::posix_time::ptime timeLocal = boost::posix_time::second_clock::local_time();
 	std::cout << "\n\nAnalysis finished: " << timeLocal << std::endl;
-	std::cout << "Total elapse Time : " << (clock() - t1) * 1.0 / CLOCKS_PER_SEC * 1000 << " ms" << std::endl;
+	std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
+	std::chrono::duration<double, std::ratio<1, 1>> duration_s(end - start);
+	//std::cout << "Total elapse Time : " << (clock() - t1) * 1.0 / CLOCKS_PER_SEC * 1000 << " ms" << std::endl;
+	cout << "Computational time: " << duration_s.count() <<" second(s)."<< endl;
 	return 1;
 }
 
@@ -296,48 +301,48 @@ void ReadData(boost::program_options::variables_map programOptions, DataManager 
 		std::string reponsefile = programOptions["phe"].as < std::string >();
 		std::cout << "Reading Phenotype from [" + reponsefile + "]." << std::endl;
 		LOG(INFO) << "Reading Phenotype from [" + reponsefile + "].";
-		clock_t t1 = clock();
+	//	clock_t t1 = clock();
 		dm.readPhe(reponsefile);
-		std::stringstream ss;
-		ss << "Read Phenotype Elapse Time : " << (clock() - t1) * 1.0 / CLOCKS_PER_SEC * 1000 << " ms";
-		std::cout <<ss.str() << std::endl;
-		LOG(INFO) << ss.str();
+	//	std::stringstream ss;
+	//	ss << "Read Phenotype Elapse Time : " << (clock() - t1) * 1.0 / CLOCKS_PER_SEC * 1000 << " ms";
+	//	std::cout <<ss.str() << std::endl;
+	//	LOG(INFO) << ss.str();
 	}
 	if (programOptions.count("covs"))
 	{
 		std::string covariatesfile = programOptions["covs"].as < std::string >();
 		std::cout << "Reading Covariates from [" + covariatesfile + "]." << std::endl;
 		LOG(INFO) << "Reading Covariates from [" + covariatesfile + "].";
-		clock_t t1 = clock();
+	//	clock_t t1 = clock();
 		dm.readCovariates(covariatesfile);
-		std::stringstream ss;
-		ss << "Read Covariates Elapse Time : " << (clock() - t1) * 1.0 / CLOCKS_PER_SEC * 1000 << " ms";
-		std::cout << ss.str() << std::endl;
-		LOG(INFO) << ss.str();
+	//	std::stringstream ss;
+	//	ss << "Read Covariates Elapse Time : " << (clock() - t1) * 1.0 / CLOCKS_PER_SEC * 1000 << " ms";
+	//	std::cout << ss.str() << std::endl;
+	//	LOG(INFO) << ss.str();
 	}
 	if (programOptions.count("kernel"))
 	{
 		std::string kernelfiles = programOptions["kernel"].as<std::string >();
 		std::cout << "Reading kernel list from [" + kernelfiles + "]." << std::endl;
 		LOG(INFO) << "Reading kernel list from [" + kernelfiles + "].";
-		clock_t t1 = clock();
+	//	clock_t t1 = clock();
 		dm.readKernel(kernelfiles);
-		std::stringstream ss;
-		ss << "Read kernel file Elapse Time : " << (clock() - t1) * 1.0 / CLOCKS_PER_SEC * 1000 << " ms";
-		std::cout << ss.str() << std::endl;
-		LOG(INFO) << ss.str();
+	//	std::stringstream ss;
+	//	ss << "Read kernel file Elapse Time : " << (clock() - t1) * 1.0 / CLOCKS_PER_SEC * 1000 << " ms";
+	//	std::cout << ss.str() << std::endl;
+	//	LOG(INFO) << ss.str();
 	}
 	if (programOptions.count("mkernel"))
 	{
 		std::string mkernelfile = programOptions["mkernel"].as<std::string >();
 		std::cout << "Reading kernel list from [" + mkernelfile + "]." << std::endl;
 		LOG(INFO) << "Reading kernel list from [" + mkernelfile + "].";
-		clock_t t1 = clock();
+	//	clock_t t1 = clock();
 		dm.readmKernel(mkernelfile);
-		std::stringstream ss;
-		ss << "Read multi-kernel Elapse Time : " << (clock() - t1) * 1.0 / CLOCKS_PER_SEC * 1000 << " ms";
-		std::cout << ss.str() << std::endl;
-		LOG(INFO) << ss.str();
+	//	std::stringstream ss;
+	//	ss << "Read multi-kernel Elapse Time : " << (clock() - t1) * 1.0 / CLOCKS_PER_SEC * 1000 << " ms";
+	//	std::cout << ss.str() << std::endl;
+	//	LOG(INFO) << ss.str();
 	}
 	if (programOptions.count("bfile"))
 	{
@@ -383,12 +388,12 @@ void ReadData(boost::program_options::variables_map programOptions, DataManager 
 	}
 	if (GFile.size()!=0)
 	{
-		clock_t t1 = clock();
+	//	clock_t t1 = clock();
 		dm.readGeno(GFile, isImpute);
-		std::stringstream ss;
-		ss << "Read Genotype Elapse Time : " << (clock() - t1) * 1.0 / CLOCKS_PER_SEC * 1000 << " ms";
-		std::cout << ss.str() << std::endl;
-		LOG(INFO) << ss.str() << std::endl;
+	//	std::stringstream ss;
+	//	ss << "Read Genotype Elapse Time : " << (clock() - t1) * 1.0 / CLOCKS_PER_SEC * 1000 << " ms";
+	//	std::cout << ss.str() << std::endl;
+	//	LOG(INFO) << ss.str() << std::endl;
 	}
 	
 }
@@ -532,15 +537,24 @@ void MINQUEAnalysis(boost::program_options::variables_map programOptions, DataMa
 	LOG(INFO) << ss.str();
 	if (programOptions.count("predict"))
 	{
+		int mode = programOptions["predict"].as<int>();
 		std::cout << "---Prediction----" << std::endl;
-
+		out<< "---Prediction----" << std::endl;
 		Eigen::VectorXf cvs = Eigen::Map<Eigen::VectorXf>(VarComp.data(), VarComp.size());
 		Eigen::VectorXf fixes = Eigen::Map<Eigen::VectorXf>(fix.data(), fix.size());
-		Prediction pred(phe.Phenotype, Kernels, cvs, Covs, fixes, phe.isbinary);
+		Prediction pred(phe.Phenotype, Kernels, cvs, Covs, fixes, phe.isbinary,mode);
 		std::stringstream ss;
 		if (phe.isbinary)
 		{
 			ss << "misclassification error:\t" << pred.getMSE() << std::endl << "AUC:\t" << pred.getAUC() << std::endl;
+//			std::ofstream of;
+//			of.open(result + ".roc", std::ios::out);
+//			of << "Sensitity\tSpecificity" << std::endl;
+//			for (int i = 0; i < pred.getSensitivity().size(); i++)
+//			{
+//				of << pred.getSensitivity()[i] << "\t" << pred.getSpecificity()[i] << std::endl;
+//			}
+//			of.close();
 		}
 		else
 		{
@@ -589,9 +603,9 @@ void BatchMINQUE(MinqueOptions &minque, std::vector<Eigen::MatrixXf>& Kernels, P
 		e.setIdentity();
 		for (int j = 0; j < KernelsBatch[i].size(); j++)
 		{
-			varest.pushback_Vi(KernelsBatch[i][j]);
+			varest.pushback_Vi(&KernelsBatch[i][j]);
 		}
-		varest.pushback_Vi(e);
+		varest.pushback_Vi(&e);
 		try
 		{
 			varest.estimate();
@@ -658,16 +672,16 @@ void MINQUE(MinqueOptions & minque, std::vector<Eigen::MatrixXf>& Kernels, Pheno
 	varest.pushback_X(Covs, false);
 	for (int i = 0; i < Kernels.size(); i++)
 	{
-		varest.pushback_Vi(Kernels[i]);
+		varest.pushback_Vi(&Kernels[i]);
 	}
 	Eigen::MatrixXf e(phe.fid_iid.size(), phe.fid_iid.size());
 	e.setIdentity();
-	varest.pushback_Vi(e);
+	varest.pushback_Vi(&e);
 	std::cout << "starting CPU MINQUE " << std::endl;
-	clock_t t1 = clock();
+//	clock_t t1 = clock();
 	varest.estimate();
-	std::cout << " --- Completed" << std::endl;
-	std::cout << "CPU Elapse Time : " << (clock() - t1) * 1.0 / CLOCKS_PER_SEC * 1000 << " ms" << std::endl;
+//	std::cout << " --- Completed" << std::endl;
+//	std::cout << "CPU Elapse Time : " << (clock() - t1) * 1.0 / CLOCKS_PER_SEC * 1000 << " ms" << std::endl;
 	variances.resize(varest.getvcs().size());
 	coefs.resize(varest.getfix().size());
 	Eigen::VectorXf::Map(&variances[0], varest.getvcs().size()) = varest.getvcs();
