@@ -121,16 +121,15 @@ void KernelReader::read()
 	Kernels.VariantCountMatrix.setZero();
 	std::cout << "Reading the kernel matrix from [" + BinFileName + "]." << std::endl;;
 	BinFileReader(Binifstream, Kernels);
-	std::ifstream Nifstream(NfileName, std::ios::binary);
-	if (Nifstream.is_open())
-	{
-		std::cout << "Reading the number of SNPs for the kernel from [" + NfileName + "]." << std::endl;
-		NfileReader(Nifstream, Kernels);
-		
-	}
+	//std::ifstream Nifstream(NfileName, std::ios::binary);
+	//if (Nifstream.is_open())
+	//{
+	//	std::cout << "Reading the number of SNPs for the kernel from [" + NfileName + "]." << std::endl;
+	//	NfileReader(Nifstream, Kernels);	
+	//}
 	IDifstream.close();
 	Binifstream.close();
-	Nifstream.close();
+	//Nifstream.close();
 
 }
 
