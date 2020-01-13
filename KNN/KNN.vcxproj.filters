@@ -52,6 +52,9 @@
     <ClCompile Include="src\Main.cpp">
       <Filter>Source</Filter>
     </ClCompile>
+    <ClCompile Include="src\Prediction.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="eigen_autoexp_part.dat" />
@@ -108,6 +111,9 @@
       <Filter>Header</Filter>
     </ClInclude>
     <ClInclude Include="include\easylogging++.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Prediction.h">
       <Filter>Header</Filter>
     </ClInclude>
   </ItemGroup>

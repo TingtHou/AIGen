@@ -56,12 +56,13 @@
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v142</PlatformToolset>
-    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <WholeProgramOptimization>false</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
     <UseIntelMKL>Parallel</UseIntelMKL>
     <UseOfMfc>false</UseOfMfc>
     <UseMpiLibrary>INTELMPI</UseMpiLibrary>
-    <UseIntelIPP>Parallel_Static</UseIntelIPP>
+    <UseIntelIPP>false</UseIntelIPP>
+    <UseILP64Interfaces>false</UseILP64Interfaces>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings" />
@@ -180,6 +181,8 @@
       <AdditionalOptions>/Zc:twoPhase- %(AdditionalOptions)</AdditionalOptions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OpenMP>GenerateParallelCode</OpenMP>
+      <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
+      <FloatingPointModel>Fast</FloatingPointModel>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -203,6 +206,7 @@
     <ClCompile Include="src\MinqueBase.cpp" />
     <ClCompile Include="src\Options.cpp" />
     <ClCompile Include="src\PlinkReader.cpp" />
+    <ClCompile Include="src\Prediction.cpp" />
     <ClCompile Include="src\Random.cpp" />
     <ClCompile Include="src\rln_mnq.cpp" />
     <ClCompile Include="src\ToolKit.cpp" />
@@ -226,6 +230,7 @@
     <ClInclude Include="include\MinqueBase.h" />
     <ClInclude Include="include\Options.h" />
     <ClInclude Include="include\PlinkReader.h" />
+    <ClInclude Include="include\Prediction.h" />
     <ClInclude Include="include\Random.h" />
     <ClInclude Include="include\rln_mnq.h" />
     <ClInclude Include="include\ToolKit.h" />
