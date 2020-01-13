@@ -10,6 +10,9 @@
 #include "easylogging++.h"
 #include <mkl.h>
 #include <thread>
+#include "mkl_types.h"
+#include "mkl_cblas.h"
+
 class rln_mnq :
 	public MinqueBase
 {

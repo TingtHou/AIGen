@@ -7,7 +7,7 @@ class MinqueBase
 {
 public:
 	void importY(Eigen::VectorXf Y);
-	void pushback_Vi(Eigen::MatrixXf vi);
+	void pushback_Vi(Eigen::MatrixXf *vi);
 	void pushback_X(Eigen::MatrixXf X,bool intercept);
 	void pushback_W(Eigen::VectorXf W);
 	void setThreadId(int Thread_id);
@@ -25,7 +25,7 @@ protected:
 	Eigen::MatrixXf VW;
 	Eigen::VectorXf vcs;
 	Eigen::VectorXf fix;
-	std::vector<Eigen::MatrixXf> Vi;
+	std::vector<Eigen::MatrixXf*> Vi;
 //	LOG *logfile;
 	int ThreadId = 0;
 	bool iscancel=false;

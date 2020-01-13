@@ -10,7 +10,7 @@ void MinqueBase::importY(Eigen::VectorXf Y)
 	VW.setZero();
 }
 
-void MinqueBase::pushback_Vi(Eigen::MatrixXf vi)
+void MinqueBase::pushback_Vi(Eigen::MatrixXf *vi)
 {
 	Vi.insert(Vi.end(), vi);
 	nVi++;

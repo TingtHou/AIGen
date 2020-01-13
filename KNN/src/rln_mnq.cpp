@@ -22,7 +22,7 @@ void rln_mnq::estimate()
 	float* pr_Identity = Identity.data();
 	for (int i = 0; i < nVi; i++)
 	{
-		float* pr_Vi = Vi[i].data();
+		float* pr_Vi = (*Vi[i]).data();
 		cblas_sgemm(CblasColMajor, CblasNoTrans, CblasNoTrans, nind, nind, nind, W[i], pr_Vi, nind, pr_Identity, nind, 1, pr_VW, nind);
 	}
 	int status=Inverse(VW, Decomp, altDecomp, allowPseudoInverse);
@@ -35,7 +35,7 @@ void rln_mnq::estimate()
 		for (int i = 0; i < nVi; i++)
 		{
 			RV[i] = Eigen::MatrixXf(nind, nind);
-			float* pr_Vi = Vi[i].data();
+			float* pr_Vi = (*Vi[i]).data();
 			float* pr_rvi = RV[i].data();
 			cblas_sgemm(CblasColMajor, CblasNoTrans, CblasNoTrans, nind, nind, nind, 1, pr_VW, nind, pr_Vi, nind, 0, pr_rvi, nind);
 
@@ -73,22 +73,26 @@ void rln_mnq::estimate()
 		for (int i = 0; i < nVi; i++)
 		{
 			RV[i].resize(nind, nind);
+			RV[i].setZero();
 			pr_rv_list.push_back(RV[i].data());
-			pr_vi_list.push_back(Vi[i].data());
+			pr_vi_list.push_back((*Vi[i]).data());
 		}
-		#pragma omp parallel for
+		
+		#pragma omp parallel for shared(pr_VW)
 		for (int i = 0; i < nVi; i++)
 		{
-			cblas_sgemm(CblasColMajor, CblasNoTrans, CblasNoTrans, nind, nind, nind, 1, pr_VW, nind, pr_vi_list[i], nind, 0, pr_rv_list[i], nind);
+			//cblas_sgemm(CblasColMajor, CblasNoTrans, CblasNoTrans, nind, nind, nind, 1, pr_VW, nind, pr_vi_list[i], nind, 0, pr_rv_list[i], nind);
+			//cblas_sgemmt(CblasColMajor, CblasUpper, CblasNoTrans, CblasNoTrans, nind, nind, 1, pr_VW, nind, pr_vi_list[i], nind, 0, pr_rv_list[i], nind);
+			cblas_ssymm(CblasColMajor, CblasLeft, CblasUpper, nind, nind, 1, pr_VW, nind, pr_vi_list[i], nind, 0, pr_rv_list[i], nind);
 		}
 		Ry = VW *Y;
 	}
 	Eigen::VectorXf u(nVi);
 	u.setZero();
-	#pragma omp parallel for
+	#pragma omp parallel for shared(Ry)
 	for (int i = 0; i < nVi; i++)
 	{
-		Eigen::VectorXd Ry_Vi_Ry = (Ry.cwiseProduct(Vi[i]*Ry)).cast<double>();
+		Eigen::VectorXd Ry_Vi_Ry = (Ry.cwiseProduct((*Vi[i]) *Ry)).cast<double>();
 		u[i] = (float)Ry_Vi_Ry.sum();
 	}
 	Eigen::MatrixXf F(nVi, nVi);
@@ -96,10 +100,23 @@ void rln_mnq::estimate()
 	#pragma omp parallel for
 	for (int i = 0; i < nVi; i++)
 	{
+		#pragma omp parallel for
 		for (int j=i;j<nVi;j++)
 		{
-			Eigen::MatrixXd RVij = (RV[i].transpose().cwiseProduct(RV[j])).cast<double>();
-			F(i, j) = (float)RVij.sum();
+			Eigen::MatrixXf RVij = (RV[i].transpose().cwiseProduct(RV[j]));
+			double sum = 0;
+			for (int m = 0; m < nind; m++)
+			{
+				for (int n = m; n < nind; n++)
+				{
+					sum += RVij(m, n);
+					if (n!=m)
+					{
+						sum+= RVij(m, n); //lower triangle
+					}
+				}
+			}
+			F(i, j) = (float)sum;
 			F(j, i) = F(i, j);
 		}
 	}
