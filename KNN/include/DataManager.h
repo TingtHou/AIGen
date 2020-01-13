@@ -1,4 +1,5 @@
 #pragma once
+#define EIGEN_USE_MKL_ALL
 #include "CommonFunc.h"
 #include <boost/program_options.hpp>
 #include <fstream>
