@@ -69,9 +69,9 @@ void Options::boostProgramOptionsRoutine(int argc, const char * const argv[])
 		("kernel", po::value<std::string>()->value_name("{prefix}"),
 			"Specify .grm.bin + .grm.N.bin + .grm.id (GCTA triangular binary relationship matrix) filename prefix.\n\n")
 	    ("mkernel", po::value<std::string>()->value_name("[filename]"),
-				"Input multiple kernel files in binary format.\n"),
+				"Input multiple kernel files in binary format.\n")
 		("covs", po::value<std::string>()->value_name("[filename]"),
-				"Specify full name of covariates file\n");
+				"Specify full name of covariates file.\n");
 		po::options_description optsFilesOperation("File Operations");
 		optsFilesOperation.add_options()
 		("impute", po::value<bool>()->value_name("True/False"),
@@ -105,7 +105,8 @@ void Options::boostProgramOptionsRoutine(int argc, const char * const argv[])
 		("ginverse", po::value<std::string>()->value_name("mode"), "The alternative matrix decomposition if the matrix is not invertible and the pseudo inverse is allowed.\n"
 				"Only mode 2, QR decomposition and mode 3, SVD decomposition are available.\n"
 				"Default to mode 3.\n")
-		("predict", "Prediction according to estimation results.\n")
+		("predict", po::value<int>()->value_name("mode"), "Prediction according to estimation results.\n"
+														"0: BLUP; 1: Leave one out\n")
 		("alphaKNN", po::value<int>()->value_name("degree"), "Adopt 2-layer KNN with 1 latent feature h and order alpha polynomial kernels.\n")
 		("batch", po::value<int>()->value_name("num"), "Split a super-large kernels into 'num' smaller batch to analysis.\n")
 		("seed", po::value<int>()->value_name("num"), "Set seed for random process.\n")
