@@ -58,7 +58,6 @@ struct GenoData
 
 };
 
-
 int Inverse(Eigen::MatrixXf & Ori_Matrix,int DecompositionMode, int AltDecompositionMode, bool allowPseudoInverse);
 int Inverse(Eigen::MatrixXd & Ori_Matrix, int DecompositionMode, int AltDecompositionMode, bool allowPseudoInverse);
 float Variance(Eigen::VectorXf &Y);
@@ -78,6 +77,8 @@ class ROC
 public:
 	ROC(Eigen::VectorXf& Response, Eigen::VectorXf& Predictor);
 	float GetAUC() { return auc; };
+	Eigen::VectorXf getSensitivity() { return Sensitivity; };
+	Eigen::VectorXf getSpecificity() { return Specificity; };
 private:
 	Eigen::VectorXf Response;    //a  vector of responses, typically encoded with 0 (controls) and 1 (cases)
 	Eigen::VectorXf Predictor;   //a numeric vector of the same length than response, containing the predicted value of each observation.
