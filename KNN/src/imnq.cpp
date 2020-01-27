@@ -6,6 +6,7 @@ void imnq::estimate()
 // 
 // 	std::cout << nProcessors << std::endl;
 // 	omp_set_num_threads(nProcessors);
+	
 	Iterate();
 }
 
@@ -27,6 +28,11 @@ void imnq::isEcho(bool isecho)
 {
 	this->isecho = isecho;
 
+}
+
+void imnq::SetMINQUE1(bool MINQUE1)
+{
+	this->MINQUE1 = MINQUE1;
 }
 
 
@@ -72,12 +78,9 @@ void imnq::Iterate()
 	vc0  = initVCS();
 	float diff = 0;
 	rln_mnq *mnq=nullptr;
-//	printf("Starting Iterate MINQUE Algorithm.\n");
-//	logfile->write("Starting Iterate MINQUE Algorithm",true);
 	LOG(INFO) << "Starting Iterate MINQUE Algorithm at thread "<<ThreadId;
 	while (initIterate <itr)
 	{
-//		clock_t t1 = clock();
 		mnq = new rln_mnq(Decomposition,altDecomposition,allowpseudoinverse);
 		mnq->importY(Y);
 		for (int i=0;i<nVi;i++)
@@ -90,22 +93,19 @@ void imnq::Iterate()
 		}
 		mnq->pushback_W(vc0);
 		mnq->setThreadId(ThreadId);
-	//	std::cout << "prepare: " << (clock() - t1) * 1.0 / CLOCKS_PER_SEC * 1000 << " ms" << std::endl;
-	//	t1 = clock();
 		mnq->estimate();
-	//	std::cout << "estimate: " << (clock() - t1) * 1.0 / CLOCKS_PER_SEC * 1000 << " ms" << std::endl;
 		vc1=mnq->getvcs();
 	    diff = (vc1 - vc0).squaredNorm() / vc0.squaredNorm();
 		std::stringstream ss;
 		ss << std::fixed << "Thread ID: " << ThreadId << std::setprecision(3) << "\tIt: " << initIterate << "\t" << vc1.transpose() << "\tdiff: ";
 		ss << std::scientific << diff;
+		vc0 = vc1;
+		initIterate++;
 		if (isecho)
 		{
 			printf("%s\n", ss.str().c_str());
 		}
 		LOG(INFO) << ss.str();
-		vc0 = vc1;
-		initIterate++;
 		if (diff<tol)
 		{
 
@@ -117,4 +117,35 @@ void imnq::Iterate()
 	fix = mnq->getfix();
 	delete mnq;
 	
+}
+
+void imnq::UseMINQUE1()
+{
+	Eigen::VectorXf vc0, vc1(nVi);
+	vc0 = initVCS();
+	rln_mnq mnq = rln_mnq(Decomposition, altDecomposition, allowpseudoinverse);
+
+	LOG(INFO) << "Starting Iterate MINQUE Algorithm at thread " << ThreadId;
+	mnq.importY(Y);
+	for (int i = 0; i < nVi; i++)
+	{
+		mnq.pushback_Vi(Vi[i]);
+	}
+	if (ncov != 0)
+	{
+		mnq.pushback_X(X, false);
+	}
+	mnq.pushback_W(vc0);
+	mnq.setThreadId(ThreadId);
+	mnq.estimate();
+	vc1 = mnq.getvcs();
+	std::stringstream ss;
+	ss << std::fixed << "Thread ID: " << ThreadId << std::setprecision(3) << "\tIt: " << initIterate << "\t" << vc1.transpose() << std::endl;
+	if (isecho)
+	{
+		printf("%s\n", ss.str().c_str());
+	}
+	LOG(INFO) << ss.str();
+	vcs = mnq.getvcs();
+	fix = mnq.getfix();
 }

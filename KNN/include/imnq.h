@@ -9,6 +9,7 @@
 #include <thread>
 #include "easylogging++.h"
 
+
 class imnq :
 	public MinqueBase
 {
@@ -17,6 +18,7 @@ public:
 	void setOptions(MinqueOptions mnqoptions);
 	int getIterateTimes();
 	void isEcho(bool isecho);
+	void SetMINQUE1(bool MINQUE1);
 private:
 	float tol = 1e-5; //convergence tolerence (def=1e-5)
 	int itr = 20;	//iterations allowed (def=20)
@@ -25,9 +27,10 @@ private:
 	bool allowpseudoinverse = true;
 	int initIterate = 0;
 	bool isecho=true;
+	bool MINQUE1 = false;
 private:
 	Eigen::VectorXf initVCS(); //initialize variance components
 	void Iterate();
-
+	void UseMINQUE1();
 };
 
