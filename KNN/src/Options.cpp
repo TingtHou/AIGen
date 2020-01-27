@@ -87,7 +87,7 @@ void Options::boostProgramOptionsRoutine(int argc, const char * const argv[])
 		("make-kernel", po::value<std::string>()->value_name("[kernel name]"), "Compute kernel matrix.\n"
 		 "mode 0: CAR kernel; mode 1: Identity kernel; mode 2: Product kernel; mode 3: Polymonial kernel; mode 4: Gaussian kernel; mode 5 IBS.\n")
 		("std", "Standardize SNP data.\n")
-		("weight", po::value<std::string>()->value_name("[filename]"), "Specify full name of weight vector file.\n")
+	//	("weight", po::value<std::string>()->value_name("[filename]"), "Specify full name of weight vector file.\n")
 		("scale", po::value<bool>()->value_name("True/False"), "The weight value will be scaled.\n")
 		("constant", po::value<float>()->value_name("value"), "The constant value used for polynomial kernel calculating.\n")
 		("deg", po::value<float>()->value_name("value"), "The degree value used for polynomial kernel calculating.\n")
@@ -95,6 +95,7 @@ void Options::boostProgramOptionsRoutine(int argc, const char * const argv[])
 	po::options_description optsAlgorithm("Algorithm Parameters");
 	optsAlgorithm.add_options()
 		("skip", "Skip estimation process.\n")
+	//	("minque1","Use MINQUE(1) for estimate.\n")
 		("iterate", po::value<int>()->value_name("times"), "The iterate times used in iterate minque method.\nDefault to 100.\n")
 		("tolerance", po::value<float>()->value_name("value"), "The threshold value used in iterate minque method.\nDefault to 1e-6.\n")
 		("inverse", po::value<std::string>()->value_name("mode"), "The matrix decomposition.\n"

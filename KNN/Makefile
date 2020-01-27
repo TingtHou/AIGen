@@ -10,19 +10,20 @@ OUTPUT = KNN
 
 RM = rm
 # Compiler
-CXX = g++
+CXX =  g++
 
 # EIGEN library
 EIGEN_PATH = /usr/include/Eigen
 
 # Intel MKL library
-MKL_PATH = /opt/intel/mkl
+MKLROOT = /opt/intel/mkl
 
 # Compiler flags
-CXXFLAGS =  -w -O3 -m64 -static -fopenmp -I $(EIGEN_PATH) -DEIGEN_NO_DEBUG -I $(MKL_PATH)/include -I /usr/include/boost
+CXXFLAGS =  -w -O3 -m64 -static -fopenmp -I $(EIGEN_PATH) -DEIGEN_NO_DEBUG -I $(MKLROOT)/include -I /usr/include/boost 
 
-LIB += -static -lz -Wl,--start-group  $(MKL_PATH)/lib/intel64/libmkl_intel_lp64.a $(MKL_PATH)/lib/intel64/libmkl_gnu_thread.a $(MKL_PATH)/lib/intel64/libmkl_core.a -Wl,--end-group -lpthread -lm -ldl -lboost_program_options
-
+LIB +=  -Wl,--start-group ${MKLROOT}/lib/intel64/libmkl_intel_lp64.a ${MKLROOT}/lib/intel64/libmkl_intel_thread.a ${MKLROOT}/lib/intel64/libmkl_core.a -Wl,--end-group -L/opt/intel/compilers_and_libraries/linux/lib/intel64 -liomp5  -lpthread -lm -ldl
+#LIB +=  -static -Wl,--start-group ${MKLROOT}/lib/intel64/libmkl_intel_lp64.a ${MKLROOT}/lib/intel64/libmkl_intel_thread.a ${MKLROOT}/lib/intel64/libmkl_core.a -Wl,--end-group -liomp5 -lpthread -lm -ldl
+LIB+=  -lboost_program_options
 SRC_DIR=src
 OBJ_DIR=obj
 

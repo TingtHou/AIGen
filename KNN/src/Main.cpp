@@ -53,7 +53,7 @@ void MINQUEAnalysis(boost::program_options::variables_map programOptions, DataMa
 
 void BatchMINQUE(MinqueOptions& minque, std::vector<Eigen::MatrixXf>& Kernels, PhenoData& phe, Eigen::MatrixXf& Covs, std::vector<float>& variances, float& iterateTimes, int nsplit, int seed, int nthread, bool isecho);
 
-void  MINQUE(MinqueOptions& minque, std::vector<Eigen::MatrixXf>& Kernels, PhenoData& phe, Eigen::MatrixXf& Covs, std::vector<float>& variances, std::vector<float>& coefs, float& iterateTimes, bool isecho);
+void MINQUE(MinqueOptions& minque, std::vector<Eigen::MatrixXf>& Kernels, PhenoData& phe, Eigen::MatrixXf& Covs, std::vector<float>& variances, std::vector<float>& coefs, float& iterateTimes, bool isecho);
 
 void TryMain(int argc, const char *const argv[])
 {
@@ -64,7 +64,6 @@ void TryMain(int argc, const char *const argv[])
 	kernelPool.insert({ "polynomial",Polymonial });
 	kernelPool.insert({ "gaussian",Gaussian });
 	kernelPool.insert({ "ibs",IBS });
-
 	Options opt(argc, argv);
 	MinqueOptions minopt;
 
@@ -265,6 +264,9 @@ int main(int argc, const char *const argv[])
 	std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
 	try
 	{
+		omp_set_nested(true);
+		omp_set_dynamic(false);
+		mkl_set_dynamic(false);
 		TryMain(argc, argv);
 	}
 	catch (string &e)
@@ -474,21 +476,16 @@ void MINQUEAnalysis(boost::program_options::variables_map programOptions, DataMa
 			if (programOptions.count("echo"))
 			{
 				isecho = programOptions["echo"].as<bool>();
-			}
-			
+			}	
 			MINQUE(minopt, Kernels, phe, Covs, VarComp, fix, iterateTimes,isecho);
 		}
-	//	Eigen::VectorXf cvs;
-	//	Eigen::VectorXf fixes;
 	}
-	
 	ofstream out;
 	out.open(result, ios::out);
 	LOG(INFO) << "---Result----";
 	std::cout << "---Result----" << std::endl;
 	out << "Source\tVariance" << std::endl;
 	LOG(INFO) << "Source\tVariance";
-//	std::cout << fixed << setprecision(4) << "Estimated Variances: ";
 	int i = 0;
 	float VG = 0;
 	float VP = 0;
@@ -547,14 +544,6 @@ void MINQUEAnalysis(boost::program_options::variables_map programOptions, DataMa
 		if (phe.isbinary)
 		{
 			ss << "misclassification error:\t" << pred.getMSE() << std::endl << "AUC:\t" << pred.getAUC() << std::endl;
-//			std::ofstream of;
-//			of.open(result + ".roc", std::ios::out);
-//			of << "Sensitity\tSpecificity" << std::endl;
-//			for (int i = 0; i < pred.getSensitivity().size(); i++)
-//			{
-//				of << pred.getSensitivity()[i] << "\t" << pred.getSpecificity()[i] << std::endl;
-//			}
-//			of.close();
 		}
 		else
 		{
@@ -564,7 +553,6 @@ void MINQUEAnalysis(boost::program_options::variables_map programOptions, DataMa
 		LOG(INFO) << ss.str();
 		out<<  ss.str();
 	}
-	
 	
 	out.close();
 }
@@ -666,6 +654,7 @@ void MINQUE(MinqueOptions & minque, std::vector<Eigen::MatrixXf>& Kernels, Pheno
 {
 	imnq varest;
 	varest.setOptions(minque);
+//	varest.SetMINQUE1(MINQUE1);
 	varest.isEcho(isecho);
 	//		varest.setLogfile(logout);
 	varest.importY(phe.Phenotype);
@@ -688,6 +677,8 @@ void MINQUE(MinqueOptions & minque, std::vector<Eigen::MatrixXf>& Kernels, Pheno
 	Eigen::VectorXf::Map(&coefs[0], varest.getfix().size()) = varest.getfix();
 	iterateTimes = varest.getIterateTimes();
 }
+
+
 
 void readAlgrithomParameter(boost::program_options::variables_map programOptions, MinqueOptions& minque)
 {
