@@ -6,6 +6,8 @@
 #include <random>
 #include <iomanip>
 #include "CommonFunc.h"
+
+//Generate subset data for each batch
 class Batch
 {
 public:

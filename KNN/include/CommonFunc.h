@@ -62,7 +62,7 @@ int Inverse(Eigen::MatrixXf & Ori_Matrix,int DecompositionMode, int AltDecomposi
 int Inverse(Eigen::MatrixXd & Ori_Matrix, int DecompositionMode, int AltDecompositionMode, bool allowPseudoInverse);
 float Variance(Eigen::VectorXf &Y);
 float mean(Eigen::VectorXf &Y);
-float isNum(std::string line);
+bool isNum(std::string line);
 std::string GetBaseName(std::string pathname);
 std::string GetParentPath(std::string pathname);
 void stripSameCol(Eigen::MatrixXf &Geno);
@@ -72,6 +72,8 @@ void GetSubMatrix(Eigen::MatrixXf &oMatrix, Eigen::MatrixXf &subMatrix, std::vec
 void GetSubMatrix(Eigen::MatrixXf& oMatrix, Eigen::MatrixXf& subMatrix, std::vector<int> rowIds);
 void GetSubVector(Eigen::VectorXf &oVector, Eigen::VectorXf &subVector, std::vector<int> IDs);
 float Cor(Eigen::VectorXf& Y1, Eigen::VectorXf& Y2);
+
+//ROC curve analysis
 class ROC
 {
 public:

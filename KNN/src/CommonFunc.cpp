@@ -1,5 +1,12 @@
 #include "../include/CommonFunc.h"
-
+//@brief:	Inverse a float matrix, and rewrite the inversed matrix into original matrix;
+//@param:	Ori_Matrix				The matrix to be inversed;
+//@param:	DecompositionMode		The mode to decompose the matrix;Cholesky = 0, LU = 1, QR = 2,SVD = 3;
+//@param:	AltDecompositionMode	Another mode to decompose if the first mode is failed; Only QR = 2 and SVD = 3 are allowed;
+//@param:	allowPseudoInverse		Allow to use pseudo inverse matrix; If True, AltDecompositionMode is avaiable; otherwise AltDecompositionMode is unavaiable.
+//@ret:		int						The info of statue of inverse method; 
+//									0 means successed; 1 means calculating inverse matrix is failed, and  using pseudo inverse matrix instead if allowPseudoInverse is true; 
+//									2 means calculating inverse matrix is failed, and pseudo inverse matrix is also failed.
 int Inverse(Eigen::MatrixXf & Ori_Matrix, int DecompositionMode, int AltDecompositionMode, bool allowPseudoInverse)
 {
 	int status = 0;
@@ -60,6 +67,15 @@ int Inverse(Eigen::MatrixXf & Ori_Matrix, int DecompositionMode, int AltDecompos
  	}
 	return status;
 }
+
+//@brief:	Inverse a double matrix, and rewrite the inversed matrix into original matrix;
+//@param:	Ori_Matrix				The matrix to be inversed;
+//@param:	DecompositionMode		The mode to decompose the matrix;Cholesky = 0, LU = 1, QR = 2,SVD = 3;
+//@param:	AltDecompositionMode	Another mode to decompose if the first mode is failed; Only QR = 2 and SVD = 3 are allowed;
+//@param:	allowPseudoInverse		Allow to use pseudo inverse matrix; If True, AltDecompositionMode is avaiable; otherwise AltDecompositionMode is unavaiable.
+//@ret:		int						The info of statue of inverse method; 
+//									0 means successed; 1 means calculating inverse matrix is failed, and  using pseudo inverse matrix instead if allowPseudoInverse is true; 
+//									2 means calculating inverse matrix is failed, and pseudo inverse matrix is also failed.
 int Inverse(Eigen::MatrixXd & Ori_Matrix, int DecompositionMode, int AltDecompositionMode, bool allowPseudoInverse)
 {
 	int status = 0;
@@ -120,7 +136,8 @@ int Inverse(Eigen::MatrixXd & Ori_Matrix, int DecompositionMode, int AltDecompos
 	}
 	return status;
 }
-//Sample variance
+
+
 float Variance(Eigen::VectorXf & Y)
 {
 	float meanY = mean(Y);
@@ -141,7 +158,8 @@ float mean(Eigen::VectorXf & Y)
 	return sumY/nind;
 }
 
-float isNum(std::string line)
+
+bool isNum(std::string line)
 {
 	stringstream sin(line);
 	float d;
@@ -170,7 +188,9 @@ std::string GetParentPath(std::string pathname)
 	return ParentPath==""?".":ParentPath;
 }
 
-
+//@brief:	remove the matrix column whose value is constant, and rewrite the new matrix into original matrix;
+//@param:	Geno	The matrix to be impute;
+//@ret:		void						
 void stripSameCol(Eigen::MatrixXf & Geno)
 {
 	std::vector<int> repeatID;
@@ -206,6 +226,9 @@ void stripSameCol(Eigen::MatrixXf & Geno)
 
 }
 
+//@brief:	Centralize a matrix by column, and rewrite the new matrix into original matrix;
+//@param:	Geno	The matrix to be centralized;
+//@ret:		void	
 void stdSNPmv(Eigen::MatrixXf & Geno)
 {
 	int ncol = Geno.cols();
@@ -224,6 +247,11 @@ void stdSNPmv(Eigen::MatrixXf & Geno)
 	}
 }
 
+//@brief:	Compare two bimap, and write the overlap elements into a vector;
+//@param:	map1		Bimap 1;
+//@param:	map2		Bimap 2;
+//@param:	overlap		A vector that stores overlap elements;
+//@ret:		void	
 void set_difference(boost::bimap<int, std::string>& map1, boost::bimap<int, std::string>& map2, std::vector<std::string>& overlap)
 {
 	for (auto it=map1.left.begin();it!=map1.left.end();it++)
@@ -235,6 +263,13 @@ void set_difference(boost::bimap<int, std::string>& map1, boost::bimap<int, std:
 	}
 }
 
+
+//@brief:	Get a subset of a float matrix given specific row IDs and column IDs;
+//@param:	oMatrix			The original matrix;
+//@param:	subMatrix		A subset matrix of the origianl matrix;
+//@param:	rowIds			A vector containing row IDs to be kept;
+//@param:	colIDs			A vector containing column IDs to be kept;
+//@ret:		void	
 void GetSubMatrix(Eigen::MatrixXf & oMatrix, Eigen::MatrixXf & subMatrix, std::vector<int> rowIds, std::vector<int> colIDs)
 {
 	for (int i=0;i<rowIds.size();i++)
@@ -246,6 +281,11 @@ void GetSubMatrix(Eigen::MatrixXf & oMatrix, Eigen::MatrixXf & subMatrix, std::v
 	}
 }
 
+//@brief:	Get a subset of a float matrix given specific row IDs;
+//@param:	oMatrix			The original matrix;
+//@param:	subMatrix		A subset matrix of the origianl matrix;
+//@param:	rowIds			A vector containing row IDs to be kept;
+//@ret:		void	
 void GetSubMatrix(Eigen::MatrixXf& oMatrix, Eigen::MatrixXf& subMatrix, std::vector<int> rowIds)
 {
 	for (int i = 0; i < rowIds.size(); i++)
@@ -257,6 +297,11 @@ void GetSubMatrix(Eigen::MatrixXf& oMatrix, Eigen::MatrixXf& subMatrix, std::vec
 	}
 }
 
+//@brief:	Get a subset of a float vector given specific IDs;
+//@param:	oVector			The original vector;
+//@param:	subVector		A subset vector of the origianl matrix;
+//@param:	IDs				A vector containing IDs to be kept;
+//@ret:		void	
 void GetSubVector(Eigen::VectorXf & oVector, Eigen::VectorXf & subVector, std::vector<int> IDs)
 {
 	for (int i=0;i<IDs.size();i++)
@@ -265,6 +310,10 @@ void GetSubVector(Eigen::VectorXf & oVector, Eigen::VectorXf & subVector, std::v
 	}
 }
 
+//@brief:	Calucating correlation coefficient between vector Y1 and vector Y2;
+//@param:	Y1		A vector;
+//@param:	Y2		Another vector;
+//@ret:		float	correlation coefficient
 float Cor(Eigen::VectorXf& Y1, Eigen::VectorXf& Y2)
 {
 	assert(Y1.size() == Y2.size());
@@ -285,11 +334,10 @@ float Cor(Eigen::VectorXf& Y1, Eigen::VectorXf& Y2)
 	return cor;
 }
 
-float AUC(Eigen::VectorXf& Response, Eigen::VectorXf& Predictor)
-{
-	return 0.0f;
-}
-
+//@brief:	Initialize class ROC;
+//@param:	Response		A vector of responses;
+//@param:	Predictor		A vector of predicts;
+//@ret:		void;
 ROC::ROC(Eigen::VectorXf& Response, Eigen::VectorXf& Predictor)
 {
 	this->Response = Response;
@@ -301,6 +349,8 @@ ROC::ROC(Eigen::VectorXf& Response, Eigen::VectorXf& Predictor)
 	AUC();
 }
 
+//@brief:	Initialize;
+//@ret:		void;
 void ROC::init()
 {
 	thresholds.resize(502);
@@ -320,6 +370,8 @@ void ROC::init()
 	thresholds[501] = std::numeric_limits<double>::infinity();
 }
 
+//@brief:	Calculating Sensitivity and Specificity given thresholds;
+//@ret:		void;
 void ROC::Calc()
 {
 	for (int i = 0; i < thresholds.size(); i++)
@@ -351,6 +403,8 @@ void ROC::Calc()
 	}
 }
 
+//@brief:	Calculating AUC;
+//@ret:		void;
 void ROC::AUC()
 {
 	double auc = 0;

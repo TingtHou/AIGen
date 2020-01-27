@@ -1,6 +1,12 @@
 #include "../include/Batch.h"
-
-
+//@brief:	Initilize batch function;
+//@param:	kernels		A vector of Eigen matrixs of variance components;
+//@param:	phe			A Eigen vector of phenotype;
+//@param:	Covs		A Eigen matrix of covariates;
+//@param:	splitnum	The number of batches;
+//@param:	seed		The seed for shuffle process;
+//@param:	isclear		Clear old "kernels" or not;
+//@ret:		void;
 Batch::Batch(std::vector<Eigen::MatrixXf>& kernels, Eigen::VectorXf &phe, Eigen::MatrixXf& Covs, int splitnum, int seed, bool isclear)
 {
 	this->kernels = kernels;
@@ -13,6 +19,9 @@ Batch::Batch(std::vector<Eigen::MatrixXf>& kernels, Eigen::VectorXf &phe, Eigen:
 	this->Covs = Covs;
 }
 
+//@brief:	Starting to generate subset data for each batch;
+//@param:	void;
+//@ret:		void;
 void Batch::start()
 {
 	shuffle();
@@ -22,16 +31,25 @@ void Batch::start()
 	}
 }
 
+//@brief:	Get Kernels for each batch;
+//@param:	BatchedKernel	A 2D vector to store kernels for each batch;
+//@ret:		void;
 void Batch::GetBatchKernels(std::vector<std::vector<Eigen::MatrixXf>>& BatchedKernel)
 {
 	BatchedKernel = KernelBatched;
 }
 
+//@brief:	Get phe for each batch;
+//@param:	phe	A vector to store phenotypes for each batch;
+//@ret:		void;
 void Batch::GetBatchPhe(std::vector<Eigen::VectorXf>& phe)
 {
 	phe = pheBatched;
 }
 
+//@brief:	Get covariate matrixes for each batch;
+//@param:	cov		A vector to store covariates for each batch;
+//@ret:		void;
 void Batch::GetBatchCov(std::vector<Eigen::MatrixXf>& cov)
 {
 	cov = CovsBatched;
@@ -41,6 +59,9 @@ Batch::~Batch()
 {
 }
 
+//@brief:	shuffle the indivisual IDs, and get phenotypes and kernels by shuffled IDs for each batch;
+//@param:	void;
+//@ret:		void;
 void Batch::shuffle()
 {
 	std::vector<int> shuffledID;
