@@ -4,101 +4,60 @@
     <Natvis Include="eigen.natvis" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="CheckMode.cpp">
+    <ClCompile Include="src\Batch.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="clog.cpp">
+    <ClCompile Include="src\CommonFunc.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="CommonFunc.cpp">
+    <ClCompile Include="src\DataManager.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="DataManager.cpp">
+    <ClCompile Include="src\imnq.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="imnq.cpp">
+    <ClCompile Include="src\KernelExpansion.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="KernelGenerator.cpp">
+    <ClCompile Include="src\KernelGenerator.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="KernelManage.cpp">
+    <ClCompile Include="src\KernelManage.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="LinearRegression.cpp">
+    <ClCompile Include="src\LinearRegression.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="Main.cpp">
+    <ClCompile Include="src\MinqueBase.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="MinqueBase.cpp">
+    <ClCompile Include="src\Options.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="Options.cpp">
+    <ClCompile Include="src\PlinkReader.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="pch.cpp">
+    <ClCompile Include="src\Random.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="PlinkReader.cpp">
+    <ClCompile Include="src\ToolKit.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="Random.cpp">
+    <ClCompile Include="src\easylogging++.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="rln_mnq.cpp">
+    <ClCompile Include="src\Main.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="ToolKit.cpp">
+    <ClCompile Include="src\Prediction.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="CheckMode.h">
-      <Filter>Header</Filter>
-    </ClInclude>
-    <ClInclude Include="cLog.h">
-      <Filter>Header</Filter>
-    </ClInclude>
-    <ClInclude Include="CommonFunc.h">
-      <Filter>Header</Filter>
-    </ClInclude>
-    <ClInclude Include="DataManager.h">
-      <Filter>Header</Filter>
-    </ClInclude>
-    <ClInclude Include="imnq.h">
-      <Filter>Header</Filter>
-    </ClInclude>
-    <ClInclude Include="KernelGenerator.h">
-      <Filter>Header</Filter>
-    </ClInclude>
-    <ClInclude Include="KernelManage.h">
-      <Filter>Header</Filter>
-    </ClInclude>
-    <ClInclude Include="LinearRegression.h">
-      <Filter>Header</Filter>
-    </ClInclude>
-    <ClInclude Include="MinqueBase.h">
-      <Filter>Header</Filter>
-    </ClInclude>
-    <ClInclude Include="Options.h">
-      <Filter>Header</Filter>
-    </ClInclude>
-    <ClInclude Include="pch.h">
-      <Filter>Header</Filter>
-    </ClInclude>
-    <ClInclude Include="PlinkReader.h">
-      <Filter>Header</Filter>
-    </ClInclude>
-    <ClInclude Include="Random.h">
-      <Filter>Header</Filter>
-    </ClInclude>
-    <ClInclude Include="rln_mnq.h">
-      <Filter>Header</Filter>
-    </ClInclude>
-    <ClInclude Include="ToolKit.h">
-      <Filter>Header</Filter>
-    </ClInclude>
+    <ClCompile Include="src\MINQUE1.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="src\MINQUE0.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="eigen_autoexp_part.dat" />
@@ -110,5 +69,58 @@
     <Filter Include="Source">
       <UniqueIdentifier>{1104405b-286c-4451-b548-8db1915b5583}</UniqueIdentifier>
     </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="include\Batch.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="include\CommonFunc.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="include\DataManager.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="include\imnq.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="include\KernelExpansion.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="include\KernelGenerator.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="include\KernelManage.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="include\LinearRegression.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="include\MinqueBase.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Options.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="include\PlinkReader.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Random.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ToolKit.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="include\easylogging++.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Prediction.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="include\MINQUE1.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="include\MINQUE0.h">
+      <Filter>Header</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

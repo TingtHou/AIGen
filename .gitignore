@@ -259,3 +259,13 @@ paket-files/
 # Python Tools for Visual Studio (PTVS)
 __pycache__/
 *.pyc
+/sample
+/later
+/TestUnit
+/KNN/My Inspector Results - KNN
+/sample2
+/test.txt
+/KNN/result.txt
+/KNN/KNN
+/s1
+/s2
