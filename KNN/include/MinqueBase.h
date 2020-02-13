@@ -2,6 +2,7 @@
 #define EIGEN_USE_MKL_ALL
 #include <Eigen/Dense>
 #include <vector>
+#include "CommonFunc.h"
 
 class MinqueBase
 {
@@ -11,10 +12,10 @@ public:
 	void pushback_X(Eigen::MatrixXf X,bool intercept);
 	void pushback_W(Eigen::VectorXf W);
 	void setThreadId(int Thread_id);
-	virtual void estimate()=0;
+	virtual void estimateVCs()=0;
+	void estimateFix();
 	Eigen::VectorXf getfix() { return fix; };
 	Eigen::VectorXf getvcs() { return vcs; };
-//	void setLogfile(LOG *logfile);
 protected:
 	int nind = 0;
 	int nVi = 0;
@@ -26,8 +27,12 @@ protected:
 	Eigen::VectorXf vcs;
 	Eigen::VectorXf fix;
 	std::vector<Eigen::MatrixXf*> Vi;
-//	LOG *logfile;
+
+	int Decomposition = Cholesky;
+	int altDecomposition = QR;
+	bool allowPseudoInverse = true;
 	int ThreadId = 0;
 	bool iscancel=false;
+	void CheckInverseStatus(int status);
 };
 
