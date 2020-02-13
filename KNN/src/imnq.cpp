@@ -1,12 +1,7 @@
 #include "../include/imnq.h"
 
-void imnq::estimate()
+void imnq::estimateVCs()
 {
-// 	int nProcessors = omp_get_max_threads();
-// 
-// 	std::cout << nProcessors << std::endl;
-// 	omp_set_num_threads(nProcessors);
-	
 	Iterate();
 }
 
@@ -16,7 +11,7 @@ void imnq::setOptions(MinqueOptions mnqoptions)
 	this->tol = mnqoptions.tolerance;
 	this->Decomposition = mnqoptions.MatrixDecomposition;
 	this->altDecomposition = mnqoptions.altMatrixDecomposition;
-	this->allowpseudoinverse = mnqoptions.allowPseudoInverse;
+	this->allowPseudoInverse = mnqoptions.allowPseudoInverse;
 }
 
 int imnq::getIterateTimes()
@@ -29,12 +24,6 @@ void imnq::isEcho(bool isecho)
 	this->isecho = isecho;
 
 }
-
-void imnq::SetMINQUE1(bool MINQUE1)
-{
-	this->MINQUE1 = MINQUE1;
-}
-
 
 
 Eigen::VectorXf imnq::initVCS()
@@ -74,14 +63,22 @@ Eigen::VectorXf imnq::initVCS()
 
 void imnq::Iterate()
 {
-	Eigen::VectorXf vc0,vc1(nVi);
-	vc0  = initVCS();
+	Eigen::VectorXf vc0(nVi),vc1(nVi);
+	if (W.size()!=0)
+	{
+		vc0 = W;
+	}
+	else
+	{
+	
+		vc0.setOnes();
+	}
 	float diff = 0;
-	rln_mnq *mnq=nullptr;
+	minque1 *mnq=nullptr;
 	LOG(INFO) << "Starting Iterate MINQUE Algorithm at thread "<<ThreadId;
 	while (initIterate <itr)
 	{
-		mnq = new rln_mnq(Decomposition,altDecomposition,allowpseudoinverse);
+		mnq = new minque1(Decomposition,altDecomposition, allowPseudoInverse);
 		mnq->importY(Y);
 		for (int i=0;i<nVi;i++)
 		{
@@ -93,7 +90,7 @@ void imnq::Iterate()
 		}
 		mnq->pushback_W(vc0);
 		mnq->setThreadId(ThreadId);
-		mnq->estimate();
+		mnq->estimateVCs();
 		vc1=mnq->getvcs();
 	    diff = (vc1 - vc0).squaredNorm() / vc0.squaredNorm();
 		std::stringstream ss;
@@ -114,38 +111,8 @@ void imnq::Iterate()
 
 	}
 	vcs = mnq->getvcs();
-	fix = mnq->getfix();
+//	mnq->estimateFix();
+//	fix = mnq->getfix();
 	delete mnq;
 	
-}
-
-void imnq::UseMINQUE1()
-{
-	Eigen::VectorXf vc0, vc1(nVi);
-	vc0 = initVCS();
-	rln_mnq mnq = rln_mnq(Decomposition, altDecomposition, allowpseudoinverse);
-
-	LOG(INFO) << "Starting Iterate MINQUE Algorithm at thread " << ThreadId;
-	mnq.importY(Y);
-	for (int i = 0; i < nVi; i++)
-	{
-		mnq.pushback_Vi(Vi[i]);
-	}
-	if (ncov != 0)
-	{
-		mnq.pushback_X(X, false);
-	}
-	mnq.pushback_W(vc0);
-	mnq.setThreadId(ThreadId);
-	mnq.estimate();
-	vc1 = mnq.getvcs();
-	std::stringstream ss;
-	ss << std::fixed << "Thread ID: " << ThreadId << std::setprecision(3) << "\tIt: " << initIterate << "\t" << vc1.transpose() << std::endl;
-	if (isecho)
-	{
-		printf("%s\n", ss.str().c_str());
-	}
-	LOG(INFO) << ss.str();
-	vcs = mnq.getvcs();
-	fix = mnq.getfix();
 }
