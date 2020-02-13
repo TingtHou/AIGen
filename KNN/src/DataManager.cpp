@@ -16,33 +16,6 @@ DataManager::~DataManager()
 {
 }
 
-// void DataManager::read()
-// {
-// 	if (programOptions.count("phe"))
-// 	{
-// 		std::string reponsefile = programOptions["phe"].as < std::string >();
-// 
-// 	}
-// 	if (programOptions.count("kernel"))
-// 	{
-// 		std::string kernelfiles = programOptions["kernel"].as<std::string >();
-// 		KernelReader kreader(kernelfiles);
-// 		kreader.read();
-// 		KernelData tmp = kreader.getKernel();
-// 		if (phe.fid_iid.size() > 0)
-// 		{
-// 			match(phe, tmp, kernelfiles);
-// 		}
-// 
-// 		KernelList.push_back(tmp);
-// 	}
-// 	if (programOptions.count("mkernel"))
-// 	{
-// 		std::string mkernelfile = programOptions["mkernel"].as<std::string >();
-// 		readmkernel(mkernelfile);
-// 	}
-// }
-
 void DataManager::readPhe(std::string phefilename)
 {
 	readResponse(phefilename, phe);
@@ -62,6 +35,7 @@ void DataManager::readmKernel(std::string mkernelfilename)
 {
 	readmkernel(mkernelfilename);
 }
+
 
 void DataManager::readCovariates(std::string covfilename)
 {
@@ -106,8 +80,6 @@ void DataManager::readCovariates(std::string covfilename)
 			Covariates(i, j) = covs[i][j];
 		}
 	}
-
-	
 }
 
 void DataManager::readGeno(std::vector<std::string> filelist, bool isImpute)
@@ -136,13 +108,48 @@ void DataManager::readGeno(std::vector<std::string> filelist, bool isImpute)
 	geno = preader.GetGeno();
 }
 
+void DataManager::readWeight(std::string filename)
+{
+
+	std::ifstream infile;
+	std::vector<float> WVector;
+	WVector.clear();
+	infile.open(filename);
+	if (!infile.is_open())
+	{
+		throw  ("Error: Cannot open [" + filename + "] to read.");
+	}
+	std::string str;
+	getline(infile, str);
+	if (!str.empty() && str.back() == 0x0D)
+		str.pop_back();
+	boost::algorithm::trim(str);
+	std::vector<std::string> strVec;
+	boost::algorithm::split(strVec, str, boost::algorithm::is_any_of(" \t"), boost::token_compress_on);
+	for (size_t i = 0; i < strVec.size(); i++)
+	{
+		if (!isNum(strVec[i]))
+		{
+			std::stringstream ss;
+			ss << "Error: The " << i << "th element in " << filename << " is not a number.\nPlease check it again.";
+			LOG(ERROR) << ss.str();
+			throw(ss.str());
+		}
+		WVector.push_back(stof(strVec[i]));
+	}
+	infile.close();
+	std::stringstream ss;
+	ss << "Reading " << strVec.size() << " weights for Iterative MINQUE" << std::endl;
+	std::cout << ss.str();
+	LOG(INFO) << ss.str();
+	Weights = Eigen::Map<Eigen::VectorXf, Eigen::Unaligned>(WVector.data(), WVector.size());
+}
+
 void DataManager::readResponse(std::string resopnsefile, PhenoData & phe)
 {
 	std::ifstream infile;
-	
 	std::vector<float> yvector;
 	yvector.clear();
-	//	std::cout << "Reading Phenotype from " << resopnsefile << std::endl;
 	infile.open(resopnsefile);
 	if (!infile.is_open())
 	{
@@ -194,7 +201,6 @@ void DataManager::readResponse(std::string resopnsefile, PhenoData & phe)
 	phe.missing = missing;
 	Covariates.resize(phe.fid_iid.size(),1);
 	Covariates.setOnes();
-	//	std::cout << "Reading Phenotype Elapse Time : " << (clock() - t1) * 1.0 / CLOCKS_PER_SEC * 1000 << " ms" << std::endl;
 }
 
 void DataManager::readmkernel(std::string mkernel)
@@ -228,11 +234,7 @@ void DataManager::readmkernel(std::string mkernel)
 
 void DataManager::match(PhenoData &phenotype, KernelData &kernel)
 {
-// 	if (phenotype.fid_iid.size() != kernel.fid_iid.size())
-// 	{
-// 		throw ("Error: the number of individuals in phenotype file cannot match the kernel file.\n");
-// 	}
-//	return;
+
 	if (phenotype.fid_iid.size()!=Covariates.rows())
 	{
 		throw ("Error: the number of individuals in phenotype file cannot match the covariates file.\n");
@@ -263,10 +265,6 @@ void DataManager::match(PhenoData &phenotype, KernelData &kernel)
 			std::string colID = overlapID[j];
 			auto itcol = tmpKernel.fid_iid.right.find(colID);
 			int OriKernelColID = itcol->second;
-// 			if (!rKernelID.count(rowID))
-// 			{
-// 				throw ("Error: cannot find the individual [" + rowID + "] in the kernel file.\n");
-// 			}
 			kernel.kernelMatrix(i, j) = kernel.kernelMatrix(j, i) = tmpKernel.kernelMatrix(OriKernelRowID, OriKernelColID);
 			kernel.VariantCountMatrix(i, j) = kernel.VariantCountMatrix(j, i) = tmpKernel.VariantCountMatrix(OriKernelRowID, OriKernelColID);
 		}

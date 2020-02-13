@@ -10,32 +10,43 @@
 #include "PlinkReader.h"
 #include "CommonFunc.h"
 #include "easylogging++.h"
+
+//Read data from files, impute the missing data, and match phenotype and kernel data
+//Usage:
+//DataManager dm;
+//dm.readPhe("Address of phenotype") ## Read phenotype
+//dm.readKernel("Address of kernel file") ## Read a kernel matrix
+//dm.readmKernel("Address of kernel list file") ## Read multiple kernels
+//dm.readGeno("Address of kernel list file",True) ## Read genotype data from plink format files
+
 class DataManager
 {
 public:
 	DataManager();
-//	void read();
-	void readPhe(std::string phefilename);
-	void readKernel(std::string prefix);
-	void readmKernel(std::string mkernelfilename);
-	void readCovariates(std::string covfilename);
-	void readGeno(std::vector<std::string> filelist, bool isImpute);                 //[ped, map] or [bed, bim, fam];
-	PhenoData getPhenotype() {	return phe;	};
-	std::vector<KernelData> GetKernel() { return KernelList; };
-	Eigen::MatrixXf GetCovariates() { return Covariates; };
-	void SetKernel(std::vector<KernelData> KernelList) { this->KernelList=KernelList; };
-	void match();
-	GenoData getGenotype() { return geno; };
+	void readPhe(std::string phefilename);											//Read phenotype
+	void readKernel(std::string prefix);											//Read a kernel matrix
+	void readmKernel(std::string mkernelfilename);									//Read multiple kernels
+	void readCovariates(std::string covfilename);									//Read Covariates
+	void readGeno(std::vector<std::string> filelist, bool isImpute);                //Read genotype data from plink format files, [ped, map] or [bed, bim, fam];
+	void readWeight(std::string filename);							                //Read weight file for Iterative MIQNUE
+	PhenoData getPhenotype() {	return phe;	};										//Get phenotype data
+	std::vector<KernelData> GetKernel() { return KernelList; };						//Get kernel data
+	Eigen::MatrixXf GetCovariates() { return Covariates; };							//Get covariate data
+	Eigen::VectorXf GetWeights() { return Weights; };								//Get Weights data
+	void SetKernel(std::vector<KernelData> KernelList)								//Replace internal kernel data with specificed external kernel data
+		{ this->KernelList=KernelList; };
+	void match();																	//match phenotype data and kernel data
+	GenoData getGenotype() { return geno; };										//Get genotype data
 	~DataManager();
 private:
-	PhenoData phe;
-	GenoData geno;
-	std::vector<KernelData> KernelList;
-	Eigen::MatrixXf Covariates;
+	PhenoData phe;																	//phenotype data
+	GenoData geno;																	//genotype data
+	std::vector<KernelData> KernelList;												//a vector of kernel data
+	Eigen::MatrixXf Covariates;														//covariates
+	Eigen::VectorXf Weights;														//Weights for Interative MINQUE
 private:
-	void readResponse(std::string resopnsefile, PhenoData &phe);
-	void readmkernel(std::string mkernel);
-	//void match(PhenoData &phenotype, KernelData &kernel, std::string prefix);
-	void match(PhenoData &phenotype, KernelData &kernel);
+	void readResponse(std::string resopnsefile, PhenoData &phe);					//as named
+	void readmkernel(std::string mkernel);											//read multiple kernels
+	void match(PhenoData &phenotype, KernelData &kernel);							//match phenotype data and one kernel matrix
 };
 
