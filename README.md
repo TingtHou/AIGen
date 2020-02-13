@@ -3,6 +3,6 @@ A Kernel-Based Neural Network for High-dimensional Genetic Risk Prediction Analy
 
 >Library Required:
 >>Eigen(version >=3.3.7);  
->>Boost
+>>Boost;
 >>Intel MKL
 
