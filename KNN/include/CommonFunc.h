@@ -6,7 +6,9 @@
 #include <Eigen/Dense>
 #include <boost/algorithm/string.hpp>
 #include "ToolKit.h"
-
+#include "easylogging++.h"
+#include <thread>
+#include <iomanip>
 
 enum MatrixDecompostionOptions :int
 {
@@ -72,6 +74,7 @@ void GetSubMatrix(Eigen::MatrixXf &oMatrix, Eigen::MatrixXf &subMatrix, std::vec
 void GetSubMatrix(Eigen::MatrixXf& oMatrix, Eigen::MatrixXf& subMatrix, std::vector<int> rowIds);
 void GetSubVector(Eigen::VectorXf &oVector, Eigen::VectorXf &subVector, std::vector<int> IDs);
 float Cor(Eigen::VectorXf& Y1, Eigen::VectorXf& Y2);
+
 
 //ROC curve analysis
 class ROC

@@ -1,4 +1,6 @@
 #include "../include/CommonFunc.h"
+
+
 //@brief:	Inverse a float matrix, and rewrite the inversed matrix into original matrix;
 //@param:	Ori_Matrix				The matrix to be inversed;
 //@param:	DecompositionMode		The mode to decompose the matrix;Cholesky = 0, LU = 1, QR = 2,SVD = 3;
