@@ -40,6 +40,9 @@
     <ClCompile Include="src\Random.cpp">
       <Filter>Source</Filter>
     </ClCompile>
+    <ClCompile Include="src\rln_mnq.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
     <ClCompile Include="src\ToolKit.cpp">
       <Filter>Source</Filter>
     </ClCompile>
@@ -50,12 +53,6 @@
       <Filter>Source</Filter>
     </ClCompile>
     <ClCompile Include="src\Prediction.cpp">
-      <Filter>Source</Filter>
-    </ClCompile>
-    <ClCompile Include="src\MINQUE1.cpp">
-      <Filter>Source</Filter>
-    </ClCompile>
-    <ClCompile Include="src\MINQUE0.cpp">
       <Filter>Source</Filter>
     </ClCompile>
   </ItemGroup>
@@ -107,6 +104,9 @@
     <ClInclude Include="include\Random.h">
       <Filter>Header</Filter>
     </ClInclude>
+    <ClInclude Include="include\rln_mnq.h">
+      <Filter>Header</Filter>
+    </ClInclude>
     <ClInclude Include="include\ToolKit.h">
       <Filter>Header</Filter>
     </ClInclude>
@@ -114,12 +114,6 @@
       <Filter>Header</Filter>
     </ClInclude>
     <ClInclude Include="include\Prediction.h">
-      <Filter>Header</Filter>
-    </ClInclude>
-    <ClInclude Include="include\MINQUE1.h">
-      <Filter>Header</Filter>
-    </ClInclude>
-    <ClInclude Include="include\MINQUE0.h">
       <Filter>Header</Filter>
     </ClInclude>
   </ItemGroup>

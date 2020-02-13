@@ -70,7 +70,6 @@ void Options::boostProgramOptionsRoutine(int argc, const char * const argv[])
 			"Specify .grm.bin + .grm.N.bin + .grm.id (GCTA triangular binary relationship matrix) filename prefix.\n\n")
 	    ("mkernel", po::value<std::string>()->value_name("[filename]"),
 				"Input multiple kernel files in binary format.\n")
-		("weights", po::value<std::string>()->value_name("[filename]"), "Specify full name of weight vector file for iterative MINQUE.\n")
 		("covs", po::value<std::string>()->value_name("[filename]"),
 				"Specify full name of covariates file.\n");
 		po::options_description optsFilesOperation("File Operations");
@@ -97,7 +96,6 @@ void Options::boostProgramOptionsRoutine(int argc, const char * const argv[])
 	optsAlgorithm.add_options()
 		("skip", "Skip estimation process.\n")
 	//	("minque1","Use MINQUE(1) for estimate.\n")
-		("minque0", "Use MINQUE(0) for estimate.\n")
 		("iterate", po::value<int>()->value_name("times"), "The iterate times used in iterate minque method.\nDefault to 100.\n")
 		("tolerance", po::value<float>()->value_name("value"), "The threshold value used in iterate minque method.\nDefault to 1e-6.\n")
 		("inverse", po::value<std::string>()->value_name("mode"), "The matrix decomposition.\n"
@@ -114,7 +112,6 @@ void Options::boostProgramOptionsRoutine(int argc, const char * const argv[])
 		("batch", po::value<int>()->value_name("num"), "Split a super-large kernels into 'num' smaller batch to analysis.\n")
 		("seed", po::value<int>()->value_name("num"), "Set seed for random process.\n")
 		("echo", po::value<bool>()->value_name("True/False"), "Print the results at each iterate or not")
-		("fix",  "Skip fixed effects estimation.\n")
 		("thread", po::value<int>()->value_name("num"), "Set a 'num' size thread pool for multi-thread analysis.\n");
 	po::options_description optsComputerDevice("Computing Device Options");
 	optsComputerDevice.add_options()
