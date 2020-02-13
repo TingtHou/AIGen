@@ -204,12 +204,13 @@
     <ClCompile Include="src\KernelManage.cpp" />
     <ClCompile Include="src\LinearRegression.cpp" />
     <ClCompile Include="src\Main.cpp" />
+    <ClCompile Include="src\MINQUE0.cpp" />
     <ClCompile Include="src\MinqueBase.cpp" />
     <ClCompile Include="src\Options.cpp" />
     <ClCompile Include="src\PlinkReader.cpp" />
     <ClCompile Include="src\Prediction.cpp" />
     <ClCompile Include="src\Random.cpp" />
-    <ClCompile Include="src\rln_mnq.cpp" />
+    <ClCompile Include="src\MINQUE1.cpp" />
     <ClCompile Include="src\ToolKit.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -228,12 +229,13 @@
     <ClInclude Include="include\KernelGenerator.h" />
     <ClInclude Include="include\KernelManage.h" />
     <ClInclude Include="include\LinearRegression.h" />
+    <ClInclude Include="include\MINQUE0.h" />
     <ClInclude Include="include\MinqueBase.h" />
     <ClInclude Include="include\Options.h" />
     <ClInclude Include="include\PlinkReader.h" />
     <ClInclude Include="include\Prediction.h" />
     <ClInclude Include="include\Random.h" />
-    <ClInclude Include="include\rln_mnq.h" />
+    <ClInclude Include="include\MINQUE1.h" />
     <ClInclude Include="include\ToolKit.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
