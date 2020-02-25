@@ -10,19 +10,12 @@
 #include "cuToolkit.h"
 #include "ToolKit.h"
 #include "cuMinqueBase.h"
-class cuMINQUE1 :
-	public cuMinqueBase
+class cuMINQUE1
 {
 public:
 	cuMINQUE1(int DecompositionMode, int altDecompositionMode, bool allowPseudoInverse);
 	~cuMINQUE1();
-	void importY(Eigen::VectorXf &Y);
-	void pushback_Vi(Eigen::MatrixXf &vi);
-	void pushback_X(Eigen::MatrixXf &X, bool intercept);
-	void pushback_W(Eigen::VectorXf& W);
 	void estimateVCs();
-	Eigen::VectorXf getfix() { return fix; };
-	Eigen::VectorXf getvcs() { return vcs; };
 private:
 	int deviceID = 0;
 
