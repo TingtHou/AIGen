@@ -211,6 +211,7 @@ void DataManager::readmkernel(std::string mkernel)
 	{
 		throw ("Error: cannot open the file [" + mkernel + "] to read.");
 	}
+	std::vector<std::string> filenames;
 	while (!klistifstream.eof())
 	{
 		std::string prefix;
@@ -221,12 +222,18 @@ void DataManager::readmkernel(std::string mkernel)
 		{
 			continue;
 		}
-		KernelReader kreader(prefix);
-		kreader.read();
-		KernelData tmpData = kreader.getKernel();
-		KernelList.push_back(tmpData);
+		filenames.push_back(prefix);
 	}
 	klistifstream.close();
+	KernelList.resize(filenames.size());
+#pragma omp parallel for
+	for (int i = 0; i < filenames.size(); i++)
+	{
+		KernelReader kreader(filenames[i]);
+		kreader.read();
+		KernelData tmpData = kreader.getKernel();
+		KernelList[i]=tmpData;
+	}
 }
 
 
