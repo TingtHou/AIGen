@@ -113,13 +113,14 @@ void KernelReader::read()
 		Binifstream.close();
 		throw ("Error: can not open the file [" + BinFileName + "] to read.");
 	}
-	std::cout << "Reading the IDs from [" + IDfileName + "]." << std::endl;
+	printf("Reading the IDs from [ %s ]\n", IDfileName.c_str());
 	IDfileReader(IDifstream, Kernels);
 	Kernels.kernelMatrix.resize(nind, nind);
 	Kernels.VariantCountMatrix.resize(nind, nind);
 	Kernels.kernelMatrix.setZero();
 	Kernels.VariantCountMatrix.setZero();
-	std::cout << "Reading the kernel matrix from [" + BinFileName + "]." << std::endl;;
+//	std::cout << "Reading the kernel matrix from [" + BinFileName + "]." << std::endl;;
+	printf("Reading the kernel matrix from[%s ]\n", BinFileName.c_str());
 	BinFileReader(Binifstream, Kernels);
 	//std::ifstream Nifstream(NfileName, std::ios::binary);
 	//if (Nifstream.is_open())
