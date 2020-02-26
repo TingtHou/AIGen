@@ -12,83 +12,17 @@ cuMINQUE1::~cuMINQUE1()
 {
 }
 
-void cuMINQUE1::importY(Eigen::VectorXf& Y)
-{
-	this->h_Y = Y.data();
-	this->nind = Y.size();
-	cudaMalloc((float**)&d_Y, nind * sizeof(float));
-	cudaDeviceSynchronize();
-	cudastat = cudaGetLastError();
-	if (cudastat != cudaSuccess)
-	{
-		throw (cudaGetErrorString(cudastat));
-	}
-	cudaMemcpy(d_Y, h_Y, nind * sizeof(float), cudaMemcpyHostToDevice);
-	cudaDeviceSynchronize();
-	cudastat = cudaGetLastError();
-	if (cudastat != cudaSuccess)
-	{
-		throw (cudaGetErrorString(cudastat));
-	}
-	
-
-}
-
-void cuMINQUE1::pushback_Vi(Eigen::MatrixXf& vi)
-{
-	h_Vi.push_back(vi.data());
-	nVi++;
-}
-
-void cuMINQUE1::pushback_X(Eigen::MatrixXf& X, bool intercept)
-{
-	int nrows = X.rows();
-	int ncols = X.cols();
-	assert(nrows == nind);
-	if (ncov == 0)
-	{
-		if (intercept)
-		{
-			this->X.resize(nind, ncols + 1);
-			Eigen::VectorXf IDt(nind);
-			IDt.setOnes();
-			this->X << IDt, X;
-		}
-		else
-		{
-			this->X = X;
-		}
-
-	}
-	else
-	{
-		Eigen::MatrixXf tmpX = this->X;
-		if (intercept)
-		{
-			this->X.resize(nind, ncov + ncols - 1);
-			this->X << tmpX, X.block(0, 1, nrows, ncols - 1);
-		}
-		else
-		{
-			this->X.resize(nind, ncov + ncols);
-			this->X << tmpX, X;
-		}
-
-	}
-	ncov = this->X.cols();
-
-}
-
-void cuMINQUE1::pushback_W(Eigen::VectorXf &W)
-{
-	this->h_W = W.data();
-	Isweight = true;
-}
-
 void cuMINQUE1::estimateVCs()
 {
-	std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
-	init();
+	float* d_Identity;
+	cudaMalloc((float**)&d_Identity, nind * nind * sizeof(float));
+	cuAsDiag(d_Identity, nind);
+	status = cublasCreate(&handle);
+	if (status != CUBLAS_STATUS_SUCCESS)
+	{
+		throw (_cudaGetErrorEnum(status));
+	}
+
 	float* d_VW, *d_Ry;
 	float* h_Ry; Eigen::VectorXf Ry(nind);
 	h_Ry = Ry.data();
@@ -128,6 +62,7 @@ void cuMINQUE1::estimateVCs()
 			throw (_cudaGetErrorEnum(cublasstatus));
 		}
 	}
+	cudaFree(d_Identity);
 	cuToolkit::cuCholesky(d_VW, nind);
 //	std::vector<Eigen::MatrixXf> RV(nVi);
 	std::vector<float*> d_RV(nVi);
@@ -225,17 +160,10 @@ void cuMINQUE1::estimateVCs()
 			throw (_cudaGetErrorEnum(status));
 		}
 	}
-	/*
-	std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
-	std::chrono::duration<double, std::ratio<1, 1>> duration_s(end - start);
-	std::cout << "GPU completed" << std::endl;
-	std::cout << "Computational time: " << duration_s.count() << " second(s)." << std::endl;
-	*/
 	Eigen::VectorXf h_u(nVi);
 	Eigen::MatrixXf h_F(nVi, nVi);
-	float* V_identity;
-	cudaMalloc((float**)&V_identity, nind * sizeof(float));
-	cuFillValue(V_identity, nind,1);
+	cudaMalloc((float**)&d_Identity, nind * sizeof(float));
+	cuFillValue(d_Identity, nind,1);
 	cudaDeviceSynchronize();
 	if (status != CUBLAS_STATUS_SUCCESS)
 	{
@@ -245,16 +173,16 @@ void cuMINQUE1::estimateVCs()
 	for (int i = 0; i < nVi; i++)
 	{
 		cuVectorCwiseProduct(d_Ry, d_Vi_y[i],d_yVi_y[i],nind);
-		status = cublasSdot(handle, nind, d_yVi_y[i], 1, V_identity, 1, h_u.data()+i);
+		status = cublasSdot(handle, nind, d_yVi_y[i], 1, d_Identity, 1, h_u.data()+i);
 		cudaDeviceSynchronize();
 		if (status != CUBLAS_STATUS_SUCCESS)
 		{
 			throw (_cudaGetErrorEnum(status));
 		}
 	}
-	cudaFree(V_identity);
-	cudaMalloc((float**)&V_identity, nind*nind * sizeof(float));
-	cuFillValue(V_identity, nind* nind, 1);
+	cudaFree(d_Identity);
+	cudaMalloc((float**)&d_Identity, nind*nind * sizeof(float));
+	cuFillValue(d_Identity, nind* nind, 1);
 	Eigen::MatrixXf tmp(nind, nind);
 	for (int i = 0; i < nVi; i++)
 	{
@@ -268,7 +196,7 @@ void cuMINQUE1::estimateVCs()
 			cudaMalloc((float**)&RVij, nind* nind * sizeof(float));
 			cudaMemset(RVij, 0, nind* nind * sizeof(float));
 			cuVectorCwiseProduct(d_RVi_t, d_RV[j], RVij, nind*nind);
-			status = cublasSdot(handle, nind * nind, RVij, 1, V_identity, 1, h_F.data()+i + nVi * j);
+			status = cublasSdot(handle, nind * nind, RVij, 1, d_Identity, 1, h_F.data()+i + nVi * j);
 			cudaDeviceSynchronize();
 			if (status != CUBLAS_STATUS_SUCCESS)
 			{
@@ -277,7 +205,7 @@ void cuMINQUE1::estimateVCs()
 			h_F(j, i) = h_F(i, j);
 		}
 	}
-	cudaFree(V_identity);
+	cudaFree(d_Identity);
 	ToolKit::comput_inverse_logdet_LU_mkl(h_F);
 	vcs = h_F * h_u;
 	cudaFree(d_VW);
@@ -288,90 +216,4 @@ void cuMINQUE1::estimateVCs()
 		cudaFree(d_Vi_y[i]);
 		cudaFree(d_yVi_y[i]);
 	}
-}
-
-
-
-void cuMINQUE1::init()
-{
-	status = cublasCreate(&handle);
-	if (status != CUBLAS_STATUS_SUCCESS)
-	{
-		throw (_cudaGetErrorEnum(status));
-	}
-
-	//alloc a mem for d_X on device
-	cudaMalloc((float**)&d_X, nind * ncov * sizeof(float));
-	cudaDeviceSynchronize();
-	cudastat = cudaGetLastError();
-	if (cudastat != cudaSuccess)
-	{
-		throw (cudaGetErrorString(cudastat));
-	}
-	//copy X from host to device
-	h_X = X.data();
-	cudaMemcpy(d_X, h_X, nind * ncov * sizeof(float), cudaMemcpyHostToDevice);
-	cudaDeviceSynchronize();
-	cudastat = cudaGetLastError();
-	if (cudastat != cudaSuccess)
-	{
-		throw (cudaGetErrorString(cudastat));
-	}
-
-	//generate a identity matrix on device
-	h_Identity = (float*)malloc(nind * nind * sizeof(float));
-	memset(h_Identity, 0, nind * nind * sizeof(float));
-	for (int id = 0; id < nind; id++) h_Identity[id * nind + id] = 1;
-	cudaMalloc((float**)&d_Identity, nind * nind * sizeof(float));
-	cudastat = cudaMemcpy(d_Identity, h_Identity, nind * nind * sizeof(float), cudaMemcpyHostToDevice);
-	cudaDeviceSynchronize();
-	cudastat = cudaGetLastError();
-	if (cudastat != cudaSuccess)
-	{
-		throw (cudaGetErrorString(cudastat));
-	}
-	d_Vi.resize(nVi);
-	//copy Vi from host to device
-	for (int i = 0; i < nVi; i++)
-	{
-		cudaMalloc((float**)&d_Vi[i], nind * nind * sizeof(float));
-		cudaDeviceSynchronize();
-		cudastat = cudaGetLastError();
-		if (cudastat != cudaSuccess)
-		{
-			throw (cudaGetErrorString(cudastat));
-		}
-		cudaMemcpy(d_Vi[i], h_Vi[i], nind * nind * sizeof(float), cudaMemcpyHostToDevice);
-		cudaDeviceSynchronize();
-		cudastat = cudaGetLastError();
-		if (cudastat != cudaSuccess)
-		{
-			throw (cudaGetErrorString(cudastat));
-		}
-	}
-
-
-}
-
-void cuMINQUE1::CheckGPU()
-{
-	CUdevice dev;
-	int deviceCount;
-	char deviceName[256];
-	cuInit(0);
-	cuDeviceGetCount(&deviceCount);
-	if (deviceCount == 0)
-    {
-        throw ("Error: There are no available device(s) that support CUDA\n");
-    }
-	else
-	{
-		printf("Detected %d CUDA Capable device(s)\n", deviceCount);
-	}
-	if (deviceID>=deviceCount)
-	{
-		throw ("Error: illegal device ID.\n");
-	}
-	cuDeviceGetName(deviceName, 256, deviceID);
-	printf("Using Device %d: \"%s\"\n", deviceID, deviceName);
 }
