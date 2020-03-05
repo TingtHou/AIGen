@@ -196,6 +196,10 @@
   <ItemGroup>
     <ClCompile Include="src\Batch.cpp" />
     <ClCompile Include="src\CommonFunc.cpp" />
+    <ClCompile Include="src\cuimnq.cpp" />
+    <ClCompile Include="src\cuMINQUE1.cpp" />
+    <ClCompile Include="src\cuMinqueBase.cpp" />
+    <ClCompile Include="src\cuToolkit.cpp" />
     <ClCompile Include="src\DataManager.cpp" />
     <ClCompile Include="src\easylogging++.cpp" />
     <ClCompile Include="src\imnq.cpp" />
@@ -218,10 +222,16 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="eigen_autoexp_part.dat" />
+    <None Include="include\cuMatrix.cuh" />
+    <None Include="src\cuMatrix.cu" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\Batch.h" />
     <ClInclude Include="include\CommonFunc.h" />
+    <ClInclude Include="include\cuimnq.h" />
+    <ClInclude Include="include\cuMINQUE1.h" />
+    <ClInclude Include="include\cuMinqueBase.h" />
+    <ClInclude Include="include\cuToolkit.h" />
     <ClInclude Include="include\DataManager.h" />
     <ClInclude Include="include\easylogging++.h" />
     <ClInclude Include="include\imnq.h" />
