@@ -12,7 +12,6 @@ void MINQUE0::estimateVCs()
 
 	vcs.resize(nVi);
 	VW.setIdentity();
-	float* pr_VW = VW.data();
 	//std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
 	std::vector<Eigen::MatrixXf> RV(nVi);
 	Eigen::VectorXf Ry(nind);
@@ -36,29 +35,48 @@ void MINQUE0::estimateVCs()
 
 		Eigen::MatrixXf B(nind, X.cols());
 		Eigen::MatrixXf Xt_X(X.cols(), X.cols());
-		Eigen::MatrixXf inv_XtX_Xt(X.cols(), nind);
+		Eigen::MatrixXf X_inv_XtX(X.cols(), nind);
 		float* pr_X = X.data();
 		float* pr_Y = Y.data();
 		float* pr_RY = Ry.data();
 		float* pr_Xt_X = Xt_X.data();
-		float* pr_inv_XtX_Xt = inv_XtX_Xt.data();
+		float* pr_X_inv_XtX = X_inv_XtX.data();
 		//Xt_X=Xt*X
 		cblas_sgemm(CblasColMajor, CblasTrans, CblasNoTrans, X.cols(), X.cols(), nind, 1, pr_X, nind, pr_X, nind, 0, pr_Xt_X, X.cols());
 		//inv(XtX)
 		int status = Inverse(Xt_X, Decomposition, altDecomposition, allowPseudoInverse);
 		CheckInverseStatus(status);
-		//inv_XtX_Xt=inv(XtX)*Xt
-		cblas_sgemm(CblasColMajor, CblasNoTrans, CblasTrans, X.cols(), nind, X.cols(), 1, pr_Xt_X, X.cols(), pr_X, nind, 0, pr_inv_XtX_Xt, X.cols());
-		//inv_VM=I-X*inv(XtX)*Xt
-		cblas_sgemm(CblasColMajor, CblasNoTrans, CblasNoTrans, nind, nind, X.cols(), -1, pr_X, nind, pr_inv_XtX_Xt, X.cols(), 1, pr_VW, nind);
+		//X_inv_XtX=X*inv(XtX)
+		cblas_sgemm(CblasColMajor, CblasNoTrans, CblasNoTrans, nind, X.cols(), X.cols(), 1, pr_X, nind, pr_Xt_X, X.cols(), 0, pr_X_inv_XtX, nind);
+		int nthread = omp_get_max_threads();
+	//	printf("Thread %d, Max threads for mkl %d\n", omp_get_max_threads(), mkl_get_max_threads());
+		int threadInNest = 1;
+		if (nthread != 1)
+		{
+			int tmp_thread = nthread > nVi ? nVi : nthread;
+			omp_set_num_threads(tmp_thread);
+			threadInNest =(nthread - tmp_thread )/ nVi;
+		}
+		#pragma omp parallel for shared(pr_X_inv_XtX,threadInNest)
+		for (int i = 0; i < nVi; i++)
+		{
+			omp_set_num_threads(threadInNest);
+	//		printf("Thread %d, Max threads for mkl %d\n", omp_get_thread_num(), mkl_get_max_threads());
+			float* tmp;
+			tmp = (float*)malloc(sizeof(float) * nind * X.cols());
+			memset(tmp, 0, sizeof(float) * nind * X.cols());
+			//pr_VW = Vi * X*inv(XtX)
+			cblas_ssymm(CblasColMajor, CblasLeft, CblasUpper, nind, X.cols(), 1, pr_vi_list[i] , nind, pr_X_inv_XtX , nind, 0, tmp, nind);
+			cblas_sgemm(CblasColMajor, CblasNoTrans, CblasTrans, nind, nind, X.cols() , 1, tmp, nind, pr_X, nind, 0, pr_rv_list[i], nind);
+			RV[i] = (*Vi[i]) - RV[i];
+			free(tmp);
+		}
+		omp_set_num_threads(nthread);
+//		printf("Thread %d, Max threads for mkl %d\n", omp_get_max_threads(), mkl_get_max_threads());
 		//MKL_free(pr_VWp);
 		Ry = VW * Y;
 	}
-	#pragma omp parallel for shared(pr_VW)
-	for (int i = 0; i < nVi; i++)
-	{
-		cblas_ssymm(CblasColMajor, CblasLeft, CblasUpper, nind, nind, 1, pr_VW, nind, pr_vi_list[i], nind, 0, pr_rv_list[i], nind);
-	}
+	
 	Eigen::VectorXf u(nVi);
 	u.setZero();
 	#pragma omp parallel for shared(Ry)
@@ -69,29 +87,29 @@ void MINQUE0::estimateVCs()
 	}
 	Eigen::MatrixXf F(nVi, nVi);
 	//Eigen::MatrixXf F_(nVi, nVi);
-	#pragma omp parallel for
+	#pragma omp parallel for shared(RV,F)
+	for (int k = 0; k < (nVi+1) * nVi / 2; k++) 
+	{
+		int i = k / nVi, j = k % nVi;
+		if (j < i) i = nVi - i , j = nVi - j - 1;
+		Eigen::MatrixXf RVij = (RV[i].transpose().cwiseProduct(RV[j]));
+		double sum = RVij.cast<double>().sum();
+		F(i, j) = (float)sum;
+		F(j, i) = F(i, j);
+	}
+	/*
+	#pragma omp parallel for collapse(2)
 	for (int i = 0; i < nVi; i++)
 	{
-		for (int j = i; j < nVi; j++)
+		for (int j = 0; j < nVi; j++)
 		{
 			Eigen::MatrixXf RVij = (RV[i].transpose().cwiseProduct(RV[j]));
-			double sum = 0;
-			for (int m = 0; m < nind; m++)
-			{
-				for (int n = m; n < nind; n++)
-				{
-					sum += RVij(m, n);
-					if (n != m)
-					{
-						sum += RVij(m, n); //lower triangle
-					}
-				}
-			}
+			double sum = RVij.cast<double>().sum();
 			F(i, j) = (float)sum;
 			F(j, i) = F(i, j);
 		}
 	}
-
+	*/
 	int status = Inverse(F, Decomposition, altDecomposition, allowPseudoInverse);
 	CheckInverseStatus(status);
 	vcs = F * u;

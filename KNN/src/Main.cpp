@@ -44,6 +44,12 @@
 #include "../include/Prediction.h"
 #include "../include/MINQUE0.h"
 
+#ifdef WIN32
+	#include "../include/cuMINQUE1.h"
+#endif // WIN32
+
+
+
 INITIALIZE_EASYLOGGINGPP
 
 void readAlgrithomParameter(boost::program_options::variables_map programOptions, MinqueOptions& minque);
@@ -117,8 +123,8 @@ void TryMain(int argc, const char *const argv[])
 	if (programOptions.count("thread"))
 	{
 		int nthread = programOptions["thread"].as<int>();
-	//	mkl_set_num_threads(nthread);
 		omp_set_num_threads(nthread);
+	//	mkl_set_num_threads(nthread);
 	}
 	if (programOptions.count("make-kernel"))
 	{
@@ -257,8 +263,6 @@ void TryMain(int argc, const char *const argv[])
 
 int main(int argc, const char *const argv[])
 {
-//	clock_t t1 = clock();
-	
 	/////////////////////////////////////////////////////////////////////
 	std::cout<<"\n"
 		"@----------------------------------------------------------@\n"
@@ -440,20 +444,37 @@ void MINQUEAnalysis(boost::program_options::variables_map programOptions, DataMa
 	}
 	if (GPU)
 	{
-		// 		cuMINQUE cuvarest;
-		// 		cuvarest.importY(Response.data(), Response.size());
-		// 		cuvarest.pushback_Vi(e.data(), e.rows());
-		// 		for (int i = 0; i < Kmatrix.size(); i++)
-		// 		{
-		// 			cuvarest.pushback_Vi(Kmatrix[i].data(), Kmatrix[i].rows());
-		// 		}
-		// 		std::cout << "Starting MINQUE estimate using GPU" << std::endl;
-		// 		clock_t t1 = clock();
-		// 		cuvarest.estimate();
-		// 		std::cout << fixed << setprecision(2) << "GPU Elapse Time : " << (clock() - t1) * 1.0 / CLOCKS_PER_SEC * 1000 << " ms" << std::endl;
-		// 		logout << setprecision(2) << "GPU Elapse Time : " << (clock() - t1) * 1.0 / CLOCKS_PER_SEC * 1000 << " ms" << std::endl;
-		// 
-		// 		VarComp = cuvarest.GetTheta();
+
+#ifdef WIN32
+		cuMINQUE1 cuvarest(minopt.MatrixDecomposition, minopt.altMatrixDecomposition, minopt.allowPseudoInverse);
+		cuvarest.importY(phe.Phenotype);
+		cuvarest.pushback_X(Covs, false);
+		if (VarComp.size() == 0)
+		{
+			VarComp.resize(Kernels.size() + 1);
+			VarComp.setOnes();
+		}
+		cuvarest.pushback_W(VarComp);
+		for (int i = 0; i < Kernels.size(); i++)
+		{
+			cuvarest.pushback_Vi(Kernels[i]);
+		}
+
+		Eigen::MatrixXf e(phe.fid_iid.size(), phe.fid_iid.size());
+		e.setIdentity();
+		cuvarest.pushback_Vi(e);
+		std::cout << "starting GPU MINQUE " << std::endl;
+		cuvarest.init();
+		cuvarest.estimateVCs();
+		VarComp = cuvarest.getvcs();
+#elif __linux__
+		throw ("Error: GPU version is only available on windows.");
+#else
+	  throw ("Error: OS not supported!");
+#endif // __WIN32__
+
+		
+
 	}
 	else
 	{

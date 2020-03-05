@@ -39,7 +39,6 @@ void minque1::estimateVCs()
 		RV[i].setZero();
 		pr_rv_list[i] = RV[i].data();
 		pr_vi_list[i] = Vi[i]->data();
-
 	}
 	if (ncov == 0)
 	{
@@ -75,11 +74,22 @@ void minque1::estimateVCs()
 		//MKL_free(pr_VWp);
 		Ry = VW *Y; 
 	}
+	int nthread = omp_get_max_threads();
+	//	printf("Thread %d, Max threads for mkl %d\n", omp_get_max_threads(), mkl_get_max_threads());
+	int threadInNest = 1;
+	if (nthread != 1)
+	{
+		int tmp_thread = nthread > nVi ? nVi : nthread;
+		omp_set_num_threads(tmp_thread);
+		threadInNest = (nthread - tmp_thread) / nVi;
+	}
 	#pragma omp parallel for shared(pr_VW)
 	for (int i = 0; i < nVi; i++)
 	{
+		omp_set_num_threads(threadInNest);
 		cblas_ssymm(CblasColMajor, CblasLeft, CblasUpper, nind, nind, 1, pr_VW, nind, pr_vi_list[i], nind, 0, pr_rv_list[i], nind);
 	}
+	omp_set_num_threads(nthread);
 	Eigen::VectorXf u(nVi);
 	u.setZero();
 	#pragma omp parallel for shared(Ry)
@@ -90,28 +100,28 @@ void minque1::estimateVCs()
 	}
 	Eigen::MatrixXf F(nVi, nVi);
 	//Eigen::MatrixXf F_(nVi, nVi);
-	#pragma omp parallel for
+	#pragma omp parallel for shared(RV,F)
+	for (int k = 0; k < (nVi + 1) * nVi / 2; k++)
+	{
+		int i = k / nVi, j = k % nVi;
+		if (j < i) i = nVi - i, j = nVi - j - 1;
+		Eigen::MatrixXf RVij = (RV[i].transpose().cwiseProduct(RV[j]));
+		double sum = RVij.cast<double>().sum();
+		F(i, j) = (float)sum;
+		F(j, i) = F(i, j);
+	}
+/*	#pragma omp parallel for collapse(2)
 	for (int i = 0; i < nVi; i++)
 	{
 		for (int j=i;j<nVi;j++)
 		{
 			Eigen::MatrixXf RVij = (RV[i].transpose().cwiseProduct(RV[j]));
-			double sum = 0;
-			for (int m = 0; m < nind; m++)
-			{
-				for (int n = m; n < nind; n++)
-				{
-					sum += RVij(m, n);
-					if (n!=m)
-					{
-						sum+= RVij(m, n); //lower triangle
-					}
-				}
-			}
+			double sum = RVij.cast<double>().sum();
 			F(i, j) = (float)sum;
 			F(j, i) = F(i, j);
 		}
 	}
+	*/
 
 	status = Inverse(F, Decomposition, altDecomposition, allowPseudoInverse);
 	CheckInverseStatus(status);

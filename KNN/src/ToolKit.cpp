@@ -152,8 +152,8 @@ bool ToolKit::comput_inverse_logdet_LDLT_mkl(Eigen::MatrixXf &Vi)
 		}
 	}
 	return true;
-
 }
+
 bool ToolKit::comput_inverse_logdet_LDLT_mkl(Eigen::MatrixXd & Vi)
 {
 
