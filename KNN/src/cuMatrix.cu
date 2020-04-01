@@ -21,7 +21,7 @@ __global__ void cuMatrixTrace_Kernel(const double *A, const int nrows, double *R
 //A is a pointer of input matrix, which is colmun-major
 //nrow is row number of matrix A
 //Result is a return value
-__global__ void cuElementInverse_kernel(double *A, double *A_inv,const int nrows)
+__global__ void cuElementInverse_kernel(float*A, float*A_inv,const int nrows)
 {
 	int thread_idx = threadIdx.x + blockIdx.x * blockDim.x;
 	double  pinvtoler = 1.e-20; // choose your tolerance wisely
@@ -42,7 +42,7 @@ __global__ void cuElementInverse_kernel(double *A, double *A_inv,const int nrows
 
 
 
-void cuElementInverse(double *A, double *A_inv, const int nrows)
+void cuElementInverse(float*A, float*A_inv, const int nrows)
 {
 	int nthread = nrows < 1024 ? nrows : 1024;
 	int nblock = 1 + (nrows / nthread);
@@ -97,6 +97,26 @@ void cuVectorCwiseProduct(float* A, float* B, float* C, int size)
 	dim3 nThread(nthread, 1, 1);
 	dim3 nBlock(nblock, 1, 1);
 	cuVectorCwiseProduct_kernel << <nBlock, nThread >> > (A, B, C , size);
+	return;
+}
+
+__global__ void cuVectorCwiseMinus_kernel(float* A, float* B, float* C, int size)
+{
+	int thread_idx = threadIdx.x + blockIdx.x * blockDim.x;
+	if (thread_idx >= size)
+	{
+		return;
+	}
+	C[thread_idx] = A[thread_idx] - B[thread_idx];
+}
+
+void cuVectorCwiseMinus(float* A, float* B, float* C, int size)
+{
+	int nthread = size < 1024 ? size : 1024;
+	int nblock = 1 + (size / nthread);
+	dim3 nThread(nthread, 1, 1);
+	dim3 nBlock(nblock, 1, 1);
+	cuVectorCwiseMinus_kernel << <nBlock, nThread >> > (A, B, C, size);
 	return;
 }
 
@@ -162,7 +182,6 @@ __global__ void cuFillValue_kernel(double* x, int size, double value)
 	{
 		x[thread_idx] = value;
 	}
-	return;
 	return;
 }
 
