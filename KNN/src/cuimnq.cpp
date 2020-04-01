@@ -1,4 +1,9 @@
-#include "..\include\cuimnq.h"
+#include "../include/cuimnq.h"
+
+void cuimnq::estimateVCs()
+{
+	Iterate();
+}
 
 void cuimnq::setOptions(MinqueOptions mnqoptions)
 {
