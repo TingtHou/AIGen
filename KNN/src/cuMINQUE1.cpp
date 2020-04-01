@@ -63,7 +63,8 @@ void cuMINQUE1::estimateVCs()
 		}
 	}
 	cudaFree(d_Identity);
-	cuToolkit::cuCholesky(d_VW, nind);
+	cuInverse(d_VW, nind, Decomposition, altDecomposition, allowPseudoInverse);
+	//cuToolkit::cuCholesky(d_VW, nind);
 //	std::vector<Eigen::MatrixXf> RV(nVi);
 	std::vector<float*> d_RV(nVi);
 	std::vector<float*> d_Vi_y(nVi);
@@ -117,7 +118,8 @@ void cuMINQUE1::estimateVCs()
 			throw (_cudaGetErrorEnum(status));
 		}
 		//inv(XtB)
-		cuToolkit::cuCholesky(d_Xt_B, ncov);
+		cuInverse(d_Xt_B, ncov, Decomposition, altDecomposition, allowPseudoInverse);
+		//cuToolkit::cuCholesky(d_Xt_B, ncov);
 		//inv_XtB_Bt=inv(XtB)*Bt
 		status = cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_T,ncov, nind,ncov, &one, d_Xt_B, ncov, d_B, nind, &zero, d_inv_XtB_Bt, ncov);
 		cudaDeviceSynchronize();
@@ -206,7 +208,8 @@ void cuMINQUE1::estimateVCs()
 		}
 	}
 	cudaFree(d_Identity);
-	ToolKit::comput_inverse_logdet_LU_mkl(h_F);
+	Inverse(h_F, Decomposition, altDecomposition, allowPseudoInverse);
+	//ToolKit::comput_inverse_logdet_LU_mkl(h_F);
 	vcs = h_F * h_u;
 	cudaFree(d_VW);
 	cudaFree(d_Ry);
