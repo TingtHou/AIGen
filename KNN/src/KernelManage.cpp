@@ -45,8 +45,6 @@ void KernelReader::IDfileReader(std::ifstream &fin, KernelData &kdata)
 
 void KernelReader::BinFileReader(std::ifstream &fin, KernelData & kdata)
 {
-	
-	
 	const size_t num_elements = nind * (nind + 1) / 2;
 	fin.seekg(0, std::ios::end);
 	int fileSize = fin.tellg();
@@ -56,18 +54,44 @@ void KernelReader::BinFileReader(std::ifstream &fin, KernelData & kdata)
 	{
 		throw ("Error: the size of the [" + BinFileName + "] file is incomplete?");
 	}
-	char *f_buf = new char[bytesize];// (char*)malloc(bytesize * sizeof(char));  //set bytesize bits buffer for data, 4bits for float and 8bits for float
+	//char *f_buf = new char[bytesize];// (char*)malloc(bytesize * sizeof(char));  //set bytesize bits buffer for data, 4bits for float and 8bits for float
+	char* f_buf = new char[fileSize];
+	//std::string f_buf;
+	if (!(fin.read(f_buf,fileSize))) // read up to the size of the buffer
+	{
+		if (!fin.eof()) // end of file is an expected condition here and not worth 
+						   // clearing. What else are you going to read?
+		{
+			 throw ("Error: the size of the [" + BinFileName + "] file is incomplete?");
+		}
+		else
+		{
+			throw ("Error: Unknow error when reading [" + BinFileName + "].");
+		}
+	}
+	#pragma omp parallel for shared(kdata,f_buf)
+	for (int k = 0; k < (nind + 1) * nind / 2; k++)
+	{
+		int i = k / nind, j = k % nind;
+		if (j < i) i = nind - i, j = nind - j - 1;
+		int id = i + ((j * (j + 1)) / 2);
+		int pointer = id * bytesize;
+		char* str2 = new char[bytesize];
+		memcpy(str2, &f_buf[pointer], bytesize);
+		kdata.kernelMatrix(j, i) = kdata.kernelMatrix(i, j) = *(float*)str2;
+		delete str2;
+	}
+	/*
 	for (int i = 0; i < nind; i++)
 	{
 		for (int j = 0; j <= i; j++)
 		{
 			if (!fin.read(f_buf, bytesize)) throw ("Error: the size of the [" + BinFileName + "] file is incomplete?");
-// 			float a= bytesize==4?*(float *)f_buf: *(float *)f_buf; 
-// 			std::cout << a << std::endl;
 			kdata.kernelMatrix(j, i) = kdata.kernelMatrix(i, j) = bytesize == 4 ? *(float *)f_buf : *(float *)f_buf;
 		}
 	}
-
+	*/
+	delete f_buf;
 }
 
 void KernelReader::NfileReader(std::ifstream &fin, KernelData & kdata)

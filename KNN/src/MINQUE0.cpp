@@ -33,14 +33,15 @@ void MINQUE0::estimateVCs()
 	else
 	{
 
-		Eigen::MatrixXf B(nind, X.cols());
 		Eigen::MatrixXf Xt_X(X.cols(), X.cols());
-		Eigen::MatrixXf X_inv_XtX(X.cols(), nind);
+		Eigen::MatrixXf X_inv_XtX(nind, X.cols());
+		Eigen::MatrixXf X_inv_XtX_Xt(nind, nind);
 		float* pr_X = X.data();
 		float* pr_Y = Y.data();
 		float* pr_RY = Ry.data();
 		float* pr_Xt_X = Xt_X.data();
 		float* pr_X_inv_XtX = X_inv_XtX.data();
+		float* pr_X_inv_XtX_Xt = X_inv_XtX_Xt.data();
 		//Xt_X=Xt*X
 		cblas_sgemm(CblasColMajor, CblasTrans, CblasNoTrans, X.cols(), X.cols(), nind, 1, pr_X, nind, pr_X, nind, 0, pr_Xt_X, X.cols());
 		//inv(XtX)
@@ -55,7 +56,7 @@ void MINQUE0::estimateVCs()
 		{
 			int tmp_thread = nthread > nVi ? nVi : nthread;
 			omp_set_num_threads(tmp_thread);
-			threadInNest =(nthread - tmp_thread )/ nVi;
+			threadInNest =nthread/ nVi;
 		}
 		#pragma omp parallel for shared(pr_X_inv_XtX,threadInNest)
 		for (int i = 0; i < nVi; i++)
@@ -74,7 +75,8 @@ void MINQUE0::estimateVCs()
 		omp_set_num_threads(nthread);
 //		printf("Thread %d, Max threads for mkl %d\n", omp_get_max_threads(), mkl_get_max_threads());
 		//MKL_free(pr_VWp);
-		Ry = VW * Y;
+		cblas_sgemm(CblasColMajor, CblasNoTrans, CblasTrans, nind, nind, X.cols(), 1, pr_X_inv_XtX, nind, pr_X, nind, 0, pr_X_inv_XtX_Xt, nind);
+		Ry = Y-X_inv_XtX_Xt * Y;
 	}
 	
 	Eigen::VectorXf u(nVi);

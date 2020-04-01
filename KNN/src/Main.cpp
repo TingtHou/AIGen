@@ -43,10 +43,10 @@
 #include "../include/imnq.h"
 #include "../include/Prediction.h"
 #include "../include/MINQUE0.h"
-
-#ifdef WIN32
-	#include "../include/cuMINQUE1.h"
-#endif // WIN32
+#ifndef CPU  
+	#include "../include/cuMINQUE0.h"
+	#include "../include/cuimnq.h" 
+#endif
 
 
 
@@ -62,10 +62,15 @@ void BatchMINQUE1(MinqueOptions& minque, std::vector<Eigen::MatrixXf>& Kernels, 
 
 void cMINQUE1(MinqueOptions& minque, std::vector<Eigen::MatrixXf>& Kernels, PhenoData& phe, Eigen::MatrixXf& Covs, Eigen::VectorXf& variances, Eigen::VectorXf& coefs, float& iterateTimes, bool isecho);
 
+
 void BatchMINQUE0(MinqueOptions& minque, std::vector<Eigen::MatrixXf>& Kernels, PhenoData& phe, Eigen::MatrixXf& Covs, Eigen::VectorXf& variances, Eigen::VectorXf& coefs, int nsplit, int seed, int nthread);
 
 void cMINQUE0(MinqueOptions& minque, std::vector<Eigen::MatrixXf>& Kernels, PhenoData& phe, Eigen::MatrixXf& Covs, Eigen::VectorXf& variances, Eigen::VectorXf& coefs);
 
+#ifndef CPU  
+void cudaMINQUE0(MinqueOptions& minque, std::vector<Eigen::MatrixXf>& Kernels, PhenoData& phe, Eigen::MatrixXf& Covs, Eigen::VectorXf& variances, Eigen::VectorXf& coefs);
+void cudaMINQUE1(MinqueOptions& minque, std::vector<Eigen::MatrixXf>& Kernels, PhenoData& phe, Eigen::MatrixXf& Covs, Eigen::VectorXf& variances, Eigen::VectorXf& coefs, float& iterateTimes, bool isecho);
+#endif
 
 void TryMain(int argc, const char *const argv[])
 {
@@ -108,6 +113,12 @@ void TryMain(int argc, const char *const argv[])
 		logfile = programOptions["log"].as < std::string >();
 		programOptions.erase("log");
 	}
+	if (programOptions.count("thread"))
+	{
+		int nthread = programOptions["thread"].as<int>();
+		omp_set_num_threads(nthread);
+		//	mkl_set_num_threads(nthread);
+	}
 //////init logger
 	el::Configurations conf;
 	conf.setToDefault();
@@ -120,12 +131,7 @@ void TryMain(int argc, const char *const argv[])
 	ReadData(programOptions, dm);
 	std::vector<KernelData> kernelList; 
 		//generate a built-in kernel or not
-	if (programOptions.count("thread"))
-	{
-		int nthread = programOptions["thread"].as<int>();
-		omp_set_num_threads(nthread);
-	//	mkl_set_num_threads(nthread);
-	}
+	
 	if (programOptions.count("make-kernel"))
 	{
 		int kerneltype=-1;
@@ -408,8 +414,12 @@ void MINQUEAnalysis(boost::program_options::variables_map programOptions, DataMa
 	fix.setZero();
 	fix[0] = -999;
 	float iterateTimes = 0;
-	bool isecho;
+	bool isecho = false;
 	std::vector<Eigen::MatrixXf> Kernels;
+	if (programOptions.count("echo"))
+	{
+		isecho = programOptions["echo"].as<bool>();
+	}
 	if (programOptions.count("alphaKNN"))
 	{
 		int alpha = programOptions["alphaKNN"].as<int>();
@@ -444,37 +454,19 @@ void MINQUEAnalysis(boost::program_options::variables_map programOptions, DataMa
 	}
 	if (GPU)
 	{
-
-#ifdef WIN32
-		cuMINQUE1 cuvarest(minopt.MatrixDecomposition, minopt.altMatrixDecomposition, minopt.allowPseudoInverse);
-		cuvarest.importY(phe.Phenotype);
-		cuvarest.pushback_X(Covs, false);
-		if (VarComp.size() == 0)
+#ifndef CPU  
+		if (programOptions.count("minque0"))
 		{
-			VarComp.resize(Kernels.size() + 1);
-			VarComp.setOnes();
+			cudaMINQUE0(minopt, Kernels, phe, Covs, VarComp, fix);
+			iterateTimes = 1;
 		}
-		cuvarest.pushback_W(VarComp);
-		for (int i = 0; i < Kernels.size(); i++)
+		else
 		{
-			cuvarest.pushback_Vi(Kernels[i]);
+			cudaMINQUE1(minopt, Kernels, phe, Covs, VarComp, fix, iterateTimes, isecho);
 		}
-
-		Eigen::MatrixXf e(phe.fid_iid.size(), phe.fid_iid.size());
-		e.setIdentity();
-		cuvarest.pushback_Vi(e);
-		std::cout << "starting GPU MINQUE " << std::endl;
-		cuvarest.init();
-		cuvarest.estimateVCs();
-		VarComp = cuvarest.getvcs();
-#elif __linux__
-		throw ("Error: GPU version is only available on windows.");
 #else
-	  throw ("Error: OS not supported!");
-#endif // __WIN32__
-
-		
-
+		throw std::runtime_error("This is a CPU program. Please use GPU version.");
+#endif
 	}
 	else
 	{
@@ -492,11 +484,6 @@ void MINQUEAnalysis(boost::program_options::variables_map programOptions, DataMa
 			if (programOptions.count("seed"))
 			{
 				seed = programOptions["seed"].as<int>();
-			}
-			isecho = false;
-			if (programOptions.count("echo"))
-			{
-				isecho = programOptions["echo"].as<bool>();
 			}
 			if (programOptions.count("minque0"))
 			{
@@ -767,6 +754,8 @@ void cMINQUE1(MinqueOptions & minque, std::vector<Eigen::MatrixXf>& Kernels, Phe
 	
 }
 
+
+
 void BatchMINQUE0(MinqueOptions& minque, std::vector<Eigen::MatrixXf>& Kernels, PhenoData& phe, Eigen::MatrixXf& Covs, Eigen::VectorXf& variances, Eigen::VectorXf& coefs,  int nsplit, int seed, int nthread)
 {
 	int nkernel = Kernels.size();
@@ -919,6 +908,66 @@ void cMINQUE0(MinqueOptions& minque, std::vector<Eigen::MatrixXf>& Kernels, Phen
 	LOG(INFO) << ss.str();
 }
 
+#ifndef CPU  
+void cudaMINQUE0(MinqueOptions& minque, std::vector<Eigen::MatrixXf>& Kernels, PhenoData& phe, Eigen::MatrixXf& Covs, Eigen::VectorXf& variances, Eigen::VectorXf& coefs)
+{
+
+	cuMINQUE0 cuvarest(minque.MatrixDecomposition, minque.altMatrixDecomposition, minque.allowPseudoInverse);
+	cuvarest.importY(phe.Phenotype);
+	cuvarest.pushback_X(Covs, false);
+	for (int i = 0; i < Kernels.size(); i++)
+	{
+		cuvarest.pushback_Vi(Kernels[i]);
+	}
+	Eigen::MatrixXf e(phe.fid_iid.size(), phe.fid_iid.size());
+	e.setIdentity();
+	cuvarest.pushback_Vi(e);
+	std::cout << "starting GPU MINQUE " << std::endl;
+	cuvarest.init();
+	cuvarest.estimateVCs();
+	variances = cuvarest.getvcs();
+	if (coefs[0] != -999)
+	{
+		cuvarest.estimateFix();
+		coefs = cuvarest.getfix();
+	}
+	std::stringstream ss;
+	ss << std::fixed << "Thread ID: 0" << std::setprecision(3) << "\tIt: " << 0 << "\t" << cuvarest.getvcs().transpose();
+	printf("%s\n", ss.str().c_str());
+	LOG(INFO) << ss.str();
+}
+
+void cudaMINQUE1(MinqueOptions& minque, std::vector<Eigen::MatrixXf>& Kernels, PhenoData& phe, Eigen::MatrixXf& Covs, Eigen::VectorXf& variances, Eigen::VectorXf& coefs, float& iterateTimes, bool isecho)
+{
+	cuimnq cuvarest;
+	cuvarest.setOptions(minque);
+	cuvarest.isEcho(isecho);
+	cuvarest.importY(phe.Phenotype);
+	cuvarest.pushback_X(Covs, false);
+	if (variances.size() != 0)
+	{
+		cuvarest.pushback_W(variances);
+	}
+	for (int i = 0; i < Kernels.size(); i++)
+	{
+		cuvarest.pushback_Vi(Kernels[i]);
+	}
+
+	Eigen::MatrixXf e(phe.fid_iid.size(), phe.fid_iid.size());
+	e.setIdentity();
+	cuvarest.pushback_Vi(e);
+	std::cout << "starting GPU MINQUE " << std::endl;
+	cuvarest.estimateVCs();
+	variances = cuvarest.getvcs();
+	iterateTimes = cuvarest.getIterateTimes();
+	if (coefs[0] != -999)
+	{
+		cuvarest.estimateFix();
+		coefs = cuvarest.getfix();
+	}
+
+}
+#endif
 
 
 

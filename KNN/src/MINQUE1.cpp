@@ -81,7 +81,7 @@ void minque1::estimateVCs()
 	{
 		int tmp_thread = nthread > nVi ? nVi : nthread;
 		omp_set_num_threads(tmp_thread);
-		threadInNest = (nthread - tmp_thread) / nVi;
+		threadInNest = nthread/ nVi;
 	}
 	#pragma omp parallel for shared(pr_VW)
 	for (int i = 0; i < nVi; i++)
@@ -110,18 +110,6 @@ void minque1::estimateVCs()
 		F(i, j) = (float)sum;
 		F(j, i) = F(i, j);
 	}
-/*	#pragma omp parallel for collapse(2)
-	for (int i = 0; i < nVi; i++)
-	{
-		for (int j=i;j<nVi;j++)
-		{
-			Eigen::MatrixXf RVij = (RV[i].transpose().cwiseProduct(RV[j]));
-			double sum = RVij.cast<double>().sum();
-			F(i, j) = (float)sum;
-			F(j, i) = F(i, j);
-		}
-	}
-	*/
 
 	status = Inverse(F, Decomposition, altDecomposition, allowPseudoInverse);
 	CheckInverseStatus(status);

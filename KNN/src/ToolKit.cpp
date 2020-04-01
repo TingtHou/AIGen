@@ -143,12 +143,21 @@ bool ToolKit::comput_inverse_logdet_LDLT_mkl(Eigen::MatrixXf &Vi)
 		}
 		else 
 		{
+			#pragma omp parallel for shared(Vi_mkl)
+			for (int k = 0; k < (n + 1) * n / 2; k++)
+			{
+				int i = k / n, j = k % n;
+				if (j < i) i = n - i, j = n - j - 1;
+				Vi_mkl[j * n + i] = Vi_mkl[i * n + j];
+			}
+			/*
 			#pragma omp parallel for
 			for (int i = 0; i < n; i++) //row
 			{
 				for (int j = i; j <n; j++) //col
 					Vi_mkl[j * n + i]=Vi_mkl[i * n + j];
 			}
+			*/
 		}
 	}
 	return true;
@@ -173,12 +182,21 @@ bool ToolKit::comput_inverse_logdet_LDLT_mkl(Eigen::MatrixXd & Vi)
 		}
 		else
 		{
-#pragma omp parallel for
+			#pragma omp parallel for shared(Vi_mkl)
+			for (int k = 0; k < (n + 1) * n / 2; k++)
+			{
+				int i = k / n, j = k % n;
+				if (j < i) i = n - i, j = n - j - 1;
+				Vi_mkl[j * n + i] = Vi_mkl[i * n + j];
+			}
+			/*
+			#pragma omp parallel for
 			for (int i = 0; i < n; i++) //row
 			{
 				for (int j = i; j < n; j++) //col
 					Vi_mkl[j * n + i] = Vi_mkl[i * n + j];
 			}
+			*/
 		}
 	}
 	return true;
