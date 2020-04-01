@@ -48,5 +48,6 @@ private:
 	void readResponse(std::string resopnsefile, PhenoData &phe);					//as named
 	void readmkernel(std::string mkernel);											//read multiple kernels
 	void match(PhenoData &phenotype, KernelData &kernel);							//match phenotype data and one kernel matrix
+
 };
 

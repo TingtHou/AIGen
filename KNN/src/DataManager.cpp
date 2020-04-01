@@ -226,14 +226,25 @@ void DataManager::readmkernel(std::string mkernel)
 	}
 	klistifstream.close();
 	KernelList.resize(filenames.size());
-#pragma omp parallel for
+
+	int nthread = omp_get_max_threads();
+	int threadInNest = 1;
+	if (nthread != 1)
+	{
+		int tmp_thread = nthread > filenames.size() ? filenames.size() : nthread;
+		omp_set_num_threads(tmp_thread);
+		threadInNest = nthread / filenames.size();
+	}
+	#pragma omp parallel for
 	for (int i = 0; i < filenames.size(); i++)
 	{
+		omp_set_num_threads(threadInNest);
 		KernelReader kreader(filenames[i]);
 		kreader.read();
 		KernelData tmpData = kreader.getKernel();
 		KernelList[i]=tmpData;
 	}
+	omp_set_num_threads(nthread);
 }
 
 
