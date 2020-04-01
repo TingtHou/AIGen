@@ -1,19 +1,20 @@
 #pragma once
-#include <cublas_v2.h>
+#include <stdio.h>
 #include <cuda_runtime.h>
-#include <malloc.h>
+#include <cuda_runtime_api.h>
+#include <cuda.h>
+#include <cublas_v2.h>
 #include <cusolverDn.h>
-#include <iostream>
 #include "cuMatrix.cuh"
-#include <Eigen/Dense>
-void InverseTest();
+//void InverseTest();
+int cuInverse(float* Ori_Matrix, int N, int DecompositionMode, int AltDecompositionMode, bool allowPseudoInverse);
 class cuToolkit
 {
 public:
-	static bool cuLU(float* d_A, float* d_A_INV, int N);
-	static bool cuSVD(double * d_A, double *d_A_INV, int N);
-	static bool cuQR(double * d_A, double *d_A_INV, int N);
+	static bool cuLU(float* d_A, int N);
+	static bool cuSVD(float* d_A, int N);
+	static bool cuQR(float* d_A, int N);
 	static bool cuCholesky(float* d_A, int N);
-	static void cuGetGPUinfo();
+//	static void cuGetGPUinfo();
 };
 

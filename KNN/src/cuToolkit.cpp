@@ -1,8 +1,83 @@
 #include "../include/cuToolkit.h"
 
-bool cuToolkit::cuLU(float * d_A, float*d_A_INV, int N)
+
+
+//@brief:	Inverse a float matrix, and rewrite the inversed matrix into original matrix;
+//@param:	Ori_Matrix				The matrix to be inversed;
+//@param:	DecompositionMode		The mode to decompose the matrix;Cholesky = 0, LU = 1, QR = 2,SVD = 3;
+//@param:	AltDecompositionMode	Another mode to decompose if the first mode is failed; Only QR = 2 and SVD = 3 are allowed;
+//@param:	allowPseudoInverse		Allow to use pseudo inverse matrix; If True, AltDecompositionMode is avaiable; otherwise AltDecompositionMode is unavaiable.
+//@ret:		int						The info of statue of inverse method; 
+//									0 means successed; 1 means calculating inverse matrix is failed, and  using pseudo inverse matrix instead if allowPseudoInverse is true; 
+//									2 means calculating inverse matrix is failed, and pseudo inverse matrix is also failed.
+int cuInverse(float * Ori_Matrix, int N, int DecompositionMode, int AltDecompositionMode, bool allowPseudoInverse)
+{
+	int status = 0;
+	bool statusInverse;
+	switch (DecompositionMode)
+	{
+	case 0:
+	{
+		float det;
+		statusInverse = cuToolkit::cuCholesky(Ori_Matrix,N);
+		//	statusInverse = ToolKit::Inv_Cholesky(Ori_Matrix);
+		status += !statusInverse;
+		if (!statusInverse && allowPseudoInverse)
+		{
+			if (AltDecompositionMode == 3)
+			{
+				statusInverse = cuToolkit::cuSVD(Ori_Matrix,N);
+			}
+			if (AltDecompositionMode == 2)
+			{
+				statusInverse = cuToolkit::cuQR(Ori_Matrix,N);
+			}
+			status += !statusInverse;
+		}
+	}
+	break;
+	case 1:
+	{
+		float det;
+		statusInverse = cuToolkit::cuLU(Ori_Matrix,N);
+		status += !statusInverse;
+		if (!statusInverse && allowPseudoInverse)
+		{
+			if (AltDecompositionMode == 3)
+			{
+				statusInverse = cuToolkit::cuSVD(Ori_Matrix, N);
+			}
+			if (AltDecompositionMode == 2)
+			{
+				statusInverse = cuToolkit::cuQR(Ori_Matrix, N);
+			}
+			status += !statusInverse;
+		}
+	}
+	break;
+	case 2:
+	{
+		statusInverse = cuToolkit::cuQR(Ori_Matrix, N);
+		status += !statusInverse;
+	}
+	break;
+	case 3:
+	{
+		statusInverse = cuToolkit::cuSVD(Ori_Matrix, N);
+		status += !statusInverse;
+	}
+	break;
+	}
+	return status;
+}
+
+
+bool cuToolkit::cuLU(float * d_A, int N)
 {
 	int sizeA = N * N * sizeof(float);
+	float* d_A_INV;
+	cudaMalloc((void**)&d_A_INV, sizeA);
+	cuAsDiag(d_A_INV, N);
 	cusolverStatus_t status;
 	cudaError_t cublasstatus;
 	cusolverDnHandle_t handle;
@@ -64,6 +139,7 @@ bool cuToolkit::cuLU(float * d_A, float*d_A_INV, int N)
 		status = cusolverDnDestroy(handle);
 		return false;
 	}
+	//This function solves a linear system of multiple right-hand sides
 	status=cusolverDnSgetrs(handle, CUBLAS_OP_N, N, N, d_A, N, dLUPivots, d_A_INV, N, dLUInfo);
 	cudaDeviceSynchronize();
 	cublasstatus = cudaGetLastError();
@@ -86,6 +162,7 @@ bool cuToolkit::cuLU(float * d_A, float*d_A_INV, int N)
 		cudaFree(dLUInfo);
 		cudaFree(dLUPivots);
 		cudaFree(d_Work);
+		cudaFree(d_A_INV);
 		status = cusolverDnDestroy(handle);
 		cudaDeviceSynchronize();
 		cublasstatus = cudaGetLastError();
@@ -95,10 +172,17 @@ bool cuToolkit::cuLU(float * d_A, float*d_A_INV, int N)
 		}
 		return false;
 	}
+	cudaMemcpy(d_A, d_A_INV, sizeA, cudaMemcpyDeviceToDevice);
+	cudaDeviceSynchronize();
+	cublasstatus = cudaGetLastError();
+	if (cublasstatus != cudaSuccess)
+	{
+		throw (cudaGetErrorString(cublasstatus));
+	}
 	cudaFree(dLUInfo);
 	cudaFree(dLUPivots);
 	cudaFree(d_Work);
-
+	cudaFree(d_A_INV);
 	
 	status = cusolverDnDestroy(handle);
 	cudaDeviceSynchronize();
@@ -110,29 +194,32 @@ bool cuToolkit::cuLU(float * d_A, float*d_A_INV, int N)
 	return true;
 }
 
-bool cuToolkit::cuSVD(double * d_A, double * d_A_INV, int N)
+bool cuToolkit::cuSVD(float * d_A, int N)
 {
 	cusolverDnHandle_t cusolverH; // cusolver handle
 	cublasHandle_t cublasH; // cublas handle
 	cublasStatus_t cublas_status = CUBLAS_STATUS_SUCCESS;
 	cusolverStatus_t cusolver_status = CUSOLVER_STATUS_SUCCESS;
 	cudaError_t cudaStat = cudaSuccess;
+	float* d_A_INV;
+	
 
-	const double alpha = 1.0;
-	const double beta = 1.0;
-	const double betaMinusOne = -1.0;
-	const double betaZero = 0;
-	double *d_U, *d_VT, *d_S, *d_V_d_S_T, *d_S_T; // and sing . val . matrix d_S
+	const float alpha = 1.0;
+	const float beta = 1.0;
+	const float betaMinusOne = -1.0;
+	const float betaZero = 0;
+	float*d_U, *d_VT, *d_S, *d_V_d_S_T, *d_S_T; // and sing . val . matrix d_S
 	int * devInfo; // on the device
-	double *d_work, *d_rwork; // workspace on the device
+	float*d_work, *d_rwork; // workspace on the device
 	int lwork = 0;
 	int info_gpu = 0; // info copied from device to host
 
-	cudaStat = cudaMalloc((void **)& d_V_d_S_T, sizeof(double)* N*N);
-	cudaStat = cudaMalloc((void **)& d_S, sizeof(double)*N);
-	cudaStat = cudaMalloc((void **)& d_S_T, sizeof(double)* N *N);
-	cudaStat = cudaMalloc((void **)& d_U, sizeof(double)* N *N);
-	cudaStat = cudaMalloc((void **)& d_VT, sizeof(double)* N *N);
+	cudaStat = cudaMalloc((void **)&d_A_INV, sizeof(float) * N * N);
+	cudaStat = cudaMalloc((void **)& d_V_d_S_T, sizeof(float)* N*N);
+	cudaStat = cudaMalloc((void **)& d_S, sizeof(float)*N);
+	cudaStat = cudaMalloc((void **)& d_S_T, sizeof(float)* N *N);
+	cudaStat = cudaMalloc((void **)& d_U, sizeof(float)* N *N);
+	cudaStat = cudaMalloc((void **)& d_VT, sizeof(float)* N *N);
 	cudaStat = cudaMalloc((void **)& devInfo, sizeof(int));
 	cudaDeviceSynchronize();
 	cudaStat = cudaGetLastError();
@@ -140,12 +227,12 @@ bool cuToolkit::cuSVD(double * d_A, double * d_A_INV, int N)
 	{
 		throw (cudaGetErrorString(cudaStat));
 	}
-	cudaMemset(d_V_d_S_T, 0, sizeof(double)*N*N);
-	cudaMemset(d_A_INV, 0, sizeof(double)*N*N);
-	cudaMemset(d_S, 0, sizeof(double)*N);
-	cudaMemset(d_S_T, 0, sizeof(double)*N*N);
-	cudaMemset(d_U, 0, sizeof(double)*N*N);
-	cudaMemset(d_VT, 0, sizeof(double)*N*N);
+	cudaMemset(d_A_INV, 0, sizeof(float) * N * N);
+	cudaMemset(d_V_d_S_T, 0, sizeof(float)*N*N);
+	cudaMemset(d_S, 0, sizeof(float)*N);
+	cudaMemset(d_S_T, 0, sizeof(float)*N*N);
+	cudaMemset(d_U, 0, sizeof(float)*N*N);
+	cudaMemset(d_VT, 0, sizeof(float)*N*N);
 	cudaMemset(devInfo, 0, sizeof(int));
 	cudaDeviceSynchronize();
 	cudaStat = cudaGetLastError();
@@ -177,7 +264,7 @@ bool cuToolkit::cuSVD(double * d_A, double * d_A_INV, int N)
 	{
 		throw (cudaGetErrorString(cudaStat));
 	}
-	cudaStat = cudaMalloc((void **)& d_work, sizeof(double)* lwork);
+	cudaStat = cudaMalloc((void **)& d_work, sizeof(float)* lwork);
 	cudaDeviceSynchronize();
 	cudaStat = cudaGetLastError();
 	if (cudaStat != cudaSuccess)
@@ -192,7 +279,7 @@ bool cuToolkit::cuSVD(double * d_A, double * d_A_INV, int N)
 	// the first min (m,n) cols of d_VT contain the right sing .vec .
 	signed char jobu = 'A'; // all m columns of d_U returned
 	signed char jobvt = 'A'; // all n columns of d_VT returned
-	cusolver_status = cusolverDnDgesvd(cusolverH, jobu, jobvt,
+	cusolver_status = cusolverDnSgesvd(cusolverH, jobu, jobvt,
 		N, N, d_A, N, d_S, d_U, N, d_VT, N, d_work, lwork,
 		NULL, devInfo);
 	cudaDeviceSynchronize();
@@ -218,6 +305,7 @@ bool cuToolkit::cuSVD(double * d_A, double * d_A_INV, int N)
 		cudaFree(d_VT);
 		cudaFree(devInfo);
 		cudaFree(d_work);
+		cudaFree(d_A_INV);
 		//	cudaFree(d_rwork);
 		cudaFree(d_V_d_S_T);
 		cublasDestroy(cublasH);
@@ -233,7 +321,7 @@ bool cuToolkit::cuSVD(double * d_A, double * d_A_INV, int N)
 	}
 
 	//V*S_T
-	cublasDgemm(cublasH, CUBLAS_OP_T, CUBLAS_OP_N, N, N, N, &alpha, d_VT, N, d_S_T, N, &beta, d_V_d_S_T, N);
+	cublasSgemm(cublasH, CUBLAS_OP_T, CUBLAS_OP_N, N, N, N, &alpha, d_VT, N, d_S_T, N, &beta, d_V_d_S_T, N);
 	cudaDeviceSynchronize();
 	cudaStat = cudaGetLastError();
 	if (cudaStat != cudaSuccess)
@@ -241,13 +329,14 @@ bool cuToolkit::cuSVD(double * d_A, double * d_A_INV, int N)
 		throw (cudaGetErrorString(cudaStat));
 	}
 
-	cublasDgemm(cublasH, CUBLAS_OP_N, CUBLAS_OP_T, N, N, N, &alpha, d_V_d_S_T, N, d_U, N, &beta, d_A_INV, N);
+	cublasSgemm(cublasH, CUBLAS_OP_N, CUBLAS_OP_T, N, N, N, &alpha, d_V_d_S_T, N, d_U, N, &beta, d_A_INV, N);
 	cudaDeviceSynchronize();
 	cudaStat = cudaGetLastError();
 	if (cudaStat != cudaSuccess)
 	{
 		throw (cudaGetErrorString(cudaStat));
 	}
+	cudaMemcpy(d_A, d_A_INV, N*N * sizeof(float), cudaMemcpyDeviceToDevice);
 	cudaFree(d_S);
 	cudaFree(d_U);
 	cudaFree(d_VT);
@@ -255,6 +344,7 @@ bool cuToolkit::cuSVD(double * d_A, double * d_A_INV, int N)
 	cudaFree(d_work);
 //	cudaFree(d_rwork);
 	cudaFree(d_V_d_S_T);
+	cudaFree(d_A_INV);
 	cublasDestroy(cublasH);
 	cusolverDnDestroy(cusolverH);
 	cudaDeviceSynchronize();
@@ -266,7 +356,7 @@ bool cuToolkit::cuSVD(double * d_A, double * d_A_INV, int N)
 	return true;
 }
 
-bool cuToolkit::cuQR(double * d_A, double * d_A_INV, int N)
+bool cuToolkit::cuQR(float * d_A, int N)
 {
 	cusolverDnHandle_t cusolverH;
 	cublasHandle_t cublasH;
@@ -274,19 +364,28 @@ bool cuToolkit::cuQR(double * d_A, double * d_A_INV, int N)
 	cusolverStatus_t cusolver_status = CUSOLVER_STATUS_SUCCESS;
 	cudaError_t cudaStat = cudaSuccess;
 	const int lda = N;
+	float* d_A_INV;
+	cudaStat = cudaMalloc((void **)&d_A_INV, N*N*sizeof(float));
+	cudaDeviceSynchronize();
+	cudaStat = cudaGetLastError();
+	if (cudaStat != cudaSuccess)
+	{
+		throw (cudaGetErrorString(cudaStat));
+	}
+	cuAsDiag(d_A_INV, N);
 	// declare matrices A and Q,R on the host
-	double * d_tau;// scalars defining the elementary reflectors
+	float* d_tau;// scalars defining the elementary reflectors
 	int * devInfo; // info on the device
-	double * d_work; // workspace on the device
+	float* d_work; // workspace on the device
 	// workspace sizes
 	int lwork_geqrf = 0;
 	int lwork_orgqr = 0;
 	int lwork = 0;
 	int info_gpu = 0; // info copied from the device
-	const double d_one = 1; // constants used in
-	const double alpha = 1.0;
-	const double betaMinusOne = - 1.0;
-	const double betaZero= 0;
+	const float d_one = 1; // constants used in
+	const float alpha = 1.0;
+	const float betaMinusOne = - 1.0;
+	const float betaZero= 0;
 	// create cusolver and cublas handles
 	cusolver_status = cusolverDnCreate(&cusolverH);
 	cublas_status = cublasCreate(&cublasH);
@@ -296,7 +395,7 @@ bool cuToolkit::cuQR(double * d_A, double * d_A_INV, int N)
 	{
 		throw (cudaGetErrorString(cudaStat));
 	}
-	cudaStat = cudaMalloc((void **)& d_tau, sizeof(double)*N);
+	cudaStat = cudaMalloc((void **)& d_tau, sizeof(float)*N);
 	cudaStat = cudaMalloc((void **)& devInfo, sizeof(int));
 	cudaDeviceSynchronize();
 	cudaStat = cudaGetLastError();
@@ -310,14 +409,14 @@ bool cuToolkit::cuQR(double * d_A, double * d_A_INV, int N)
 		throw (cudaGetErrorString(cudaStat));
 	}
 	// compute working space for geqrf and orgqr
-	cusolver_status = cusolverDnDgeqrf_bufferSize(cusolverH, N, N, d_A, lda, &lwork_geqrf); // compute Sgeqrf buffer size
+	cusolver_status = cusolverDnSgeqrf_bufferSize(cusolverH, N, N, d_A, lda, &lwork_geqrf); // compute Sgeqrf buffer size
 	cudaDeviceSynchronize();
 	cudaStat = cudaGetLastError();
 	if (cudaStat != cudaSuccess)
 	{
 		throw (cudaGetErrorString(cudaStat));
 	}
-	cusolver_status = cusolverDnDorgqr_bufferSize(cusolverH, N, N, N, d_A, lda, d_tau, &lwork_orgqr); // and Sorgqr b. size
+	cusolver_status = cusolverDnSorgqr_bufferSize(cusolverH, N, N, N, d_A, lda, d_tau, &lwork_orgqr); // and Sorgqr b. size
 	cudaDeviceSynchronize();
 	cudaStat = cudaGetLastError();
 	if (cudaStat != cudaSuccess)
@@ -326,9 +425,9 @@ bool cuToolkit::cuQR(double * d_A, double * d_A_INV, int N)
 	}
 	lwork = (lwork_geqrf > lwork_orgqr) ? lwork_geqrf : lwork_orgqr;
 	// device memory for workspace
-	cudaStat = cudaMalloc((void **)& d_work, sizeof(double)* lwork);
+	cudaStat = cudaMalloc((void **)& d_work, sizeof(float)* lwork);
 	// QR factorization for d_A
-	cusolver_status = cusolverDnDgeqrf(cusolverH, N, N, d_A, lda, d_tau, d_work, lwork, devInfo);
+	cusolver_status = cusolverDnSgeqrf(cusolverH, N, N, d_A, lda, d_tau, d_work, lwork, devInfo);
 	cudaDeviceSynchronize();
 	cudaStat = cudaGetLastError();
 	if (cudaStat != cudaSuccess)
@@ -354,54 +453,9 @@ bool cuToolkit::cuQR(double * d_A, double * d_A_INV, int N)
 		cusolverDnDestroy(cusolverH);
 		return false;
 	}
-
-/*
-/////////////////
-	double *d_R;
-	cudaMalloc((void **)&d_R, N*N * sizeof(double));
-	cudaMemset(d_R, 0, N*N * sizeof(double));
-	cuGetupperTriangular(d_A, d_R, N);
-	cudaDeviceSynchronize();
-/ *	cublasDgemm(cublasH, CUBLAS_OP_T, CUBLAS_OP_N, N, N, N, &alpha, d_R, N, d_U, N, &beta, d_A_INV, N);* /
-	double *R = (double*)malloc(N*N * sizeof(double));
-	cudaMemcpy(R, d_R, sizeof(double)*N*N, cudaMemcpyDeviceToHost);
-	Eigen::MatrixXd a1 = Eigen::Map<Eigen::MatrixXd>(R, N, N);
-	std::cout << "R:\n" << a1 << std::endl;
-							
-							
-	cublas_status = cublasDtrsm(cublasH, CUBLAS_SIDE_LEFT, CUBLAS_FILL_MODE_UPPER, CUBLAS_OP_N, CUBLAS_DIAG_NON_UNIT,
-		N, N, &d_one, d_R, lda, d_A_INV, N);
-	cudaDeviceSynchronize();
-	double *R_inv = (double*)malloc(N*N * sizeof(double));
-	cudaMemcpy(R_inv, d_A_INV, sizeof(double)*N*N, cudaMemcpyDeviceToHost);
-	Eigen::MatrixXd a1_inv = Eigen::Map<Eigen::MatrixXd>(R_inv, N, N);
-	std::cout << "R inverse:\n" << a1_inv << std::endl;
-							
-	cusolver_status = cusolverDnDormqr(cusolverH, CUBLAS_SIDE_LEFT, CUBLAS_OP_T, N, N, N, d_A, lda,
-		d_tau, d_A_INV, N, d_work, lwork, devInfo);
-	cudaDeviceSynchronize();
-							
-	cusolver_status = cusolverDnDorgqr(
-		cusolverH,
-		N,
-		N,
-		N,
-		d_A,
-		lda,
-		d_tau,
-		d_work,
-		lwork,
-		devInfo);
-		cudaDeviceSynchronize();
-		double *Q = (double*)malloc(N*N * sizeof(double));
-		cudaMemcpy(Q, d_A, sizeof(double)*N*N, cudaMemcpyDeviceToHost);
-							
-	Eigen::MatrixXd a2 = Eigen::Map<Eigen::MatrixXd>(Q, N, N);
-	std::cout << "Q:\n" << a2 << std::endl;
-								*/
 
 	// step 5: compute Q^T*B, B is Idenitity
-	cusolver_status = cusolverDnDormqr(cusolverH, CUBLAS_SIDE_LEFT,	CUBLAS_OP_T, N,	N, N, d_A, lda,
+	cusolver_status = cusolverDnSormqr(cusolverH, CUBLAS_SIDE_LEFT,	CUBLAS_OP_T, N,	N, N, d_A, lda,
 		d_tau, d_A_INV, N, d_work, lwork, devInfo);
 	cudaDeviceSynchronize();
 	cudaStat = cudaGetLastError();
@@ -424,13 +478,21 @@ bool cuToolkit::cuQR(double * d_A, double * d_A_INV, int N)
 		cudaFree(d_tau);
 		cudaFree(devInfo);
 		cudaFree(d_work);
+		cudaFree(d_A_INV);
 		cublasDestroy(cublasH);
 		cusolverDnDestroy(cusolverH);
 		return false;
 	}
-
-	cublas_status = cublasDtrsm(cublasH, CUBLAS_SIDE_LEFT, CUBLAS_FILL_MODE_UPPER, CUBLAS_OP_N, CUBLAS_DIAG_NON_UNIT, 
+	//This function solves the triangular linear system with multiple right - hand - sides
+	cublas_status = cublasStrsm(cublasH, CUBLAS_SIDE_LEFT, CUBLAS_FILL_MODE_UPPER, CUBLAS_OP_N, CUBLAS_DIAG_NON_UNIT, 
 		N, N, &d_one, d_A, lda, d_A_INV,N);
+	cudaDeviceSynchronize();
+	cudaStat = cudaGetLastError();
+	if (cudaStat != cudaSuccess)
+	{
+		throw (cudaGetErrorString(cudaStat));
+	}
+	cudaMemcpy(d_A, d_A_INV, N * N * sizeof(float), cudaMemcpyDeviceToDevice);
 	cudaDeviceSynchronize();
 	cudaStat = cudaGetLastError();
 	if (cudaStat != cudaSuccess)
@@ -442,6 +504,7 @@ bool cuToolkit::cuQR(double * d_A, double * d_A_INV, int N)
 	cudaFree(d_tau);
 	cudaFree(devInfo);
 	cudaFree(d_work);
+	cudaFree(d_A_INV);
 	cublasDestroy(cublasH);
 	cusolverDnDestroy(cusolverH);
 	cudaDeviceSynchronize();
@@ -565,7 +628,7 @@ bool cuToolkit::cuCholesky(float* d_A, int N)
 	return true;
 }
 
-
+/*
 void cuToolkit::cuGetGPUinfo()
 {
 	std::cout<<"\\\\\\\\\\\\\\\\\\\\\\\\\GPU Info\\\\\\\\\\\\\\\\\\\\\\\\\\"<<std::endl;
@@ -588,30 +651,17 @@ void cuToolkit::cuGetGPUinfo()
 
 	std::cout << "\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\" << std::endl;
 }
-
-
+*/
+/*
 void InverseTest()
 {
 	int nrank = 10;
 	using namespace Eigen;
 	MatrixXf a = MatrixXf::Random(nrank, nrank);
 	a = a.transpose() * a;
-	MatrixXf a_inv = a.inverse();
-	Eigen::MatrixXf IdentityMatrix(nrank, nrank);
-	IdentityMatrix.setIdentity();
-// 	VectorXd b(nrank);
-// 	b.setOnes();
-// 	a.col(0) << b;
-// 	a.col(5) << b;
-	
-//	Eigen::MatrixXd ain(nrank, nrank);
-//	ain.setZero();
-//	bool status=ToolKit::Inv_LU(a, ain);
-//	std::cout << "LU inverse Elapse Time : " << (clock() - t1) * 1.0 / CLOCKS_PER_SEC * 1000 << " ms" << std::endl;
- //	std::cout << "Original :\n" << a << std::endl;
-// 	std::cout << "\\\\\\\\\\\\\\\\\\\\\\\\\\\\"<< std::endl;
-// 	std::cout << "Inverse :\n" << a.inverse() << std::endl;
-// 	std::cout << "\\\\\\\\\\\\\\\\\\\\\\\\\\\\" << std::endl;
+	//std::cout << "\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\" << std::endl;
+	//std::cout << "Orginal Matrix:" << std::endl;
+	//std::cout << a.inverse() << std::endl;
 	{
 		float *aorg;
 		cudaMalloc((float**)&aorg, nrank * nrank * sizeof(float));
@@ -625,10 +675,12 @@ void InverseTest()
 			cudaMemcpy(ai, aorg, nrank * nrank * sizeof(float), cudaMemcpyDeviceToHost);
 			cudaDeviceSynchronize();
 			MatrixXf a2 = Eigen::Map<MatrixXf>(ai, nrank, nrank);
-				std::cout << a2 << std::endl;
-				std::cout << "\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\" << std::endl;
-				std::cout << a_inv << std::endl;
-		/*
+			MatrixXf newMatrix = a * a2 * a;
+//			std::cout << "\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\" << std::endl;
+//			std::cout << "Orginal Matrix * Inversed Matrix * Orginal Matrix:" << std::endl;
+//			std::cout << a2 << std::endl;
+			
+			bool a_solution_exists = newMatrix.isApprox(a);
 			if (a_solution_exists)
 			{
 				std::cout << "Cholesky Passed." << std::endl;
@@ -637,7 +689,7 @@ void InverseTest()
 			{
 				std::cout << "Cholesky Failed." << std::endl;
 			}
-			*/
+			
 			free(ai);
 		}
 		else
@@ -648,102 +700,24 @@ void InverseTest()
 		cudaFree(aorg);
 	
 	}
-	/*
-	{
-		double *aorg, *ainv;
-		cudaMalloc((double**)&aorg, nrank * nrank * sizeof(double));
-		cudaMalloc((double**)&ainv, nrank * nrank * sizeof(double));
-		cudaMemcpy(aorg, a.data(), nrank * nrank * sizeof(double), cudaMemcpyHostToDevice);
-		cudaMemcpy(ainv, h_ainv, nrank * nrank * sizeof(double), cudaMemcpyHostToDevice);
-		cudaDeviceSynchronize();
-		clock_t t1 = clock();
-		bool status= cuToolkit::cuQR(aorg, ainv, nrank);
-		std::cout << "cuQR inverse Elapse Time : " << (clock() - t1) * 1.0 / CLOCKS_PER_SEC * 1000 << " ms" << std::endl;
-		if (status)
-		{
-			double *ai;
-			ai = (double*)malloc(nrank * nrank * sizeof(double));
-			cudaMemcpy(ai, ainv, nrank * nrank * sizeof(double), cudaMemcpyDeviceToHost);
-			cudaDeviceSynchronize();
-			MatrixXd a2 = Eigen::Map<MatrixXd>(ai, nrank, nrank);
-	//		std::cout << a2 << std::endl;
-			bool a_solution_exists = (a*a2*a).isApprox(a, 1e-10);
-			if (a_solution_exists)
-			{
-				std::cout << "QR Passed." << std::endl;
-			}
-			else
-			{
-				std::cout << "QR Failed." << std::endl;
-			}
-			free(ai);
-		}
-		else
-		{
-			std::cout << "QR Failed." << std::endl;
-		}
-		cudaFree(aorg);
-		cudaFree(ainv);
-	
-	}
-	{
-		double *aorg, *ainv;
-		cudaMalloc((double**)&aorg, nrank * nrank * sizeof(double));
-		cudaMalloc((double**)&ainv, nrank * nrank * sizeof(double));
-		cudaMemcpy(aorg, a.data(), nrank * nrank * sizeof(double), cudaMemcpyHostToDevice);
-		cudaMemcpy(ainv, h_ainv, nrank * nrank * sizeof(double), cudaMemcpyHostToDevice);
-		cudaDeviceSynchronize();
-		clock_t t1 = clock();
-		bool status=cuToolkit::cuSVD(aorg, ainv, nrank);
-		std::cout << "cuSVD inverse Elapse Time : " << (clock() - t1) * 1.0 / CLOCKS_PER_SEC * 1000 << " ms" << std::endl;
-		if (status)
-		{
-			double *ai;
-			ai = (double*)malloc(nrank * nrank * sizeof(double));
-			cudaMemcpy(ai, ainv, nrank * nrank * sizeof(double), cudaMemcpyDeviceToHost);
-			cudaDeviceSynchronize();
-			MatrixXd a2 = Eigen::Map<MatrixXd>(ai, nrank, nrank);
-			bool a_solution_exists = (a*a2*a).isApprox(a, 1e-10);
-			if (a_solution_exists)
-			{
-				std::cout << "SVD Passed." << std::endl;
-			}
-			else
-			{
-				std::cout << "SVD Failed." << std::endl;
-			}
-			
-			free(ai);
-		}
-		else
-		{
-			std::cout << "SVD Failed." << std::endl;
-		}
-		cudaFree(aorg);
-		cudaFree(ainv);
-
-		
-		
-	}
 
 	{
-		double *aorg, *ainv;
-		cudaMalloc((double**)&aorg, nrank * nrank * sizeof(double));
-		cudaMalloc((double**)&ainv, nrank * nrank * sizeof(double));
-		cudaMemcpy(aorg, a.data(), nrank * nrank * sizeof(double), cudaMemcpyHostToDevice);
-		cudaMemcpy(ainv, h_ainv, nrank * nrank * sizeof(double), cudaMemcpyHostToDevice);
+		float* aorg;
+		cudaMalloc((float**)&aorg, nrank * nrank * sizeof(float));
+		cudaMemcpy(aorg, a.data(), nrank * nrank * sizeof(float), cudaMemcpyHostToDevice);
 		cudaDeviceSynchronize();
-		clock_t t1 = clock();
-		bool status=cuToolkit::cuLU(aorg, ainv, nrank);
-		std::cout << "cuLU inverse Elapse Time : " << (clock() - t1) * 1.0 / CLOCKS_PER_SEC * 1000 << " ms" << std::endl;
-		if (status)
+		bool inverstatus = cuToolkit::cuLU(aorg, nrank);
+		if (inverstatus)
 		{
-			double *ai;
-			ai = (double*)malloc(nrank * nrank * sizeof(double));
-			cudaMemcpy(ai, ainv, nrank * nrank * sizeof(double), cudaMemcpyDeviceToHost);
+			float* ai;
+			ai = (float*)malloc(nrank * nrank * sizeof(float));
+			cudaMemcpy(ai, aorg, nrank * nrank * sizeof(float), cudaMemcpyDeviceToHost);
 			cudaDeviceSynchronize();
-			MatrixXd a2 = Eigen::Map<MatrixXd>(ai, nrank, nrank);
-			bool a_solution_exists = (a*a2*a).isApprox(a, 1e-10);
+			MatrixXf a2 = Eigen::Map<MatrixXf>(ai, nrank, nrank);
+			//		std::cout << a2 << std::endl;
+			//		std::cout << "\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\" << std::endl;
+			//		std::cout << a_inv << std::endl;
+			bool a_solution_exists = (a * a2 * a).isApprox(a);
 			if (a_solution_exists)
 			{
 				std::cout << "LU Passed." << std::endl;
@@ -752,17 +726,90 @@ void InverseTest()
 			{
 				std::cout << "LU Failed." << std::endl;
 			}
+
 			free(ai);
 		}
 		else
 		{
 			std::cout << "LU Failed." << std::endl;
 		}
-		
+
 		cudaFree(aorg);
-		cudaFree(ainv);
-	
-		
+
 	}
-	*/
+	
+
+	{
+		float* aorg;
+		cudaMalloc((float**)&aorg, nrank * nrank * sizeof(float));
+		cudaMemcpy(aorg, a.data(), nrank * nrank * sizeof(float), cudaMemcpyHostToDevice);
+		cudaDeviceSynchronize();
+		bool inverstatus = cuToolkit::cuQR(aorg, nrank);
+		if (inverstatus)
+		{
+			float* ai;
+			ai = (float*)malloc(nrank * nrank * sizeof(float));
+			cudaMemcpy(ai, aorg, nrank * nrank * sizeof(float), cudaMemcpyDeviceToHost);
+			cudaDeviceSynchronize();
+			MatrixXf a2 = Eigen::Map<MatrixXf>(ai, nrank, nrank);
+			//		std::cout << a2 << std::endl;
+			//		std::cout << "\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\" << std::endl;
+			//		std::cout << a_inv << std::endl;
+			bool a_solution_exists = (a * a2 * a).isApprox(a);
+			if (a_solution_exists)
+			{
+				std::cout << "QR Passed." << std::endl;
+			}
+			else
+			{
+				std::cout << "QR Failed." << std::endl;
+			}
+
+			free(ai);
+		}
+		else
+		{
+			std::cout << "QR Failed." << std::endl;
+		}
+
+		cudaFree(aorg);
+
+	}
+	{
+		float* aorg;
+		cudaMalloc((float**)&aorg, nrank * nrank * sizeof(float));
+		cudaMemcpy(aorg, a.data(), nrank * nrank * sizeof(float), cudaMemcpyHostToDevice);
+		cudaDeviceSynchronize();
+		bool inverstatus = cuToolkit::cuSVD(aorg, nrank);
+		if (inverstatus)
+		{
+			float* ai;
+			ai = (float*)malloc(nrank * nrank * sizeof(float));
+			cudaMemcpy(ai, aorg, nrank * nrank * sizeof(float), cudaMemcpyDeviceToHost);
+			cudaDeviceSynchronize();
+			MatrixXf a2 = Eigen::Map<MatrixXf>(ai, nrank, nrank);
+	//		std::cout << a2 << std::endl;
+		//	std::cout << "\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\" << std::endl;
+	//		std::cout << a.inverse() << std::endl;
+			bool a_solution_exists = (a * a2 * a).isApprox(a);
+			if (a_solution_exists)
+			{
+				std::cout << "SVD Passed." << std::endl;
+			}
+			else
+			{
+				std::cout << "SVD Failed." << std::endl;
+			}
+
+			free(ai);
+		}
+		else
+		{
+			std::cout << "SVD Failed." << std::endl;
+		}
+
+		cudaFree(aorg);
+
+	}
 }
+*/
