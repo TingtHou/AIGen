@@ -1,6 +1,6 @@
 #pragma once
-#include <cuda.h>
 #include <cuda_runtime.h>
+#include <cuda.h>
 #include <cublas_v2.h>
 #include <iostream>
 #include <vector>
@@ -10,6 +10,9 @@
 #include "helper_cuda.h"
 #include "cuToolkit.h"
 #include "ToolKit.h"
+#include "CommonFunc.h"
+#include "easylogging++.h"
+
 class cuMinqueBase
 {
 public:
@@ -24,6 +27,7 @@ public:
 	void pushback_X(float* d_X, int ncov);
 	void pushback_W(float* h_W);
 	virtual void estimateVCs() = 0;
+	void estimateFix();
 	Eigen::VectorXf getfix() { return fix; };
 	Eigen::VectorXf getvcs() { return vcs; };
 	void init();
@@ -36,8 +40,8 @@ protected:
 	float* h_W = NULL;
 	std::vector<float*> h_Vi;
 	Eigen::MatrixXf X;
-	Eigen::MatrixXf fix;
-	Eigen::MatrixXf vcs;
+	Eigen::VectorXf fix;
+	Eigen::VectorXf vcs;
 
 	//pointer of device
 	float* d_Y = NULL;
@@ -62,4 +66,6 @@ protected:
 	void CheckGPU();
 	bool Iscovariate = false;
 	bool Isweight = false;
+
+	void CheckInverseStatus(int status);
 };

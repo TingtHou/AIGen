@@ -1,4 +1,5 @@
-#include "..\include\cuMinqueBase.h"
+#include "../include/cuMinqueBase.h"
+
 
 cuMinqueBase::cuMinqueBase()
 {
@@ -110,6 +111,107 @@ void cuMinqueBase::pushback_W(float* h_W)
 	this->h_W = h_W;
 }
 
+void cuMinqueBase::estimateFix()
+{
+	if (ncov == 0)
+	{
+		return;
+	}
+	float* fixed;
+	fix.resize(ncov);
+	cudaMalloc((float**)&fixed,  ncov * sizeof(float));
+	float* d_Identity;
+	cudaMalloc((float**)&d_Identity, nind * nind * sizeof(float));
+	cuAsDiag(d_Identity, nind);
+	status = cublasCreate(&handle);
+	if (status != CUBLAS_STATUS_SUCCESS)
+	{
+		throw (_cudaGetErrorEnum(status));
+	}
+
+	float* d_VW;
+	cudaMalloc((float**)&d_VW, nind * nind * sizeof(float));
+	cudaDeviceSynchronize();
+	cudastat = cudaGetLastError();
+	if (cudastat != cudaSuccess)
+	{
+		throw (cudaGetErrorString(cudastat));
+	}
+	cudaMemset(d_VW, 0, nind * nind * sizeof(float));
+	cudaDeviceSynchronize();
+	cudastat = cudaGetLastError();
+	if (cudastat != cudaSuccess)
+	{
+		throw (cudaGetErrorString(cudastat));
+	}
+
+	const float one = 1;
+	const float zero = 0;
+	const float minus_one = -1;
+	for (int i = 0; i < nVi; i++)
+	{
+		cublasStatus_t cublasstatus = cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, nind, nind, nind, &vcs[i], d_Vi[i], nind, d_Identity, nind, &one, d_VW, nind);
+		if (cublasstatus != CUBLAS_STATUS_SUCCESS)
+		{
+			throw (_cudaGetErrorEnum(cublasstatus));
+		}
+	}
+	cudaFree(d_Identity);
+
+	cuInverse(d_VW, nind, Decomposition, altDecomposition, allowPseudoInverse);
+
+	float* d_B, * d_Xt_B, * d_inv_XtB_Bt;
+	cudaMalloc((float**)&d_B, nind * ncov * sizeof(float));
+	cudaMalloc((float**)&d_Xt_B, ncov * ncov * sizeof(float));
+	cudaMalloc((float**)&d_inv_XtB_Bt, ncov * nind * sizeof(float));
+	cudaMemset(d_B, 0, nind * ncov * sizeof(float));
+	cudaMemset(d_Xt_B, 0, ncov * ncov * sizeof(float));
+	cudaMemset(d_inv_XtB_Bt, 0, ncov * nind * sizeof(float));
+	cudaDeviceSynchronize();
+	//B=inv(VW)*X
+	status = cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, nind, ncov, nind, &one, d_VW, nind, d_X, nind, &zero, d_B, nind);
+	if (status != CUBLAS_STATUS_SUCCESS)
+	{
+		throw (_cudaGetErrorEnum(status));
+	}
+
+	//XtB=Xt*B
+	status = cublasSgemm(handle, CUBLAS_OP_T, CUBLAS_OP_N, ncov, ncov, nind, &one, d_X, nind, d_B, nind, &zero, d_Xt_B, ncov);
+	cudaDeviceSynchronize();
+	if (status != CUBLAS_STATUS_SUCCESS)
+	{
+		throw (_cudaGetErrorEnum(status));
+	}
+	//inv(XtB)
+	cuInverse(d_Xt_B, ncov, Decomposition, altDecomposition, allowPseudoInverse);
+	//cuToolkit::cuCholesky(d_Xt_B, ncov);
+	//inv_XtB_Bt=inv(XtB)*Bt
+	status = cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_T, ncov, nind, ncov, &one, d_Xt_B, ncov, d_B, nind, &zero, d_inv_XtB_Bt, ncov);
+	cudaDeviceSynchronize();
+	if (status != CUBLAS_STATUS_SUCCESS)
+	{
+		throw (_cudaGetErrorEnum(status));
+	}
+
+	status = cublasSgemv(handle, CUBLAS_OP_N, ncov, nind, &one, d_inv_XtB_Bt, ncov, d_Y, 1, &zero, fixed, 1);
+	cudaDeviceSynchronize();
+	if (status != CUBLAS_STATUS_SUCCESS)
+	{
+		throw (_cudaGetErrorEnum(status));
+	}
+	cudastat=cudaMemcpy(fix.data(), fixed, ncov * sizeof(float), cudaMemcpyDeviceToHost);
+	cudaDeviceSynchronize();
+	if (cudastat != CUBLAS_STATUS_SUCCESS)
+	{
+		throw (_cudaGetErrorEnum(cudastat));
+	}
+
+	cudaFree(fixed);
+	cudaFree(d_B);
+	cudaFree(d_Xt_B);
+	cudaFree(d_inv_XtB_Bt);
+}
+
 void cuMinqueBase::init()
 {
 	//alloc a mem for d_X on device
@@ -174,4 +276,43 @@ void cuMinqueBase::CheckGPU()
 	}
 	cuDeviceGetName(deviceName, 256, deviceID);
 	printf("Using Device %d: \"%s\"\n", deviceID, deviceName);
+}
+
+
+void cuMinqueBase::CheckInverseStatus(int status)
+{
+
+	switch (status)
+	{
+	case 0:
+		break;
+	case 1:
+		if (allowPseudoInverse)
+		{
+			stringstream ss;
+			ss << "Calculating inverse matrix is failed, using pseudo inverse matrix instead\n";
+			printf("%s", ss.str().c_str());
+			//			logfile->write("Calculating inverse matrix is failed, using pseudo inverse matrix instead", false);
+			LOG(WARNING) << "Calculating inverse matrix is failed, using pseudo inverse matrix instead";
+		}
+		else
+		{
+			stringstream ss;
+			ss << "[Error]: calculating inverse matrix is failed, and pseudo inverse matrix is not allowed\n";
+			throw std::exception(logic_error(ss.str().c_str()));
+		}
+		break;
+	case 2:
+	{
+		stringstream ss;
+		ss << "[Error]: calculating inverse matrix is failed, and pseudo inverse matrix is also failed\n";
+		throw std::exception(logic_error(ss.str().c_str()));
+	}
+	break;
+	default:
+		stringstream ss;
+		ss << "[Error]: unknown code [" << std::to_string(status) << "] from calculating inverse matrix.\n";
+		throw std::exception(logic_error(ss.str().c_str()));
+	}
+
 }
