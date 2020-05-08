@@ -21,7 +21,7 @@ void cuMINQUE0::estimateVCs()
 	status = cublasCreate(&handle);
 	if (status != CUBLAS_STATUS_SUCCESS)
 	{
-		throw (_cudaGetErrorEnum(status));
+		throw std::string(_cudaGetErrorEnum(status));
 	}
 
 	float* d_Ry;
@@ -34,7 +34,7 @@ void cuMINQUE0::estimateVCs()
 	cudastat = cudaGetLastError();
 	if (cudastat != cudaSuccess)
 	{
-		throw (cudaGetErrorString(cudastat));
+		throw std::string(cudaGetErrorString(cudastat));
 	}
 	const float one = 1;
 	const float zero = 0;
@@ -56,7 +56,7 @@ void cuMINQUE0::estimateVCs()
 		cudastat = cudaGetLastError();
 		if (cudastat != cudaSuccess)
 		{
-			throw (cudaGetErrorString(cudastat));
+			throw std::string(cudaGetErrorString(cudastat));
 		}
 		cudaMemset(d_RV[i], 0, nind * nind * sizeof(float));
 		cudaMemset(d_Vi_y[i], 0, nind * 1 * sizeof(float));
@@ -84,30 +84,30 @@ void cuMINQUE0::estimateVCs()
 		cudaDeviceSynchronize();
 		if (status != CUBLAS_STATUS_SUCCESS)
 		{
-			throw (_cudaGetErrorEnum(status));
+			throw std::string(_cudaGetErrorEnum(status));
 		}
 		//inv(XtX)
-		cuInverse(d_Xt_X, ncov, Decomposition, altDecomposition, allowPseudoInverse);
+		cuInverse(d_Xt_X, ncov, Decomposition, SVD, true);
 	//	cuToolkit::cuCholesky(d_Xt_X, ncov);
 		//X_inv_XtX=X*inv(XtX)
 		status = cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, nind, ncov, ncov, &one, d_X, nind, d_Xt_X, ncov, &zero, d_X_inv_XtX, nind);
 		cudaDeviceSynchronize();
 		if (status != CUBLAS_STATUS_SUCCESS)
 		{
-			throw (_cudaGetErrorEnum(status));
+			throw std::string(_cudaGetErrorEnum(status));
 		}
 		//X_inv_XtX=X*inv(XtX)
 		status = cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_T, nind, nind, ncov, &one, d_X_inv_XtX, nind, d_X, nind, &zero, d_X_inv_XtX_Xt, nind);
 		cudaDeviceSynchronize();
 		if (status != CUBLAS_STATUS_SUCCESS)
 		{
-			throw (_cudaGetErrorEnum(status));
+			throw std::string(_cudaGetErrorEnum(status));
 		}
 		status = cublasSgemv(handle, CUBLAS_OP_N, nind, nind, &one, d_X_inv_XtX_Xt, nind, d_Y, 1, &zero, d_Ry, 1);
 		cudaDeviceSynchronize();
 		if (status != CUBLAS_STATUS_SUCCESS)
 		{
-			throw (_cudaGetErrorEnum(status));
+			throw std::string(_cudaGetErrorEnum(status));
 		}
 		cuVectorCwiseMinus(d_Y, d_Ry, d_Ry,nind);
 		float* d_tmp;
@@ -119,20 +119,20 @@ void cuMINQUE0::estimateVCs()
 			cudaDeviceSynchronize();
 			if (status != CUBLAS_STATUS_SUCCESS)
 			{
-				throw (_cudaGetErrorEnum(status));
+				throw std::string(_cudaGetErrorEnum(status));
 			}
 			status = cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_T, nind, nind, ncov, &one, d_tmp, nind, d_X, nind, &zero, d_RV[i], nind);
 			cudaDeviceSynchronize();
 			if (status != CUBLAS_STATUS_SUCCESS)
 			{
-				throw (_cudaGetErrorEnum(status));
+				throw std::string(_cudaGetErrorEnum(status));
 			}
 			cuVectorCwiseMinus(d_Vi[i], d_RV[i], d_RV[i], nind * nind);
 			status = cublasSgemv(handle, CUBLAS_OP_N, nind, nind, &one, d_Vi[i], nind, d_Ry, 1, &zero, d_Vi_y[i], 1);
 			cudaDeviceSynchronize();
 			if (status != CUBLAS_STATUS_SUCCESS)
 			{
-				throw (_cudaGetErrorEnum(status));
+				throw std::string(_cudaGetErrorEnum(status));
 			}
 		}
 		cudaFree(d_Xt_X);
@@ -148,7 +148,7 @@ void cuMINQUE0::estimateVCs()
 	cudaDeviceSynchronize();
 	if (status != CUBLAS_STATUS_SUCCESS)
 	{
-		throw (_cudaGetErrorEnum(status));
+		throw std::string(_cudaGetErrorEnum(status));
 	}
 
 	for (int i = 0; i < nVi; i++)
@@ -158,7 +158,7 @@ void cuMINQUE0::estimateVCs()
 		cudaDeviceSynchronize();
 		if (status != CUBLAS_STATUS_SUCCESS)
 		{
-			throw (_cudaGetErrorEnum(status));
+			throw std::string(_cudaGetErrorEnum(status));
 		}
 	}
 	cudaFree(d_Identity);
@@ -181,13 +181,13 @@ void cuMINQUE0::estimateVCs()
 			cudaDeviceSynchronize();
 			if (status != CUBLAS_STATUS_SUCCESS)
 			{
-				throw (_cudaGetErrorEnum(status));
+				throw std::string(_cudaGetErrorEnum(status));
 			}
 			h_F(j, i) = h_F(i, j);
 		}
 	}
 	cudaFree(d_Identity);
-	Inverse(h_F, Decomposition, altDecomposition, allowPseudoInverse);
+	Inverse(h_F, Decomposition, SVD, true);
 	vcs = h_F * h_u;
 	cudaFree(d_Ry);
 	for (int i = 0; i < nVi; i++)

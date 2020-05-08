@@ -85,7 +85,7 @@ bool cuToolkit::cuLU(float * d_A, int N)
 	cublasstatus = cudaGetLastError();
 	if (cublasstatus != cudaSuccess)
 	{
-		throw (cudaGetErrorString(cublasstatus));
+		throw std::string(cudaGetErrorString(cublasstatus));
 	}
 	float *d_Work;
 	int *dLUPivots, *dLUInfo, Lwork;
@@ -96,28 +96,28 @@ bool cuToolkit::cuLU(float * d_A, int N)
 	cublasstatus = cudaGetLastError();
 	if (cublasstatus != cudaSuccess)
 	{
-		throw (cudaGetErrorString(cublasstatus));
+		throw std::string(cudaGetErrorString(cublasstatus));
 	}
 	cusolverDnSgetrf_bufferSize(handle, N, N, d_A, N, &Lwork);
 	cudaDeviceSynchronize();
 	cublasstatus = cudaGetLastError();
 	if (cublasstatus != cudaSuccess)
 	{
-		throw (cudaGetErrorString(cublasstatus));
+		throw std::string(cudaGetErrorString(cublasstatus));
 	}
 	cudaMalloc((void **)& d_Work, Lwork * sizeof(float));
 	cudaDeviceSynchronize();
 	cublasstatus = cudaGetLastError();
 	if (cublasstatus != cudaSuccess)
 	{
-		throw (cudaGetErrorString(cublasstatus));
+		throw std::string(cudaGetErrorString(cublasstatus));
 	}
 	cusolverDnSgetrf(handle, N, N, d_A, N, d_Work, dLUPivots, dLUInfo);
 	cudaDeviceSynchronize();
 	cublasstatus = cudaGetLastError();
 	if (cublasstatus != cudaSuccess)
 	{
-		throw (cudaGetErrorString(cublasstatus));
+		throw std::string(cudaGetErrorString(cublasstatus));
 	}
 	cublasstatus = cudaMemcpy(&info_gpu, dLUInfo, sizeof(int),
 		cudaMemcpyDeviceToHost); // copy devInfo -> info_gpu
@@ -125,7 +125,7 @@ bool cuToolkit::cuLU(float * d_A, int N)
 	cublasstatus = cudaGetLastError();
 	if (cublasstatus != cudaSuccess)
 	{
-		throw (cudaGetErrorString(cublasstatus));
+		throw std::string(cudaGetErrorString(cublasstatus));
 	}
 		// check error code
 	//if devInfo = 0, the LU factorization is successful. 
@@ -145,14 +145,14 @@ bool cuToolkit::cuLU(float * d_A, int N)
 	cublasstatus = cudaGetLastError();
 	if (cublasstatus != cudaSuccess)
 	{
-		throw (cudaGetErrorString(cublasstatus));
+		throw std::string(cudaGetErrorString(cublasstatus));
 	}
 	cublasstatus = cudaMemcpy(&info_gpu, dLUInfo, sizeof(int),cudaMemcpyDeviceToHost); // copy devInfo -> info_gpu
 	cudaDeviceSynchronize();
 	cublasstatus = cudaGetLastError();
 	if (cublasstatus != cudaSuccess)
 	{
-		throw (cudaGetErrorString(cublasstatus));
+		throw std::string(cudaGetErrorString(cublasstatus));
 	}
 	// check error code
 	//if devInfo = 0, the Cholesky factorization is successful. if devInfo = -i, the i - th parameter is wrong(not counting handle).
@@ -168,7 +168,7 @@ bool cuToolkit::cuLU(float * d_A, int N)
 		cublasstatus = cudaGetLastError();
 		if (cublasstatus != cudaSuccess)
 		{
-			throw (cudaGetErrorString(cublasstatus));
+			throw std::string(cudaGetErrorString(cublasstatus));
 		}
 		return false;
 	}
@@ -177,7 +177,7 @@ bool cuToolkit::cuLU(float * d_A, int N)
 	cublasstatus = cudaGetLastError();
 	if (cublasstatus != cudaSuccess)
 	{
-		throw (cudaGetErrorString(cublasstatus));
+		throw std::string(cudaGetErrorString(cublasstatus));
 	}
 	cudaFree(dLUInfo);
 	cudaFree(dLUPivots);
@@ -189,7 +189,7 @@ bool cuToolkit::cuLU(float * d_A, int N)
 	cublasstatus = cudaGetLastError();
 	if (cublasstatus != cudaSuccess)
 	{
-		throw (cudaGetErrorString(cublasstatus));
+		throw std::string(cudaGetErrorString(cublasstatus));
 	}
 	return true;
 }
@@ -225,7 +225,7 @@ bool cuToolkit::cuSVD(float * d_A, int N)
 	cudaStat = cudaGetLastError();
 	if (cudaStat != cudaSuccess)
 	{
-		throw (cudaGetErrorString(cudaStat));
+		throw std::string(cudaGetErrorString(cudaStat));
 	}
 	cudaMemset(d_A_INV, 0, sizeof(float) * N * N);
 	cudaMemset(d_V_d_S_T, 0, sizeof(float)*N*N);
@@ -238,7 +238,7 @@ bool cuToolkit::cuSVD(float * d_A, int N)
 	cudaStat = cudaGetLastError();
 	if (cudaStat != cudaSuccess)
 	{
-		throw (cudaGetErrorString(cudaStat));
+		throw std::string(cudaGetErrorString(cudaStat));
 	}
 	// create cusolver and cublas handle
 	cusolver_status = cusolverDnCreate(&cusolverH);
@@ -246,14 +246,14 @@ bool cuToolkit::cuSVD(float * d_A, int N)
 	cudaStat = cudaGetLastError();
 	if (cudaStat != cudaSuccess)
 	{
-		throw (cudaGetErrorString(cudaStat));
+		throw std::string(cudaGetErrorString(cudaStat));
 	}
 	cublas_status = cublasCreate(&cublasH);
 	cudaDeviceSynchronize();
 	cudaStat = cudaGetLastError();
 	if (cudaStat != cudaSuccess)
 	{
-		throw (cudaGetErrorString(cudaStat));
+		throw std::string(cudaGetErrorString(cudaStat));
 	}
 	// compute buffer size and prepare workspace
 	cusolver_status = cusolverDnDgesvd_bufferSize(cusolverH, N, N,
@@ -262,14 +262,14 @@ bool cuToolkit::cuSVD(float * d_A, int N)
 	cudaStat = cudaGetLastError();
 	if (cudaStat != cudaSuccess)
 	{
-		throw (cudaGetErrorString(cudaStat));
+		throw std::string(cudaGetErrorString(cudaStat));
 	}
 	cudaStat = cudaMalloc((void **)& d_work, sizeof(float)* lwork);
 	cudaDeviceSynchronize();
 	cudaStat = cudaGetLastError();
 	if (cudaStat != cudaSuccess)
 	{
-		throw (cudaGetErrorString(cudaStat));
+		throw std::string(cudaGetErrorString(cudaStat));
 	}
 	// compute the singular value decomposition of d_A
 	// and optionally the left and right singular vectors :
@@ -286,14 +286,14 @@ bool cuToolkit::cuSVD(float * d_A, int N)
 	cudaStat = cudaGetLastError();
 	if (cudaStat != cudaSuccess)
 	{
-		throw (cudaGetErrorString(cudaStat));
+		throw std::string(cudaGetErrorString(cudaStat));
 	}
 	cudaStat = cudaMemcpy(&info_gpu, devInfo, sizeof(int), cudaMemcpyDeviceToHost); // copy devInfo -> info_gpu
 	cudaDeviceSynchronize();
 	cudaStat = cudaGetLastError();
 	if (cudaStat != cudaSuccess)
 	{
-		throw (cudaGetErrorString(cudaStat));
+		throw std::string(cudaGetErrorString(cudaStat));
 	}
 		// check error code
 		//if devInfo = 0, the Cholesky factorization is successful. if devInfo = -i, the i - th parameter is wrong(not counting handle).
@@ -317,7 +317,7 @@ bool cuToolkit::cuSVD(float * d_A, int N)
 	cudaStat = cudaGetLastError();
 	if (cudaStat != cudaSuccess)
 	{
-		throw (cudaGetErrorString(cudaStat));
+		throw std::string(cudaGetErrorString(cudaStat));
 	}
 
 	//V*S_T
@@ -326,7 +326,7 @@ bool cuToolkit::cuSVD(float * d_A, int N)
 	cudaStat = cudaGetLastError();
 	if (cudaStat != cudaSuccess)
 	{
-		throw (cudaGetErrorString(cudaStat));
+		throw std::string(cudaGetErrorString(cudaStat));
 	}
 
 	cublasSgemm(cublasH, CUBLAS_OP_N, CUBLAS_OP_T, N, N, N, &alpha, d_V_d_S_T, N, d_U, N, &beta, d_A_INV, N);
@@ -334,7 +334,7 @@ bool cuToolkit::cuSVD(float * d_A, int N)
 	cudaStat = cudaGetLastError();
 	if (cudaStat != cudaSuccess)
 	{
-		throw (cudaGetErrorString(cudaStat));
+		throw std::string(cudaGetErrorString(cudaStat));
 	}
 	cudaMemcpy(d_A, d_A_INV, N*N * sizeof(float), cudaMemcpyDeviceToDevice);
 	cudaFree(d_S);
@@ -351,7 +351,7 @@ bool cuToolkit::cuSVD(float * d_A, int N)
 	cudaStat = cudaGetLastError();
 	if (cudaStat != cudaSuccess)
 	{
-		throw (cudaGetErrorString(cudaStat));
+		throw std::string(cudaGetErrorString(cudaStat));
 	}
 	return true;
 }
@@ -370,7 +370,7 @@ bool cuToolkit::cuQR(float * d_A, int N)
 	cudaStat = cudaGetLastError();
 	if (cudaStat != cudaSuccess)
 	{
-		throw (cudaGetErrorString(cudaStat));
+		throw std::string(cudaGetErrorString(cudaStat));
 	}
 	cuAsDiag(d_A_INV, N);
 	// declare matrices A and Q,R on the host
@@ -393,7 +393,7 @@ bool cuToolkit::cuQR(float * d_A, int N)
 	cudaStat = cudaGetLastError();
 	if (cudaStat != cudaSuccess)
 	{
-		throw (cudaGetErrorString(cudaStat));
+		throw std::string(cudaGetErrorString(cudaStat));
 	}
 	cudaStat = cudaMalloc((void **)& d_tau, sizeof(float)*N);
 	cudaStat = cudaMalloc((void **)& devInfo, sizeof(int));
@@ -401,12 +401,12 @@ bool cuToolkit::cuQR(float * d_A, int N)
 	cudaStat = cudaGetLastError();
 	if (cudaStat != cudaSuccess)
 	{
-		throw (cudaGetErrorString(cudaStat));
+		throw std::string(cudaGetErrorString(cudaStat));
 	}
 	cudaDeviceSynchronize();
 	if (cudaStat != cudaSuccess)
 	{
-		throw (cudaGetErrorString(cudaStat));
+		throw std::string(cudaGetErrorString(cudaStat));
 	}
 	// compute working space for geqrf and orgqr
 	cusolver_status = cusolverDnSgeqrf_bufferSize(cusolverH, N, N, d_A, lda, &lwork_geqrf); // compute Sgeqrf buffer size
@@ -414,14 +414,14 @@ bool cuToolkit::cuQR(float * d_A, int N)
 	cudaStat = cudaGetLastError();
 	if (cudaStat != cudaSuccess)
 	{
-		throw (cudaGetErrorString(cudaStat));
+		throw std::string(cudaGetErrorString(cudaStat));
 	}
 	cusolver_status = cusolverDnSorgqr_bufferSize(cusolverH, N, N, N, d_A, lda, d_tau, &lwork_orgqr); // and Sorgqr b. size
 	cudaDeviceSynchronize();
 	cudaStat = cudaGetLastError();
 	if (cudaStat != cudaSuccess)
 	{
-		throw (cudaGetErrorString(cudaStat));
+		throw std::string(cudaGetErrorString(cudaStat));
 	}
 	lwork = (lwork_geqrf > lwork_orgqr) ? lwork_geqrf : lwork_orgqr;
 	// device memory for workspace
@@ -432,14 +432,14 @@ bool cuToolkit::cuQR(float * d_A, int N)
 	cudaStat = cudaGetLastError();
 	if (cudaStat != cudaSuccess)
 	{
-		throw (cudaGetErrorString(cudaStat));
+		throw std::string(cudaGetErrorString(cudaStat));
 	}
 	cudaStat = cudaMemcpy(&info_gpu, devInfo, sizeof(int), cudaMemcpyDeviceToHost); // copy devInfo -> info_gpu
 	cudaDeviceSynchronize();
 	cudaStat = cudaGetLastError();
 	if (cudaStat != cudaSuccess)
 	{
-		throw (cudaGetErrorString(cudaStat));
+		throw std::string(cudaGetErrorString(cudaStat));
 	}
 	// check error code
 	//if devInfo = 0, the Cholesky factorization is successful. if devInfo = -i, the i - th parameter is wrong(not counting handle).
@@ -461,14 +461,14 @@ bool cuToolkit::cuQR(float * d_A, int N)
 	cudaStat = cudaGetLastError();
 	if (cudaStat != cudaSuccess)
 	{
-		throw (cudaGetErrorString(cudaStat));
+		throw std::string(cudaGetErrorString(cudaStat));
 	}
 	cudaStat = cudaMemcpy(&info_gpu, devInfo, sizeof(int), cudaMemcpyDeviceToHost); // copy devInfo -> info_gpu
 	cudaDeviceSynchronize();
 	cudaStat = cudaGetLastError();
 	if (cudaStat != cudaSuccess)
 	{
-		throw (cudaGetErrorString(cudaStat));
+		throw std::string(cudaGetErrorString(cudaStat));
 	}
 	// check error code
 	//if devInfo = 0, the Cholesky factorization is successful. if devInfo = -i, the i - th parameter is wrong(not counting handle).
@@ -490,14 +490,14 @@ bool cuToolkit::cuQR(float * d_A, int N)
 	cudaStat = cudaGetLastError();
 	if (cudaStat != cudaSuccess)
 	{
-		throw (cudaGetErrorString(cudaStat));
+		throw std::string(cudaGetErrorString(cudaStat));
 	}
 	cudaMemcpy(d_A, d_A_INV, N * N * sizeof(float), cudaMemcpyDeviceToDevice);
 	cudaDeviceSynchronize();
 	cudaStat = cudaGetLastError();
 	if (cudaStat != cudaSuccess)
 	{
-		throw (cudaGetErrorString(cudaStat));
+		throw std::string(cudaGetErrorString(cudaStat));
 	}
 	//check inversed 
 	
@@ -511,7 +511,7 @@ bool cuToolkit::cuQR(float * d_A, int N)
 	cudaStat = cudaGetLastError();
 	if (cudaStat != cudaSuccess)
 	{
-		throw (cudaGetErrorString(cudaStat));
+		throw std::string(cudaGetErrorString(cudaStat));
 	}
 	return true;
 }
@@ -527,7 +527,7 @@ bool cuToolkit::cuCholesky(float* d_A, int N)
 	cudaDeviceSynchronize();
 	if (cudaStatus != cudaSuccess)
 	{
-		throw (cudaGetErrorString(cudaStatus));
+		throw std::string(cudaGetErrorString(cudaStatus));
 	}
 	cuAsDiag(d_A_INV, N);
 	int *d_info, Lwork; // device version of info , worksp . size
@@ -537,7 +537,7 @@ bool cuToolkit::cuCholesky(float* d_A, int N)
 	cudaStatus = cudaGetLastError();
 	if (cudaStatus != cudaSuccess)
 	{
-		throw (cudaGetErrorString(cudaStatus));
+		throw std::string(cudaGetErrorString(cudaStatus));
 	}
 	cublasFillMode_t uplo = CUBLAS_FILL_MODE_LOWER;
 	// prepare memory on the device
@@ -547,14 +547,14 @@ bool cuToolkit::cuCholesky(float* d_A, int N)
 	cudaStatus = cudaGetLastError();
 	if (cudaStatus != cudaSuccess)
 	{
-		throw (cudaGetErrorString(cudaStatus));
+		throw std::string(cudaGetErrorString(cudaStatus));
 	}
 	cusolverStatus = cusolverDnSpotrf_bufferSize(handle, uplo, N, d_A, N, &Lwork);
 	cudaDeviceSynchronize();
 	cudaStatus = cudaGetLastError();
 	if (cudaStatus != cudaSuccess)
 	{
-		throw (cudaGetErrorString(cudaStatus));
+		throw std::string(cudaGetErrorString(cudaStatus));
 	}
 	cudaStatus = cudaMalloc((void **)& Work, Lwork * sizeof(float));
 	// Cholesky decomposition d_A =L*L^T, lower triangle of d_A is
@@ -563,7 +563,7 @@ bool cuToolkit::cuCholesky(float* d_A, int N)
 	cudaStatus = cudaGetLastError();
 	if (cudaStatus != cudaSuccess)
 	{
-		throw (cudaGetErrorString(cudaStatus));
+		throw std::string(cudaGetErrorString(cudaStatus));
 	}
 	cusolverStatus = cusolverDnSpotrf(handle, uplo, N, d_A, N, Work,
 		Lwork, d_info);
@@ -571,14 +571,14 @@ bool cuToolkit::cuCholesky(float* d_A, int N)
 	cudaStatus = cudaGetLastError();
 	if (cudaStatus != cudaSuccess)
 	{
-		throw (cudaGetErrorString(cudaStatus));
+		throw std::string(cudaGetErrorString(cudaStatus));
 	}
 	cudaStatus = cudaMemcpy (& info_gpu , d_info , sizeof (int), cudaMemcpyDeviceToHost ); // copy devInfo -> info_gpu
 	cudaDeviceSynchronize();
 	cudaStatus = cudaGetLastError();
 	if (cudaStatus != cudaSuccess)
 	{
-		throw (cudaGetErrorString(cudaStatus));
+		throw std::string(cudaGetErrorString(cudaStatus));
 	}
 	// check error code
 	//if devInfo = 0, the Cholesky factorization is successful. if devInfo = -i, the i - th parameter is wrong(not counting handle).
@@ -598,7 +598,7 @@ bool cuToolkit::cuCholesky(float* d_A, int N)
 	cudaStatus = cudaGetLastError();
 	if (cudaStatus != cudaSuccess)
 	{
-		throw (cudaGetErrorString(cudaStatus));
+		throw std::string(cudaGetErrorString(cudaStatus));
 	}
 	cudaStatus = cudaMemcpy(&info_gpu, d_info, sizeof(int), cudaMemcpyDeviceToHost); // copy devInfo -> info_gpu
 	//if devInfo = 0, the Cholesky factorization is successful. if devInfo = -i, the i-th parameter is wrong (not counting handle).
@@ -606,7 +606,7 @@ bool cuToolkit::cuCholesky(float* d_A, int N)
 	cudaStatus = cudaGetLastError();
 	if (cudaStatus != cudaSuccess)
 	{
-		throw (cudaGetErrorString(cudaStatus));
+		throw std::string(cudaGetErrorString(cudaStatus));
 	}
 	if (info_gpu)
 	{
@@ -623,7 +623,7 @@ bool cuToolkit::cuCholesky(float* d_A, int N)
 	cudaStatus = cudaGetLastError();
 	if (cudaStatus != cudaSuccess)
 	{
-		throw (cudaGetErrorString(cudaStatus));
+		throw std::string(cudaGetErrorString(cudaStatus));
 	}
 	return true;
 }

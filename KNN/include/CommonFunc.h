@@ -9,6 +9,7 @@
 #include "easylogging++.h"
 #include <thread>
 #include <iomanip>
+#include <vector>
 
 enum MatrixDecompostionOptions :int
 {
@@ -60,6 +61,16 @@ struct GenoData
 
 };
 
+
+struct CovData
+{
+	boost::bimap<int, std::string> fid_iid;
+	Eigen::MatrixXf Covariates;
+	std::vector<std::string> names;
+	int nind=0;
+	int npar=0;
+};
+
 int Inverse(Eigen::MatrixXf & Ori_Matrix,int DecompositionMode, int AltDecompositionMode, bool allowPseudoInverse);
 int Inverse(Eigen::MatrixXd & Ori_Matrix, int DecompositionMode, int AltDecompositionMode, bool allowPseudoInverse);
 float Variance(Eigen::VectorXf &Y);
@@ -70,11 +81,14 @@ std::string GetParentPath(std::string pathname);
 void stripSameCol(Eigen::MatrixXf &Geno);
 void stdSNPmv(Eigen::MatrixXf &Geno);
 void set_difference(boost::bimap<int, std::string> &map1, boost::bimap<int, std::string> &map2, std::vector<std::string> &overlap);
+boost::bimap<int, std::string> set_difference(boost::bimap<int, std::string>& map1, boost::bimap<int, std::string>& map2);
+boost::bimap<int, std::string> set_difference(std::vector<boost::bimap<int, std::string>>& mapList);
+void set_difference(boost::bimap<int, std::string>& map1, boost::bimap<int, std::string>& map2, boost::bimap<int, std::string>& map3, std::vector<std::string>& overlap);
 void GetSubMatrix(Eigen::MatrixXf &oMatrix, Eigen::MatrixXf &subMatrix, std::vector<int> rowIds, std::vector<int> colIDs);
 void GetSubMatrix(Eigen::MatrixXf& oMatrix, Eigen::MatrixXf& subMatrix, std::vector<int> rowIds);
 void GetSubVector(Eigen::VectorXf &oVector, Eigen::VectorXf &subVector, std::vector<int> IDs);
 float Cor(Eigen::VectorXf& Y1, Eigen::VectorXf& Y2);
-
+std::vector<std::string> UniqueCount(std::vector<std::string> vec);
 
 //ROC curve analysis
 class ROC

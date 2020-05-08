@@ -265,6 +265,51 @@ void set_difference(boost::bimap<int, std::string>& map1, boost::bimap<int, std:
 	}
 }
 
+boost::bimap<int, std::string> set_difference(boost::bimap<int, std::string>& map1, boost::bimap<int, std::string>& map2)
+{
+	boost::bimap<int, std::string> overlap;
+	int id = 0;
+	for (auto it = map1.left.begin(); it != map1.left.end(); it++)
+	{
+		if (map2.right.count(it->second))
+		{
+			overlap.insert({ id++ ,it->second });
+		}
+	}
+	return overlap;
+}
+
+boost::bimap<int, std::string> set_difference(std::vector<boost::bimap<int, std::string>>& mapList)
+{
+	boost::bimap<int, std::string> overlap;
+	if (mapList.size()==1)
+	{
+		overlap = mapList.back();
+		mapList.pop_back();
+	}
+	else
+	{
+		boost::bimap<int, std::string> map1 = mapList.back();
+		mapList.pop_back();
+		boost::bimap<int, std::string> map2 = set_difference(mapList);
+		overlap=set_difference(map1, map2);
+	}
+	return overlap;
+}
+
+void set_difference(boost::bimap<int, std::string>& map1, boost::bimap<int, std::string>& map2, boost::bimap<int, std::string>& map3, std::vector<std::string>& overlap)
+{
+	for (auto it = map1.left.begin(); it != map1.left.end(); it++)
+	{
+		if (map2.right.count(it->second))
+		{
+			if (map3.right.count(it->second))
+			{
+				overlap.push_back(it->second);
+			}
+		}
+	}
+}
 
 //@brief:	Get a subset of a float matrix given specific row IDs and column IDs;
 //@param:	oMatrix			The original matrix;
@@ -334,6 +379,13 @@ float Cor(Eigen::VectorXf& Y1, Eigen::VectorXf& Y2)
 	lower = std::sqrt(nind * Y1_squre_sum - Y1_sum * Y1_sum) * std::sqrt(nind * Y2_squre_sum - Y2_sum * Y2_sum);
 	float cor = (float)upper / lower;
 	return cor;
+}
+
+std::vector<std::string> UniqueCount(std::vector<std::string> vec)
+{
+	sort(vec.begin(), vec.end());
+	vec.erase(unique(vec.begin(), vec.end()), vec.end());
+	return vec;
 }
 
 //@brief:	Initialize class ROC;

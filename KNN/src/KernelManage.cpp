@@ -47,12 +47,14 @@ void KernelReader::BinFileReader(std::ifstream &fin, KernelData & kdata)
 {
 	const size_t num_elements = nind * (nind + 1) / 2;
 	fin.seekg(0, std::ios::end);
-	int fileSize = fin.tellg();
+	std::streampos fileSize = fin.tellg();
 	int bytesize = fileSize / num_elements;
 	fin.seekg(0, std::ios::beg);
 	if (bytesize!=4&&bytesize!=8)
 	{
-		throw ("Error: the size of the [" + BinFileName + "] file is incomplete?");
+		std::stringstream ss;
+		ss << "Error: the size of the [" + BinFileName + "] file is incomplete? \n The size of " << num_elements << " individuals file should have " << num_elements * 4 << " B.";
+		throw std::string(ss.str());
 	}
 	//char *f_buf = new char[bytesize];// (char*)malloc(bytesize * sizeof(char));  //set bytesize bits buffer for data, 4bits for float and 8bits for float
 	char* f_buf = new char[fileSize];
@@ -62,11 +64,11 @@ void KernelReader::BinFileReader(std::ifstream &fin, KernelData & kdata)
 		if (!fin.eof()) // end of file is an expected condition here and not worth 
 						   // clearing. What else are you going to read?
 		{
-			 throw ("Error: the size of the [" + BinFileName + "] file is incomplete?");
+			 throw std::string("Error: the size of the [" + BinFileName + "] file is incomplete? EOF is missing.");
 		}
 		else
 		{
-			throw ("Error: Unknow error when reading [" + BinFileName + "].");
+			throw std::string("Error: Unknow error when reading [" + BinFileName + "].");
 		}
 	}
 	#pragma omp parallel for shared(kdata,f_buf)
@@ -105,7 +107,7 @@ void KernelReader::NfileReader(std::ifstream &fin, KernelData & kdata)
 	fin.seekg(0, std::ios::beg);
 	if (bytesize != 4 && bytesize != 8)
 	{
-		throw ("Error: the size of the [" + NfileName + "] file is incomplete?");
+		throw std::string("Error: the size of the [" + NfileName + "] file is incomplete?");
 	}
 	char *f_buf = new char[bytesize];//set bytesize bits buffer for data, 4bits for float and 8bits for float
 	//char *f_buf = (char*)malloc(bytesize * sizeof(char));  
@@ -113,7 +115,7 @@ void KernelReader::NfileReader(std::ifstream &fin, KernelData & kdata)
 	{
 		for (int j = 0; j <= i; j++)
 		{
-			if (!fin.read(f_buf, bytesize)) throw ("Error: the size of the [" + NfileName + "] file is incomplete?");
+			if (!fin.read(f_buf, bytesize)) throw std::string("Error: the size of the [" + NfileName + "] file is incomplete?");
 			kdata.VariantCountMatrix(j, i) = kdata.VariantCountMatrix(i, j) = bytesize == 4 ? *(float *)f_buf : *(float *)f_buf;
 		}
 	}
@@ -129,13 +131,13 @@ void KernelReader::read()
 	if (!IDifstream.is_open())
 	{
 		IDifstream.close();
-		throw ("Error: can not open the file [" + IDfileName + "] to read.");
+		throw std::string("Error: can not open the file [" + IDfileName + "] to read.");
 	}
 	std::ifstream Binifstream(BinFileName, std::ios::binary);
 	if (!IDifstream.is_open())
 	{
 		Binifstream.close();
-		throw ("Error: can not open the file [" + BinFileName + "] to read.");
+		throw std::string("Error: can not open the file [" + BinFileName + "] to read.");
 	}
 	printf("Reading the IDs from [ %s ]\n", IDfileName.c_str());
 	IDfileReader(IDifstream, Kernels);
@@ -189,7 +191,7 @@ void KernelWriter::writeText(std::string filename)
 	if (!IDsfstram.is_open())
 	{
 		IDsfstram.close();
-		throw ("Error: can not open the file [" + IDfileName + "] to write.");
+		throw std::string("Error: can not open the file [" + IDfileName + "] to write.");
 	}
 	std::cout << "Writing the IDs to [" + filename + ".id]." << std::endl;
 	IDfileWriter(IDsfstram,Kernels);
@@ -198,7 +200,7 @@ void KernelWriter::writeText(std::string filename)
 	if (!Kwriter.is_open())
 	{
 		Kwriter.close();
-		throw ("Error: can not open the file [" + filename + "] to write.");
+		throw std::string("Error: can not open the file [" + filename + "] to write.");
 	}
 	std::cout << "Writing the kernel matrix to the file [" + filename + "]." << std::endl;
 	int nind = Kernels.fid_iid.size();
@@ -223,21 +225,21 @@ void KernelWriter::write()
 	if (!IDsfstram.is_open())
 	{
 		IDsfstram.close();
-		throw ("Error: can not open the file [" + IDfileName + "] to write.");
+		throw std::string("Error: can not open the file [" + IDfileName + "] to write.");
 	}
 	std::ofstream Binofstream;
 	Binofstream.open(BinFileName, std::ios::out | std::ios::binary);
 	if (!Binofstream.is_open())
 	{
 		Binofstream.close();
-		throw ("Error: can not open the file [" + BinFileName + "] to write.");
+		throw std::string("Error: can not open the file [" + BinFileName + "] to write.");
 	}
 	std::ofstream Nofstream;
 	Nofstream.open(NfileName, std::ios::out | std::ios::binary);
 	if (!Nofstream.is_open())
 	{
 		Nofstream.close();
-		throw ("Error: can not open the file [" + NfileName + "] to write.");
+		throw std::string("Error: can not open the file [" + NfileName + "] to write.");
 	}
 	std::cout << "Writing the IDs to [" + IDfileName + "].\n" << std::endl;
 	IDfileWriter(IDsfstram, Kernels);
@@ -264,21 +266,21 @@ void KernelWriter::write(std::string prefix)
 	if (!IDsfstram.is_open())
 	{
 		IDsfstram.close();
-		throw ("Error: can not open the file [" + IDfileName + "] to write.");
+		throw std::string("Error: can not open the file [" + IDfileName + "] to write.");
 	}
 	std::ofstream Binofstream;
 	Binofstream.open(BinFileName, std::ios::out|std::ios::binary);
 	if (!Binofstream.is_open())
 	{
 		Binofstream.close();
-		throw ("Error: can not open the file [" + BinFileName + "] to write.");
+		throw std::string("Error: can not open the file [" + BinFileName + "] to write.");
 	}
 	std::ofstream Nofstream;
 	Nofstream.open(NfileName, std::ios::out | std::ios::binary);
 	if (!Nofstream.is_open())
 	{
 		Nofstream.close();
-		throw ("Error: can not open the file [" + NfileName + "] to write.");
+		throw std::string("Error: can not open the file [" + NfileName + "] to write.");
 	}
 	std::cout << "Writing the IDs to [" + IDfileName + "]." << std::endl;
 	IDfileWriter(IDsfstram, Kernels);

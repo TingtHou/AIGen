@@ -26,13 +26,13 @@ public:
 	void readPhe(std::string phefilename);											//Read phenotype
 	void readKernel(std::string prefix);											//Read a kernel matrix
 	void readmKernel(std::string mkernelfilename);									//Read multiple kernels
-	void readCovariates(std::string covfilename);									//Read Covariates
 	void readGeno(std::vector<std::string> filelist, bool isImpute);                //Read genotype data from plink format files, [ped, map] or [bed, bim, fam];
 	void readWeight(std::string filename);							                //Read weight file for Iterative MIQNUE
-	PhenoData getPhenotype() {	return phe;	};										//Get phenotype data
-	std::vector<KernelData> GetKernel() { return KernelList; };						//Get kernel data
-	Eigen::MatrixXf GetCovariates() { return Covariates; };							//Get covariate data
-	Eigen::VectorXf GetWeights() { return Weights; };								//Get Weights data
+	void readCovariates(std::string qfilename,std::string dfilename);				//Read covariates files, including quantitative and discrete covari
+	PhenoData& getPhenotype() {	return phe;	};										//Get phenotype data
+	std::vector<KernelData>& GetKernel() { return KernelList; };						//Get kernel data
+	CovData& GetCovariates() { return Covs; };								//Get covariate data
+	Eigen::VectorXf& GetWeights() { return Weights; };								//Get Weights data
 	void SetKernel(std::vector<KernelData> KernelList)								//Replace internal kernel data with specificed external kernel data
 		{ this->KernelList=KernelList; };
 	void match();																	//match phenotype data and kernel data
@@ -42,12 +42,15 @@ private:
 	PhenoData phe;																	//phenotype data
 	GenoData geno;																	//genotype data
 	std::vector<KernelData> KernelList;												//a vector of kernel data
-	Eigen::MatrixXf Covariates;														//covariates
+	CovData Covs;																	//intercept + all covariates
 	Eigen::VectorXf Weights;														//Weights for Interative MINQUE
 private:
 	void readResponse(std::string resopnsefile, PhenoData &phe);					//as named
 	void readmkernel(std::string mkernel);											//read multiple kernels
-	void match(PhenoData &phenotype, KernelData &kernel);							//match phenotype data and one kernel matrix
+	void readCovariates_quantitative(std::string covfilename, CovData & Quantitative);									//Read quantitative Covariates
+	void readCovariates_Discrete(std::string covfilename, CovData & Discrete);									//Read discrete Covariates
+//	void match(PhenoData &phenotype, KernelData &kernel);							//match phenotype data and one kernel matrix
+	void match_Kernels(KernelData& kernel, boost::bimap<int, std::string>& overlapped);
 
 };
 

@@ -27,7 +27,7 @@ void minque1::estimateVCs()
 		cblas_sgemm(CblasColMajor, CblasNoTrans, CblasNoTrans, nind, nind, nind, W[i], pr_Vi, nind, pr_Identity, nind, 1, pr_VW, nind);
 	}
 	int status=Inverse(VW, Decomposition, altDecomposition, allowPseudoInverse);
-	CheckInverseStatus(status);
+	CheckInverseStatus(status, allowPseudoInverse);
 	std::vector<Eigen::MatrixXf> RV(nVi);
 	Eigen::VectorXf Ry(nind);
 	std::vector<float*> pr_rv_list(nVi);
@@ -65,8 +65,8 @@ void minque1::estimateVCs()
 		//XtB=Xt*B
 		cblas_sgemm(CblasColMajor, CblasTrans, CblasNoTrans, X.cols(), X.cols(), nind, 1, pr_X, nind, pr_B, nind, 0, pr_Xt_B, X.cols());
 		//inv(XtB)
-		int status = Inverse(Xt_B, Decomposition, altDecomposition, allowPseudoInverse);
-		CheckInverseStatus(status);
+		int status = Inverse(Xt_B, Decomposition, SVD, true);
+		CheckInverseStatus(status,true);
 		//inv_XtB_Bt=inv(XtB)*Bt
 		cblas_sgemm(CblasColMajor, CblasNoTrans, CblasTrans, X.cols(), nind, X.cols(), 1, pr_Xt_B, X.cols(), pr_B, nind, 0, pr_inv_XtB_Bt, X.cols());
 		//inv_VM=inv_VM-B*inv(XtB)*Bt
@@ -111,8 +111,8 @@ void minque1::estimateVCs()
 		F(j, i) = F(i, j);
 	}
 
-	status = Inverse(F, Decomposition, altDecomposition, allowPseudoInverse);
-	CheckInverseStatus(status);
+	status = Inverse(F, Decomposition,  SVD, true);
+	CheckInverseStatus(status,true);
 	vcs = F * u;
 }
 

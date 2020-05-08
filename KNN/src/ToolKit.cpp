@@ -279,7 +279,7 @@ bool ToolKit::comput_inverse_logdet_QR_mkl(Eigen::MatrixXf& Vi)
 	if (INFO != 0)
 	{
 		delete[] tau;
-		throw ("Error: QR decomposition failed. Invalid values found in the matrix.\n");
+		throw  std::string("Error: QR decomposition failed. Invalid values found in the matrix.\n");
 	}
 	cblas_strsm(CblasColMajor, CblasLeft, CblasUpper, CblasNoTrans, CblasNonUnit, n, n, 1, Vi_mkl, n, pr_Rinv, n);
 	LAPACKE_sormqr(LAPACK_COL_MAJOR, 'L', 'T', n, n, n, Vi_mkl, n, tau, pr_Qt, n);
@@ -303,7 +303,7 @@ bool ToolKit::comput_inverse_logdet_QR_mkl(Eigen::MatrixXd& Vi)
 	if (INFO != 0)
 	{
 		delete[] tau;
-		throw ("Error: QR decomposition failed. Invalid values found in the matrix.\n");
+		throw  std::string("Error: QR decomposition failed. Invalid values found in the matrix.\n");
 	}
 	cblas_dtrsm(CblasColMajor, CblasLeft, CblasUpper, CblasNoTrans, CblasNonUnit, n, n, 1, Vi_mkl, n, pr_Rinv, n);
 	LAPACKE_dormqr(LAPACK_COL_MAJOR, 'L', 'T', n, n, n, Vi_mkl, n, tau, pr_Qt, n);
@@ -336,14 +336,14 @@ bool ToolKit::comput_inverse_logdet_SVD_mkl(Eigen::MatrixXf& Vi)
 		free(s);
 		free(u);
 		free(vt);
-		throw ("The algorithm computing SVD failed to converge.\n");
+		throw  std::string("The algorithm computing SVD failed to converge.\n");
 	}
 	if (info < 0)
 	{
 		free(s);
 		free(u);
 		free(vt);
-		throw ("Error: SVD decomposition failed. Invalid values found in the matrix.\n");
+		throw  std::string("Error: SVD decomposition failed. Invalid values found in the matrix.\n");
 	}
 	//u=(s^-1)*U
 	MKL_INT incx = 1;
@@ -390,14 +390,14 @@ bool ToolKit::comput_inverse_logdet_SVD_mkl(Eigen::MatrixXd& Vi)
 		free(s);
 		free(u);
 		free(vt);
-		throw ("The algorithm computing SVD failed to converge.\n");
+		throw  std::string("The algorithm computing SVD failed to converge.\n");
 	}
 	if (info < 0)
 	{
 		free(s);
 		free(u);
 		free(vt);
-		throw ("Error: SVD decomposition failed. Invalid values found in the matrix.\n");
+		throw  std::string("Error: SVD decomposition failed. Invalid values found in the matrix.\n");
 	}
 	//u=(s^-1)*U
 	MKL_INT incx = 1;

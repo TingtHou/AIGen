@@ -75,6 +75,10 @@ void imnq::Iterate()
 	}
 	float diff = 0;
 	minque1 *mnq=nullptr;
+	if (isecho)
+	{
+		printf("Starting Iterate MINQUE Algorithm at thread %d \n", ThreadId);
+	}
 	LOG(INFO) << "Starting Iterate MINQUE Algorithm at thread "<<ThreadId;
 	while (initIterate <itr)
 	{

@@ -71,8 +71,10 @@ void Options::boostProgramOptionsRoutine(int argc, const char * const argv[])
 	    ("mkernel", po::value<std::string>()->value_name("[filename]"),
 				"Input multiple kernel files in binary format.\n")
 		("weights", po::value<std::string>()->value_name("[filename]"), "Specify full name of weight vector file for iterative MINQUE.\n")
-		("covs", po::value<std::string>()->value_name("[filename]"),
-				"Specify full name of covariates file.\n");
+		("covar", po::value<std::string>()->value_name("[filename]"),
+				"Input discrete covariates from a plain text file.\n")
+		("qcovar", po::value<std::string>()->value_name("[filename]"),
+				"Input quantitative covariates from a plain text file.\n");
 		po::options_description optsFilesOperation("File Operations");
 		optsFilesOperation.add_options()
 		("impute", po::value<bool>()->value_name("True/False"),

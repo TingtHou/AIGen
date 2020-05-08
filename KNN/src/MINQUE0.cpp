@@ -45,8 +45,8 @@ void MINQUE0::estimateVCs()
 		//Xt_X=Xt*X
 		cblas_sgemm(CblasColMajor, CblasTrans, CblasNoTrans, X.cols(), X.cols(), nind, 1, pr_X, nind, pr_X, nind, 0, pr_Xt_X, X.cols());
 		//inv(XtX)
-		int status = Inverse(Xt_X, Decomposition, altDecomposition, allowPseudoInverse);
-		CheckInverseStatus(status);
+		int status = Inverse(Xt_X, Decomposition, SVD, true);
+		CheckInverseStatus(status,true);
 		//X_inv_XtX=X*inv(XtX)
 		cblas_sgemm(CblasColMajor, CblasNoTrans, CblasNoTrans, nind, X.cols(), X.cols(), 1, pr_X, nind, pr_Xt_X, X.cols(), 0, pr_X_inv_XtX, nind);
 		int nthread = omp_get_max_threads();
@@ -112,8 +112,8 @@ void MINQUE0::estimateVCs()
 		}
 	}
 	*/
-	int status = Inverse(F, Decomposition, altDecomposition, allowPseudoInverse);
-	CheckInverseStatus(status);
+	int status = Inverse(F, Decomposition, SVD, true);
+	CheckInverseStatus(status,true);
 	vcs = F * u;
 }
 

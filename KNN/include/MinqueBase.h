@@ -7,10 +7,10 @@
 class MinqueBase
 {
 public:
-	void importY(Eigen::VectorXf Y);
+	void importY(Eigen::VectorXf &Y);
 	void pushback_Vi(Eigen::MatrixXf *vi);
-	void pushback_X(Eigen::MatrixXf X,bool intercept);
-	void pushback_W(Eigen::VectorXf W);
+	void pushback_X(Eigen::MatrixXf &X,bool intercept);
+	void pushback_W(Eigen::VectorXf &W);
 	void setThreadId(int Thread_id);
 	virtual void estimateVCs()=0;
 	void estimateFix();
@@ -33,6 +33,6 @@ protected:
 	bool allowPseudoInverse = true;
 	int ThreadId = 0;
 	bool iscancel=false;
-	void CheckInverseStatus(int status);
+	void CheckInverseStatus(int status, bool allowPseudoInverse);
 };
 

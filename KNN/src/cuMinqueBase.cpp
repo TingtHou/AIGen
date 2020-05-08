@@ -26,14 +26,14 @@ void cuMinqueBase::importY(Eigen::VectorXf& Y)
 	cudastat = cudaGetLastError();
 	if (cudastat != cudaSuccess)
 	{
-		throw (cudaGetErrorString(cudastat));
+		throw std::string(cudaGetErrorString(cudastat));
 	}
 	cudaMemcpy(d_Y, h_Y, nind * sizeof(float), cudaMemcpyHostToDevice);
 	cudaDeviceSynchronize();
 	cudastat = cudaGetLastError();
 	if (cudastat != cudaSuccess)
 	{
-		throw (cudaGetErrorString(cudastat));
+		throw std::string(cudaGetErrorString(cudastat));
 	}
 
 }
@@ -126,7 +126,7 @@ void cuMinqueBase::estimateFix()
 	status = cublasCreate(&handle);
 	if (status != CUBLAS_STATUS_SUCCESS)
 	{
-		throw (_cudaGetErrorEnum(status));
+		throw std::string(_cudaGetErrorEnum(status));
 	}
 
 	float* d_VW;
@@ -135,14 +135,14 @@ void cuMinqueBase::estimateFix()
 	cudastat = cudaGetLastError();
 	if (cudastat != cudaSuccess)
 	{
-		throw (cudaGetErrorString(cudastat));
+		throw std::string(cudaGetErrorString(cudastat));
 	}
 	cudaMemset(d_VW, 0, nind * nind * sizeof(float));
 	cudaDeviceSynchronize();
 	cudastat = cudaGetLastError();
 	if (cudastat != cudaSuccess)
 	{
-		throw (cudaGetErrorString(cudastat));
+		throw std::string(cudaGetErrorString(cudastat));
 	}
 
 	const float one = 1;
@@ -153,7 +153,7 @@ void cuMinqueBase::estimateFix()
 		cublasStatus_t cublasstatus = cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, nind, nind, nind, &vcs[i], d_Vi[i], nind, d_Identity, nind, &one, d_VW, nind);
 		if (cublasstatus != CUBLAS_STATUS_SUCCESS)
 		{
-			throw (_cudaGetErrorEnum(cublasstatus));
+			throw std::string(_cudaGetErrorEnum(cublasstatus));
 		}
 	}
 	cudaFree(d_Identity);
@@ -172,7 +172,7 @@ void cuMinqueBase::estimateFix()
 	status = cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, nind, ncov, nind, &one, d_VW, nind, d_X, nind, &zero, d_B, nind);
 	if (status != CUBLAS_STATUS_SUCCESS)
 	{
-		throw (_cudaGetErrorEnum(status));
+		throw std::string(_cudaGetErrorEnum(status));
 	}
 
 	//XtB=Xt*B
@@ -180,30 +180,30 @@ void cuMinqueBase::estimateFix()
 	cudaDeviceSynchronize();
 	if (status != CUBLAS_STATUS_SUCCESS)
 	{
-		throw (_cudaGetErrorEnum(status));
+		throw std::string(_cudaGetErrorEnum(status));
 	}
 	//inv(XtB)
-	cuInverse(d_Xt_B, ncov, Decomposition, altDecomposition, allowPseudoInverse);
+	cuInverse(d_Xt_B, ncov, Decomposition, SVD, true);
 	//cuToolkit::cuCholesky(d_Xt_B, ncov);
 	//inv_XtB_Bt=inv(XtB)*Bt
 	status = cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_T, ncov, nind, ncov, &one, d_Xt_B, ncov, d_B, nind, &zero, d_inv_XtB_Bt, ncov);
 	cudaDeviceSynchronize();
 	if (status != CUBLAS_STATUS_SUCCESS)
 	{
-		throw (_cudaGetErrorEnum(status));
+		throw std::string(_cudaGetErrorEnum(status));
 	}
 
 	status = cublasSgemv(handle, CUBLAS_OP_N, ncov, nind, &one, d_inv_XtB_Bt, ncov, d_Y, 1, &zero, fixed, 1);
 	cudaDeviceSynchronize();
 	if (status != CUBLAS_STATUS_SUCCESS)
 	{
-		throw (_cudaGetErrorEnum(status));
+		throw std::string(_cudaGetErrorEnum(status));
 	}
 	cudastat=cudaMemcpy(fix.data(), fixed, ncov * sizeof(float), cudaMemcpyDeviceToHost);
 	cudaDeviceSynchronize();
 	if (cudastat != CUBLAS_STATUS_SUCCESS)
 	{
-		throw (_cudaGetErrorEnum(cudastat));
+		throw std::string(_cudaGetErrorEnum(cudastat));
 	}
 
 	cudaFree(fixed);
@@ -220,7 +220,7 @@ void cuMinqueBase::init()
 	cudastat = cudaGetLastError();
 	if (cudastat != cudaSuccess)
 	{
-		throw (cudaGetErrorString(cudastat));
+		throw std::string(cudaGetErrorString(cudastat));
 	}
 	//copy X from host to device
 	h_X = X.data();
@@ -229,7 +229,7 @@ void cuMinqueBase::init()
 	cudastat = cudaGetLastError();
 	if (cudastat != cudaSuccess)
 	{
-		throw (cudaGetErrorString(cudastat));
+		throw std::string(cudaGetErrorString(cudastat));
 	}
 
 
@@ -242,14 +242,14 @@ void cuMinqueBase::init()
 		cudastat = cudaGetLastError();
 		if (cudastat != cudaSuccess)
 		{
-			throw (cudaGetErrorString(cudastat));
+			throw std::string(cudaGetErrorString(cudastat));
 		}
 		cudaMemcpy(d_Vi[i], h_Vi[i], nind * nind * sizeof(float), cudaMemcpyHostToDevice);
 		cudaDeviceSynchronize();
 		cudastat = cudaGetLastError();
 		if (cudastat != cudaSuccess)
 		{
-			throw (cudaGetErrorString(cudastat));
+			throw std::string(cudaGetErrorString(cudastat));
 		}
 	}
 }
@@ -299,20 +299,20 @@ void cuMinqueBase::CheckInverseStatus(int status)
 		{
 			stringstream ss;
 			ss << "[Error]: calculating inverse matrix is failed, and pseudo inverse matrix is not allowed\n";
-			throw std::exception(logic_error(ss.str().c_str()));
+			throw ss.str();
 		}
 		break;
 	case 2:
 	{
 		stringstream ss;
 		ss << "[Error]: calculating inverse matrix is failed, and pseudo inverse matrix is also failed\n";
-		throw std::exception(logic_error(ss.str().c_str()));
+		throw ss.str();
 	}
 	break;
 	default:
 		stringstream ss;
 		ss << "[Error]: unknown code [" << std::to_string(status) << "] from calculating inverse matrix.\n";
-		throw std::exception(logic_error(ss.str().c_str()));
+		throw ss.str();
 	}
 
 }

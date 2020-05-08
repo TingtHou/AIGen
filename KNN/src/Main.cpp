@@ -159,7 +159,7 @@ void TryMain(int argc, const char *const argv[])
 		}
 		else
 		{
-			throw ("Error: Invalided kernel name \"" + kernelname+"\"");
+			throw std::string("Error: Invalided kernel name \"" + kernelname+"\"");
 		}
 		GenoData gd = dm.getGenotype();
 		if (programOptions.count("std"))
@@ -178,7 +178,7 @@ void TryMain(int argc, const char *const argv[])
 			infile.open(weightVFile);
 			if (!infile.is_open())
 			{
-				throw ("Error: cannot open the file [" + weightVFile + "] to read.");
+				throw std::string("Error: cannot open the file [" + weightVFile + "] to read.");
 			}
 			int id = 0;
 			while (!infile.eof())
@@ -314,6 +314,8 @@ void ReadData(boost::program_options::variables_map programOptions, DataManager 
 {
 	std::vector<std::string> GFile;
 	bool isImpute = false;
+	std::string qcovariatefile;
+	std::string dcovariatefile;
 	if (programOptions.count("phe"))
 	{
 		std::string reponsefile = programOptions["phe"].as < std::string >();
@@ -321,14 +323,15 @@ void ReadData(boost::program_options::variables_map programOptions, DataManager 
 		LOG(INFO) << "Reading Phenotype from [" + reponsefile + "].";
 		dm.readPhe(reponsefile);
 	}
-	if (programOptions.count("covs"))
+	if (programOptions.count("covar"))
 	{
-		std::string covariatesfile = programOptions["covs"].as < std::string >();
-		std::cout << "Reading Covariates from [" + covariatesfile + "]." << std::endl;
-		LOG(INFO) << "Reading Covariates from [" + covariatesfile + "].";
-		dm.readCovariates(covariatesfile);
-
+		dcovariatefile = programOptions["covar"].as < std::string >();
 	}
+	if (programOptions.count("qcovar"))
+	{
+		qcovariatefile = programOptions["qcovar"].as < std::string >();
+	}
+	dm.readCovariates(qcovariatefile, dcovariatefile);
 	if (programOptions.count("kernel"))
 	{
 		std::string kernelfiles = programOptions["kernel"].as<std::string >();
@@ -392,6 +395,7 @@ void ReadData(boost::program_options::variables_map programOptions, DataManager 
 	{
 		isImpute = programOptions["impute"].as<bool>();
 	}
+	
 	if (GFile.size()!=0)
 	{
 		dm.readGeno(GFile, isImpute);
@@ -406,11 +410,12 @@ void MINQUEAnalysis(boost::program_options::variables_map programOptions, DataMa
 	{
 		GPU = true;
 	}
-	PhenoData phe = dm.getPhenotype();
-	std::vector<KernelData> kd = dm.GetKernel();
-	Eigen::MatrixXf Covs = dm.GetCovariates();
-	Eigen::VectorXf VarComp = dm.GetWeights();			// initialize the variance components vector with pre-set weights
-	Eigen::VectorXf fix(Covs.cols());
+	PhenoData phe=dm.getPhenotype();
+	std::vector<KernelData> kd=dm.GetKernel();
+	CovData Covs=dm.GetCovariates();
+	Eigen::VectorXf VarComp=dm.GetWeights();
+		// initialize the variance components vector with pre-set weights
+	Eigen::VectorXf fix(Covs.npar);
 	fix.setZero();
 	fix[0] = -999;
 	float iterateTimes = 0;
@@ -437,7 +442,7 @@ void MINQUEAnalysis(boost::program_options::variables_map programOptions, DataMa
 	{
 		if (VarComp.size() != (Kernels.size() + 1))
 		{
-			throw ("Error: The size of pre-specified weight vector is not equal to the number of variance components.");
+			throw std::string("Error: The size of pre-specified weight vector is not equal to the number of variance components.");
 		}
 	}
 	if (programOptions.count("fix"))
@@ -448,7 +453,7 @@ void MINQUEAnalysis(boost::program_options::variables_map programOptions, DataMa
 	{
 		if (!programOptions.count("fix"))
 		{
-			throw std::runtime_error("Error: arguments [--fix] and [--predict] must be used at the same time.");
+			throw std::string("Error: arguments [--fix] and [--predict] must be used at the same time.");
 		}
 		
 	}
@@ -457,15 +462,15 @@ void MINQUEAnalysis(boost::program_options::variables_map programOptions, DataMa
 #ifndef CPU  
 		if (programOptions.count("minque0"))
 		{
-			cudaMINQUE0(minopt, Kernels, phe, Covs, VarComp, fix);
+			cudaMINQUE0(minopt, Kernels, phe, Covs.Covariates, VarComp, fix);
 			iterateTimes = 1;
 		}
 		else
 		{
-			cudaMINQUE1(minopt, Kernels, phe, Covs, VarComp, fix, iterateTimes, isecho);
+			cudaMINQUE1(minopt, Kernels, phe, Covs.Covariates, VarComp, fix, iterateTimes, isecho);
 		}
 #else
-		throw std::runtime_error("This is a CPU program. Please use GPU version.");
+		throw std::string("This is a CPU program. Please use GPU version.");
 #endif
 	}
 	else
@@ -487,12 +492,12 @@ void MINQUEAnalysis(boost::program_options::variables_map programOptions, DataMa
 			}
 			if (programOptions.count("minque0"))
 			{
-				BatchMINQUE0(minopt, Kernels, phe, Covs, VarComp, fix, nsplit, seed, nthread);
+				BatchMINQUE0(minopt, Kernels, phe, Covs.Covariates, VarComp, fix, nsplit, seed, nthread);
 				iterateTimes = 1;
 			}
 			else
 			{
-				BatchMINQUE1(minopt, Kernels, phe, Covs, VarComp, fix, iterateTimes, nsplit, seed, nthread, isecho);
+				BatchMINQUE1(minopt, Kernels, phe, Covs.Covariates, VarComp, fix, iterateTimes, nsplit, seed, nthread, isecho);
 			}
 			
 		}
@@ -505,12 +510,12 @@ void MINQUEAnalysis(boost::program_options::variables_map programOptions, DataMa
 			}	
 			if (programOptions.count("minque0"))
 			{
-				cMINQUE0(minopt, Kernels, phe, Covs, VarComp, fix);
+				cMINQUE0(minopt, Kernels, phe, Covs.Covariates, VarComp, fix);
 				iterateTimes = 1;
 			}
 			else
 			{
-				cMINQUE1(minopt, Kernels, phe, Covs, VarComp, fix, iterateTimes, isecho);
+				cMINQUE1(minopt, Kernels, phe, Covs.Covariates, VarComp, fix, iterateTimes, isecho);
 			}
 			
 		}
@@ -572,7 +577,7 @@ void MINQUEAnalysis(boost::program_options::variables_map programOptions, DataMa
 		int mode = programOptions["predict"].as<int>();
 		std::cout << "---Prediction----" << std::endl;
 		out<< "---Prediction----" << std::endl;
-		Prediction pred(phe.Phenotype, Kernels, VarComp, Covs, fix, phe.isbinary,mode);
+		Prediction pred(phe.Phenotype, Kernels, VarComp, Covs.Covariates, fix, phe.isbinary,mode);
 		std::stringstream ss;
 		if (phe.isbinary)
 		{
@@ -1010,8 +1015,7 @@ void readAlgrithomParameter(boost::program_options::variables_map programOptions
 				break;
 			default:
 			{
-				logic_error emsg("The parameter \"--inverse "+ Decomposition+"\" is not correct, please check it. More detail --help");
-				throw std::exception(emsg);
+				throw std::string("The parameter \"--inverse " + Decomposition + "\" is not correct, please check it. More detail --help");
 				break;
 			}
 			}
@@ -1037,8 +1041,7 @@ void readAlgrithomParameter(boost::program_options::variables_map programOptions
 			}
 			else
 			{
-				logic_error emsg("The parameter \"--inverse " + Decomposition + "\" is not correct, please check it. More detail --help");
-				throw std::exception(emsg);
+				throw  std::string("The parameter \"--inverse " + Decomposition + "\" is not correct, please check it. More detail --help");
 			}
 		}
 
@@ -1062,7 +1065,7 @@ void readAlgrithomParameter(boost::program_options::variables_map programOptions
 				minque.altMatrixDecomposition = 3;
 				break;
 			default:
-				throw std::exception(logic_error("The argument \"--ginverse " + Decomposition + "\" is not correct, please check it. More detail --help"));
+				throw std::string("The argument \"--ginverse " + Decomposition + "\" is not correct, please check it. More detail --help");
 				break;
 			}
 		}
@@ -1079,7 +1082,7 @@ void readAlgrithomParameter(boost::program_options::variables_map programOptions
 			}
 			else
 			{
-				throw std::exception(logic_error("The parameter \"--ginverse " + Decomposition + "\" is not correct, please check it. More detail --help"));
+				throw  std::string("The parameter \"--ginverse " + Decomposition + "\" is not correct, please check it. More detail --help");
 			}
 		}
 	}

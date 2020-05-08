@@ -90,7 +90,7 @@ void mvnorm::generate()
 	for (unsigned int i = 0; i < singularValues.size(); ++i)
 	{
 		if (singularValues(i) < -10E-6)
-			throw("The variance covariance matrix is not positive definite.");
+			throw  std::string("The variance covariance matrix is not positive definite.");
 	}
 	Eigen::MatrixXf Lower = svd.matrixU() * singularValues.cwiseSqrt().asDiagonal();
 	for (int i = 0; i < n; i++)

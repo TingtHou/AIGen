@@ -71,7 +71,7 @@ void Batch::shuffle()
 	}
 	auto rng = std::default_random_engine{};
 	std::shuffle(std::begin(shuffledID), std::end(shuffledID), rng);
-	int nINDinEach = nInd / splitnum;
+	unsigned long nINDinEach = nInd / splitnum;
 	std::vector<std::vector<int>> IDinEach;
 	std::vector<int> IDs;
 	int count = 0;
