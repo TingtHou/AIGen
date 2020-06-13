@@ -5,6 +5,7 @@
 #include <fstream>
 #include <string>
 #include <boost/algorithm/string.hpp>
+#include <boost/bimap.hpp>
 #include <Eigen/Dense>
 #include "KernelManage.h"
 #include "PlinkReader.h"
@@ -29,6 +30,7 @@ public:
 	void readGeno(std::vector<std::string> filelist, bool isImpute);                //Read genotype data from plink format files, [ped, map] or [bed, bim, fam];
 	void readWeight(std::string filename);							                //Read weight file for Iterative MIQNUE
 	void readCovariates(std::string qfilename,std::string dfilename);				//Read covariates files, including quantitative and discrete covari
+	void readkeepFile(std::string filename);										//Read specific file containing individuals ID for analysis
 	PhenoData& getPhenotype() {	return phe;	};										//Get phenotype data
 	std::vector<KernelData>& GetKernel() { return KernelList; };						//Get kernel data
 	CovData& GetCovariates() { return Covs; };								//Get covariate data
@@ -44,6 +46,7 @@ private:
 	std::vector<KernelData> KernelList;												//a vector of kernel data
 	CovData Covs;																	//intercept + all covariates
 	Eigen::VectorXf Weights;														//Weights for Interative MINQUE
+	boost::bimap<int, std::string> fid_iid_keeping;										// keep individuals ID for analysis
 private:
 	void readResponse(std::string resopnsefile, PhenoData &phe);					//as named
 	void readmkernel(std::string mkernel);											//read multiple kernels

@@ -6,20 +6,27 @@ DataManager::DataManager()
 
 void DataManager::match()
 {
-	int count_same=0;
 	std::vector< boost::bimap<int, std::string>> IDLists;
+	if (fid_iid_keeping.size())
+	{
+		IDLists.push_back(fid_iid_keeping);
+	}
 	for (int i = 0; i < KernelList.size(); i++)
 	{
 		IDLists.push_back(KernelList[i].fid_iid);
-		if (i)
-			if (KernelList[i].fid_iid == IDLists[i - 1]) count_same++;
 	}
-	if (IDLists.back() == phe.fid_iid) count_same++;
 	IDLists.push_back(phe.fid_iid);
-	if (IDLists.back() == Covs.fid_iid) count_same++;
 	IDLists.push_back(Covs.fid_iid);
-
-	if (count_same==(KernelList.size()+ 1))
+	bool isSame = 1;
+	for (int i = 1; i < IDLists.size(); i++)
+	{
+		if (IDLists[i-1]!= IDLists[i])
+		{
+			isSame = 0;
+			break;
+		}
+	}
+	if (isSame)
 	{
 		return;
 	}
@@ -28,8 +35,9 @@ void DataManager::match()
 	{
 		throw std::string("There is a file whose individual is not existed in other files. Please check the input.\n");
 	}
+	std::cout << overlapped.size()<<" individuals are in common in these files."<< std::endl;
 	/////////////
-	std::cout << "Match genotypes and phenotypes" << std::endl;
+	std::cout << "Matching files" << std::endl;
 	PhenoData tmpPhe = phe;
 	CovData tmpCovs = Covs;
 	int nind = overlapped.size(); //overlap FID_IID
@@ -421,6 +429,45 @@ void DataManager::readCovariates(std::string qfilename, std::string dfilename)
 	Covs.npar = Covs.Covariates.cols();
 
 
+}
+
+void DataManager::readkeepFile(std::string filename)
+{
+	std::ifstream infile;
+	infile.open(filename);
+	if (!infile.is_open())
+	{
+		throw  std::string("Error: Cannot open [" + filename + "] to read.");
+	}
+	int id = 0;
+	while (!infile.eof())
+	{
+		std::string str;
+		getline(infile, str);
+		if (!str.empty() && str.back() == 0x0D)
+			str.pop_back();
+		if (infile.fail())
+		{
+			continue;
+		}
+		boost::algorithm::trim(str);
+		if (str.empty())
+		{
+			continue;
+		}
+		std::vector<std::string> strVec;
+		boost::algorithm::split(strVec, str, boost::algorithm::is_any_of(" \t"), boost::token_compress_on);
+		if (strVec.size()<2)
+		{
+			throw std::string("The format of keep file is not correct.");
+		}
+		std::string fid_iid = strVec[0] + "_" + strVec[1];
+		fid_iid_keeping.insert({ id++, fid_iid });
+		
+	}
+	infile.close();
+	std::cout << fid_iid_keeping.size() << " individuals is listed in [" << filename << "]." << std::endl;
+	LOG(INFO)<< fid_iid_keeping.size() << " individuals is listed in [" << filename << "]." << std::endl;
 }
 
 void DataManager::readResponse(std::string resopnsefile, PhenoData & phe)
