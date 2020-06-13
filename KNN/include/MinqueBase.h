@@ -33,6 +33,6 @@ protected:
 	bool allowPseudoInverse = true;
 	int ThreadId = 0;
 	bool iscancel=false;
-	void CheckInverseStatus(int status, bool allowPseudoInverse);
+	void CheckInverseStatus(std::string MatrixType,int status, bool allowPseudoInverse);
 };
 
