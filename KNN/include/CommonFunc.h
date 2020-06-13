@@ -33,7 +33,7 @@ enum KernelNames :int
 struct MinqueOptions
 {
 	int iterate = 200;
-	float tolerance = 1e-6;
+	float tolerance = 1e-4;
 	int MatrixDecomposition = 0;
 	int altMatrixDecomposition = 3;
 	bool allowPseudoInverse = true;
