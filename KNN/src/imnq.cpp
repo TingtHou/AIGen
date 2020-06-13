@@ -80,6 +80,7 @@ void imnq::Iterate()
 		printf("Starting Iterate MINQUE Algorithm at thread %d \n", ThreadId);
 	}
 	LOG(INFO) << "Starting Iterate MINQUE Algorithm at thread "<<ThreadId;
+	bool isConverge = false;
 	while (initIterate <itr)
 	{
 		mnq = new minque1(Decomposition,altDecomposition, allowPseudoInverse);
@@ -109,10 +110,16 @@ void imnq::Iterate()
 		LOG(INFO) << ss.str();
 		if (diff<tol)
 		{
-
+			isConverge = true;
 			break;
 		}
 
+	}
+	if (!isConverge)
+	{
+		std::stringstream ss;
+		ss << "[Error]: iteration not converged (stop after " << itr << " iterations). You can specify the option --iter to allow for more iterations\n";
+		throw std::string(ss.str().c_str());
 	}
 	vcs = mnq->getvcs();
 //	mnq->estimateFix();
