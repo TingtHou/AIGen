@@ -45,7 +45,7 @@ void MINQUE0::estimateVCs()
 		//Xt_X=Xt*X
 		cblas_sgemm(CblasColMajor, CblasTrans, CblasNoTrans, X.cols(), X.cols(), nind, 1, pr_X, nind, pr_X, nind, 0, pr_Xt_X, X.cols());
 		//inv(XtX)
-		int status = Inverse(Xt_X, Decomposition, SVD, false);
+		int status = Inverse(Xt_X, Cholesky, SVD, false);
 		CheckInverseStatus("P matrix",status, false);
 		//X_inv_XtX=X*inv(XtX)
 		cblas_sgemm(CblasColMajor, CblasNoTrans, CblasNoTrans, nind, X.cols(), X.cols(), 1, pr_X, nind, pr_Xt_X, X.cols(), 0, pr_X_inv_XtX, nind);
@@ -112,7 +112,7 @@ void MINQUE0::estimateVCs()
 		}
 	}
 	*/
-	int status = Inverse(F, Decomposition, SVD, true);
+	int status = Inverse(F, Cholesky, SVD, true);
 	CheckInverseStatus("S matrix", status,true);
 	vcs = F * u;
 }
