@@ -74,9 +74,7 @@ void Options::boostProgramOptionsRoutine(int argc, const char * const argv[])
 		("covar", po::value<std::string>()->value_name("[filename]"),
 				"Input discrete covariates from a plain text file.\n")
 		("qcovar", po::value<std::string>()->value_name("[filename]"),
-				"Input quantitative covariates from a plain text file.\n")
-		("keep", po::value<std::string>()->value_name("[filename]"),
-				"Only use individuals in this file for analysis.\n");
+				"Input quantitative covariates from a plain text file.\n");
 		po::options_description optsFilesOperation("File Operations");
 		optsFilesOperation.add_options()
 		("impute", po::value<bool>()->value_name("True/False"),

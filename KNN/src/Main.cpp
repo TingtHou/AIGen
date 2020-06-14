@@ -353,13 +353,6 @@ void ReadData(boost::program_options::variables_map programOptions, DataManager 
 		LOG(INFO) << "Reading weights from [" + weightfile + "].";
 		dm.readWeight(weightfile);
 	}
-	if (programOptions.count("keep"))
-	{
-		std::string keepingfile = programOptions["keep"].as < std::string >();
-		std::cout << "Reading keeping individuals from [" + keepingfile + "]." << std::endl;
-		LOG(INFO) << "Reading keeping individuals from [" + keepingfile + "].";
-		dm.readkeepFile(keepingfile);
-	}
 	if (programOptions.count("bfile"))
 	{
 		std::string Prefix = programOptions["bfile"].as<std::string >();
@@ -522,13 +515,6 @@ void MINQUEAnalysis(boost::program_options::variables_map programOptions, DataMa
 			}
 			else
 			{
-				if (!VarComp.size())
-				{
-					std::cout << "Using results from MINQUE(0) as inital value." << std::endl;
-					LOG(INFO) << "Using results from MINQUE(0) as inital value.";
-					cMINQUE0(minopt, Kernels, phe, Covs.Covariates, VarComp, fix);
-				}
-				
 				cMINQUE1(minopt, Kernels, phe, Covs.Covariates, VarComp, fix, iterateTimes, isecho);
 			}
 			
@@ -749,18 +735,19 @@ void cMINQUE1(MinqueOptions & minque, std::vector<Eigen::MatrixXf>& Kernels, Phe
 	varest.isEcho(isecho);
 	varest.importY(phe.Phenotype);
 	varest.pushback_X(Covs, false);
+	if (variances.size()!=0)
+	{
+		varest.pushback_W(variances);
+	}
 	for (int i = 0; i < Kernels.size(); i++)
 	{
 		varest.pushback_Vi(&Kernels[i]);
 	}
+	
 	Eigen::MatrixXf e(phe.fid_iid.size(), phe.fid_iid.size());
 	e.setIdentity();
 	varest.pushback_Vi(&e);
-	if (variances.size() != 0)
-	{
-		varest.pushback_W(variances);
-	}
-	std::cout << "starting CPU MINQUE(1) " << std::endl;
+	std::cout << "starting CPU MINQUE " << std::endl;
 	varest.estimateVCs();
 	variances = varest.getvcs();
 	iterateTimes = varest.getIterateTimes();
@@ -912,7 +899,7 @@ void cMINQUE0(MinqueOptions& minque, std::vector<Eigen::MatrixXf>& Kernels, Phen
 	Eigen::MatrixXf e(phe.fid_iid.size(), phe.fid_iid.size());
 	e.setIdentity();
 	varest.pushback_Vi(&e);
-	std::cout << "starting CPU MINQUE(0) " << std::endl;
+	std::cout << "starting CPU MINQUE " << std::endl;
 	varest.estimateVCs();
 	variances = varest.getvcs();
 	if (coefs[0]!=-999)
