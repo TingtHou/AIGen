@@ -27,11 +27,11 @@ CUDAROOT= /usr/local/cuda-10.2
 ## 
 CUDACPP=$(SRC_DIR)/cuimnq.cpp $(SRC_DIR)/cuimnq.cpp $(SRC_DIR)/cuMINQUE1.cpp $(SRC_DIR)/cuMINQUE0.cpp $(SRC_DIR)/cuMinqueBase.cpp $(SRC_DIR)/cuToolkit.cpp
 # Compiler flags
-CXXFLAGS =  -w -O3 -m64 -fopenmp -I$(EIGEN_PATH) -DEIGEN_NO_DEBUG -I$(MKLROOT)/mkl/include -I/usr/include/boost  -L$(MKLROOT)/mkl/lib/intel64 -L$(MKLROOT)/compilers_and_libraries/linux/lib/intel64
+CXXFLAGS =  -w -O3 -m64 -fopenmp -static -I$(EIGEN_PATH) -DEIGEN_NO_DEBUG -I$(MKLROOT)/mkl/include -I/usr/include/boost  -L$(MKLROOT)/mkl/lib/intel64 -L$(MKLROOT)/compilers_and_libraries/linux/lib/intel64
 CUDAFLAGS= -std=c++11 -c -arch=sm_30
 
-LIB +=  -Wl,--start-group $(MKLROOT)/mkl/lib/intel64/libmkl_intel_lp64.a $(MKLROOT)/mkl/lib/intel64/libmkl_intel_thread.a $(MKLROOT)/mkl/lib/intel64/libmkl_core.a -Wl,--end-group  -lpthread -lm  -ldl
-LIB+= -Wl,-Bstatic -liomp5 -lboost_program_options
+LIB +=  -Wl,--start-group $(MKLROOT)/mkl/lib/intel64/libmkl_intel_lp64.a $(MKLROOT)/mkl/lib/intel64/libmkl_intel_thread.a $(MKLROOT)/mkl/lib/intel64/libmkl_core.a -Wl,--end-group  -lpthread -lm  -ldl -liomp5 -lboost_program_options
+##LIB+= -Wl,-Bstatic -liomp5 -lboost_program_options
 SRC_DIR=src
 INC_DIR=include
 OBJ_DIR=obj
@@ -49,7 +49,7 @@ ifeq ($(stage),GPU)
 else
 	SRC_CPP = $(filter-out $(CUDACPP), $(wildcard $(SRC_DIR)/*.cpp))
 	OBJ = $(SRC_CPP:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)
-	LIB := $(LIB) -Wl,-Bdynamic -Wl,--as-need
+	##LIB := $(LIB) -Wl,-Bdynamic -Wl,--as-need
 	CXXFLAGS := -DCPU $(CXXFLAGS)
 endif
 

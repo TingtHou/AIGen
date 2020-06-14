@@ -27,7 +27,7 @@ void minque1::estimateVCs()
 		cblas_sgemm(CblasColMajor, CblasNoTrans, CblasNoTrans, nind, nind, nind, W[i], pr_Vi, nind, pr_Identity, nind, 1, pr_VW, nind);
 	}
 	int status=Inverse(VW, Decomposition, altDecomposition, allowPseudoInverse);
-	CheckInverseStatus(status, allowPseudoInverse);
+	CheckInverseStatus("V matrix",status, allowPseudoInverse);
 	std::vector<Eigen::MatrixXf> RV(nVi);
 	Eigen::VectorXf Ry(nind);
 	std::vector<float*> pr_rv_list(nVi);
@@ -65,14 +65,15 @@ void minque1::estimateVCs()
 		//XtB=Xt*B
 		cblas_sgemm(CblasColMajor, CblasTrans, CblasNoTrans, X.cols(), X.cols(), nind, 1, pr_X, nind, pr_B, nind, 0, pr_Xt_B, X.cols());
 		//inv(XtB)
-		int status = Inverse(Xt_B, Decomposition, SVD, true);
-		CheckInverseStatus(status,true);
+		int status = Inverse(Xt_B, Cholesky , SVD, false);
+		CheckInverseStatus("P matrix",status, false);
 		//inv_XtB_Bt=inv(XtB)*Bt
 		cblas_sgemm(CblasColMajor, CblasNoTrans, CblasTrans, X.cols(), nind, X.cols(), 1, pr_Xt_B, X.cols(), pr_B, nind, 0, pr_inv_XtB_Bt, X.cols());
 		//inv_VM=inv_VM-B*inv(XtB)*Bt
 		cblas_sgemm(CblasColMajor, CblasNoTrans, CblasNoTrans, nind, nind, X.cols(), -1, pr_B, nind, pr_inv_XtB_Bt, X.cols(), 1, pr_VW, nind);	
 		//MKL_free(pr_VWp);
-		Ry = VW *Y; 
+		cblas_sgemv(CblasColMajor, CblasNoTrans, nind, nind, 1, pr_VW, nind, pr_Y, 1, 0, pr_RY, 1);
+		//Ry = VW *Y; 
 	}
 	int nthread = omp_get_max_threads();
 	//	printf("Thread %d, Max threads for mkl %d\n", omp_get_max_threads(), mkl_get_max_threads());
@@ -111,8 +112,8 @@ void minque1::estimateVCs()
 		F(j, i) = F(i, j);
 	}
 
-	status = Inverse(F, Decomposition,  SVD, true);
-	CheckInverseStatus(status,true);
+	status = Inverse(F, Cholesky,  SVD, true);
+	CheckInverseStatus("S matrix",status,true);
 	vcs = F * u;
 }
 

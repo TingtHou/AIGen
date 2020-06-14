@@ -74,10 +74,10 @@ void KernelReader::BinFileReader(std::ifstream &fin, KernelData & kdata)
 	#pragma omp parallel for shared(kdata,f_buf)
 	for (int k = 0; k < (nind + 1) * nind / 2; k++)
 	{
-		int i = k / nind, j = k % nind;
+		unsigned long long i = k / nind, j = k % nind;
 		if (j < i) i = nind - i, j = nind - j - 1;
-		int id = i + ((j * (j + 1)) / 2);
-		int pointer = id * bytesize;
+		unsigned long long id = i + ((j * (j + 1)) / 2);
+		unsigned long long pointer = id * bytesize;
 		char* str2 = new char[bytesize];
 		memcpy(str2, &f_buf[pointer], bytesize);
 		kdata.kernelMatrix(j, i) = kdata.kernelMatrix(i, j) = *(float*)str2;
@@ -101,7 +101,7 @@ void KernelReader::NfileReader(std::ifstream &fin, KernelData & kdata)
 	
 	const size_t num_elements = nind * (nind + 1) / 2;
 	fin.seekg(0, std::ios::end);
-	int fileSize = fin.tellg();
+	unsigned long long fileSize = fin.tellg();
 	int bytesize =  fileSize / num_elements;
 	bytesize = !bytesize ? fileSize % num_elements : bytesize;
 	fin.seekg(0, std::ios::beg);
