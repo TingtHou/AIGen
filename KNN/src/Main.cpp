@@ -482,13 +482,15 @@ void MINQUEAnalysis(boost::program_options::variables_map programOptions, DataMa
 	}
 	else
 	{
-		
-
 		if (programOptions.count("batch"))
 		{
 			int nthread = 10;
 			int nsplit= programOptions["batch"].as<int>();
 			int seed = 0;
+			if (!programOptions.count("pseudo"))
+			{
+				minopt.allowPseudoInverse = 0;
+			}
 			if (programOptions.count("thread"))
 			{
 				nthread = programOptions["thread"].as<int>();
