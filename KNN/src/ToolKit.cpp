@@ -128,6 +128,7 @@ bool ToolKit::comput_inverse_logdet_LDLT_mkl(Eigen::MatrixXf &Vi)
 {
 
 	int n = Vi.cols();
+//	long long sizes = ((long long)n + 1) * (long long)n / 2;
 	float* Vi_mkl = Vi.data();
 	// MKL's Cholesky decomposition
 	int info = 0, int_n = (int)n;
@@ -143,10 +144,12 @@ bool ToolKit::comput_inverse_logdet_LDLT_mkl(Eigen::MatrixXf &Vi)
 		}
 		else 
 		{
+			Vi = Vi.selfadjointView<Eigen::Lower>();
+			/*
 			#pragma omp parallel for shared(Vi_mkl)
-			for (int k = 0; k < (n + 1) * n / 2; k++)
+			for (long long k = 0; k < sizes; k++)
 			{
-				int i = k / n, j = k % n;
+				long long i = k / n, j = k % n;
 				if (j < i) i = n - i, j = n - j - 1;
 				Vi_mkl[j * n + i] = Vi_mkl[i * n + j];
 			}
@@ -168,6 +171,7 @@ bool ToolKit::comput_inverse_logdet_LDLT_mkl(Eigen::MatrixXd & Vi)
 
 	int n = Vi.cols();
 	double* Vi_mkl = Vi.data();
+//	long long sizes = ((long long)n + 1) * (long long)n / 2;
 	// MKL's Cholesky decomposition
 	int info = 0, int_n = (int)n;
 	char uplo = 'L';
@@ -182,10 +186,12 @@ bool ToolKit::comput_inverse_logdet_LDLT_mkl(Eigen::MatrixXd & Vi)
 		}
 		else
 		{
+			Vi = Vi.selfadjointView<Eigen::Lower>();
+/*
 			#pragma omp parallel for shared(Vi_mkl)
-			for (int k = 0; k < (n + 1) * n / 2; k++)
+			for (long long k = 0; k < sizes; k++)
 			{
-				int i = k / n, j = k % n;
+				long long i = k / n, j = k % n;
 				if (j < i) i = n - i, j = n - j - 1;
 				Vi_mkl[j * n + i] = Vi_mkl[i * n + j];
 			}
@@ -218,7 +224,6 @@ bool ToolKit::comput_inverse_logdet_LU_mkl(Eigen::MatrixXf &Vi)
 {
 	int n = Vi.cols();
 	float* Vi_mkl = Vi.data();
-
 	int N = (int)n;
 	int *IPIV = new int[n + 1];
 	int LWORK = N * N;
