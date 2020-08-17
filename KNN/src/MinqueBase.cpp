@@ -6,8 +6,6 @@ void MinqueBase::importY(Eigen::VectorXf &Y)
 	this->Y = Y;
 	nind = Y.size();
 	Vi.clear();
-	VW = Eigen::MatrixXf(nind, nind);
-	VW.setZero();
 }
 
 void MinqueBase::pushback_Vi(Eigen::MatrixXf *vi)

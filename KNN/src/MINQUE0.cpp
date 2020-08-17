@@ -11,7 +11,7 @@ void MINQUE0::estimateVCs()
 {
 
 	vcs.resize(nVi);
-	VW.setIdentity();
+	//VW.setIdentity();
 	//std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
 	std::vector<Eigen::MatrixXf> RV(nVi);
 	Eigen::VectorXf Ry(nind);
@@ -32,7 +32,6 @@ void MINQUE0::estimateVCs()
 	}
 	else
 	{
-
 		Eigen::MatrixXf Xt_X(X.cols(), X.cols());
 		Eigen::MatrixXf X_inv_XtX(nind, X.cols());
 		Eigen::MatrixXf X_inv_XtX_Xt(nind, nind);
@@ -78,7 +77,6 @@ void MINQUE0::estimateVCs()
 		cblas_sgemm(CblasColMajor, CblasNoTrans, CblasTrans, nind, nind, X.cols(), 1, pr_X_inv_XtX, nind, pr_X, nind, 0, pr_X_inv_XtX_Xt, nind);
 		Ry = Y-X_inv_XtX_Xt * Y;
 	}
-	
 	Eigen::VectorXf u(nVi);
 	u.setZero();
 	#pragma omp parallel for shared(Ry)
