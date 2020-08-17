@@ -84,8 +84,8 @@ void set_difference(boost::bimap<int, std::string> &map1, boost::bimap<int, std:
 boost::bimap<int, std::string> set_difference(boost::bimap<int, std::string>& map1, boost::bimap<int, std::string>& map2);
 boost::bimap<int, std::string> set_difference(std::vector<boost::bimap<int, std::string>>& mapList);
 void set_difference(boost::bimap<int, std::string>& map1, boost::bimap<int, std::string>& map2, boost::bimap<int, std::string>& map3, std::vector<std::string>& overlap);
-void GetSubMatrix(Eigen::MatrixXf &oMatrix, Eigen::MatrixXf &subMatrix, std::vector<int> rowIds, std::vector<int> colIDs);
-void GetSubMatrix(Eigen::MatrixXf& oMatrix, Eigen::MatrixXf& subMatrix, std::vector<int> rowIds);
+void GetSubMatrix(Eigen::MatrixXf* oMatrix, Eigen::MatrixXf* subMatrix, std::vector<int> rowIds, std::vector<int> colIDs);
+void GetSubMatrix(Eigen::MatrixXf* oMatrix, Eigen::MatrixXf* subMatrix, std::vector<int> rowIds);
 void GetSubVector(Eigen::VectorXf &oVector, Eigen::VectorXf &subVector, std::vector<int> IDs);
 float Cor(Eigen::VectorXf& Y1, Eigen::VectorXf& Y2);
 std::vector<std::string> UniqueCount(std::vector<std::string> vec);

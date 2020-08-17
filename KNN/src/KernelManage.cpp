@@ -171,7 +171,7 @@ void KernelReader::read()
 
 }
 
-KernelWriter::KernelWriter(KernelData kdata)
+KernelWriter::KernelWriter(KernelData &kdata)
 {
 	this->Kernels = kdata;
 	nind = kdata.fid_iid.size();

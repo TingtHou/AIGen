@@ -1,6 +1,6 @@
 #include "../include/Prediction.h"
 
-Prediction::Prediction(Eigen::VectorXf& Real_Y, std::vector<Eigen::MatrixXf>&  Kernels, Eigen::VectorXf& vcs, Eigen::MatrixXf& X, Eigen::VectorXf& fixed, bool isbinary, int mode)
+Prediction::Prediction(Eigen::VectorXf& Real_Y, std::vector<Eigen::MatrixXf *>&  Kernels, Eigen::VectorXf& vcs, Eigen::MatrixXf& X, Eigen::VectorXf& fixed, bool isbinary, int mode)
 {
 	this->Real_Y = Real_Y;
 	this->Kernels = Kernels;
@@ -15,7 +15,7 @@ Prediction::Prediction(Eigen::VectorXf& Real_Y, std::vector<Eigen::MatrixXf>&  K
 	Predict_Y.setZero();
 	Eigen::MatrixXf Identity(nind, nind);
 	Identity.setIdentity();
-	this->Kernels.push_back(Identity);
+	this->Kernels.push_back(&Identity);
 	calc();
 }
 
@@ -51,10 +51,10 @@ void Prediction::GetpredictY()
 	for (; i < ncvs-1; i++)
 	{
 		
-		Sigma += vcs[i] * Kernels[i];
-		G += vcs[i] * Kernels[i];
+		Sigma += vcs[i] * (*(Kernels[i]));
+		G += vcs[i] * (*(Kernels[i]));
 	}
-	Sigma += vcs[i] * Kernels[i];
+	Sigma += vcs[i] * (*(Kernels[i]));
 	ToolKit::comput_inverse_logdet_LU_mkl(Sigma);
 	Random = Sigma * G  * (Real_Y - Fix);
 	Predict_Y = Fix + Random;
@@ -113,7 +113,7 @@ void Prediction::GetPredictYLOO()
 	for (int i = 0; i < ncvs; i++)
 	{
 
-		Sigma += vcs[i] * Kernels[i];
+		Sigma += vcs[i] * (*(Kernels[i]));
 	}
 	ToolKit::comput_inverse_logdet_LU_mkl(Sigma);
 	Eigen::VectorXf Diag = Sigma.diagonal();

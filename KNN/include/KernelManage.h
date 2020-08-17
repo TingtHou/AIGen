@@ -35,7 +35,7 @@ private:
 class KernelWriter
 {
 public:
-	KernelWriter(KernelData kdata);
+	KernelWriter(KernelData &kdata);
 	~KernelWriter();
 	std::string print();
 	void setprecision(int datatype);

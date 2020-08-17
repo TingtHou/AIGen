@@ -315,13 +315,13 @@ void set_difference(boost::bimap<int, std::string>& map1, boost::bimap<int, std:
 //@param:	rowIds			A vector containing row IDs to be kept;
 //@param:	colIDs			A vector containing column IDs to be kept;
 //@ret:		void	
-void GetSubMatrix(Eigen::MatrixXf & oMatrix, Eigen::MatrixXf & subMatrix, std::vector<int> rowIds, std::vector<int> colIDs)
+void GetSubMatrix(Eigen::MatrixXf*  oMatrix, Eigen::MatrixXf* subMatrix, std::vector<int> rowIds, std::vector<int> colIDs)
 {
 	for (int i=0;i<rowIds.size();i++)
 	{
 		for (int j=0;j<colIDs.size();j++)
 		{
-			subMatrix(i, j) = oMatrix(rowIds[i], colIDs[j]);
+			(*subMatrix)(i, j) = (*oMatrix)(rowIds[i], colIDs[j]);
 		}
 	}
 }
@@ -331,13 +331,13 @@ void GetSubMatrix(Eigen::MatrixXf & oMatrix, Eigen::MatrixXf & subMatrix, std::v
 //@param:	subMatrix		A subset matrix of the origianl matrix;
 //@param:	rowIds			A vector containing row IDs to be kept;
 //@ret:		void	
-void GetSubMatrix(Eigen::MatrixXf& oMatrix, Eigen::MatrixXf& subMatrix, std::vector<int> rowIds)
+void GetSubMatrix(Eigen::MatrixXf* oMatrix, Eigen::MatrixXf* subMatrix, std::vector<int> rowIds)
 {
 	for (int i = 0; i < rowIds.size(); i++)
 	{
-		for (int j = 0; j < oMatrix.cols(); j++)
+		for (int j = 0; j < oMatrix->cols(); j++)
 		{
-			subMatrix(i, j) = oMatrix(rowIds[i], j);
+			(*subMatrix)(i, j) = (*oMatrix)(rowIds[i], j);
 		}
 	}
 }
