@@ -17,7 +17,6 @@ int Inverse(Eigen::MatrixXf & Ori_Matrix, int DecompositionMode, int AltDecompos
 	{
 	case Cholesky:
 	{
-		float det;
 		statusInverse = ToolKit::comput_inverse_logdet_LDLT_mkl(Ori_Matrix);
 	//	statusInverse = ToolKit::Inv_Cholesky(Ori_Matrix);
 		status += !statusInverse;
@@ -37,7 +36,6 @@ int Inverse(Eigen::MatrixXf & Ori_Matrix, int DecompositionMode, int AltDecompos
 	break;
 	case LU:
 	{
-		float det;
 		statusInverse = ToolKit::comput_inverse_logdet_LU_mkl(Ori_Matrix);
 		status += !statusInverse;
  		if (!statusInverse&&allowPseudoInverse)
