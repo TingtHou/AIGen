@@ -32,7 +32,7 @@ public:
 	void readCovariates(std::string qfilename,std::string dfilename);				//Read covariates files, including quantitative and discrete covari
 	void readkeepFile(std::string filename);										//Read specific file containing individuals ID for analysis
 	PhenoData& getPhenotype() {	return phe;	};										//Get phenotype data
-	std::vector<KernelData>& GetKernel() { return KernelList; };						//Get kernel data
+	std::vector<KernelData>* GetKernel() { return &KernelList; };						//Get kernel data
 	CovData& GetCovariates() { return Covs; };								//Get covariate data
 	Eigen::VectorXf& GetWeights() { return Weights; };								//Get Weights data
 	void SetKernel(std::vector<KernelData> KernelList)								//Replace internal kernel data with specificed external kernel data

@@ -72,7 +72,7 @@ void DataManager::match_Kernels(KernelData & kernel, boost::bimap<int, std::stri
 	KernelData tmpKernel = kernel;
 	int nind = overlapped.size(); //overlap FID_IID
 	kernel.kernelMatrix.resize(nind, nind);
-	kernel.VariantCountMatrix.resize(nind, nind);
+//	kernel.VariantCountMatrix.resize(nind, nind);
 	kernel.fid_iid.clear();
 	int i = 0;
 	for (auto it_row = overlapped.left.begin(); it_row != overlapped.left.end(); it_row++)
@@ -88,7 +88,7 @@ void DataManager::match_Kernels(KernelData & kernel, boost::bimap<int, std::stri
 			auto itcol = tmpKernel.fid_iid.right.find(colID);
 			int OriKernelColID = itcol->second;
 			kernel.kernelMatrix(i, j)=tmpKernel.kernelMatrix(OriKernelRowID, OriKernelColID);
-			kernel.VariantCountMatrix(i, j) = tmpKernel.VariantCountMatrix(OriKernelRowID, OriKernelColID);
+//			kernel.VariantCountMatrix(i, j) = tmpKernel.VariantCountMatrix(OriKernelRowID, OriKernelColID);
 			j++;
 		}
 		i++;
@@ -427,7 +427,6 @@ void DataManager::readCovariates(std::string qfilename, std::string dfilename)
 	}
 	Covs.nind = Covs.fid_iid.size();
 	Covs.npar = Covs.Covariates.cols();
-
 
 }
 
