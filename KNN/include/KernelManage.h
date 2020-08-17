@@ -5,6 +5,7 @@
 #include <fstream>
 #include <boost/algorithm/string.hpp>
 #include <map>
+#include <cstdio>
 #include "KernelManage.h"
 #include <iomanip>
 #include "CommonFunc.h"
@@ -23,7 +24,7 @@ private:
 	std::string IDfileName;  //*.grm.id
 	std::string prefix;
 	KernelData Kernels; //store kernel data
-	int nind=0;
+	unsigned long long nind=0;
 	void IDfileReader(std::ifstream &fin, KernelData &kdata);   // read *.grm.id
 	void BinFileReader(std::ifstream &fin, KernelData &kdata);  // read *.grm.bin
 	void NfileReader(std::ifstream &fin, KernelData &kdata);    //read *.grm.N.bin
@@ -49,7 +50,7 @@ private:
 	std::string prefix;
 	KernelData Kernels; //store kernel data
 	int precision =1 ;  //0 for float; 1 for float;
-	int nind=0;
+	unsigned long long nind=0;
 private:
 	void IDfileWriter(std::ofstream &fin, KernelData &kdata);   // read *.grm.id
 	void BinFileWriter(std::ofstream &fin, KernelData &kdata);  // read *.grm.bin

@@ -45,10 +45,10 @@ void KernelReader::IDfileReader(std::ifstream &fin, KernelData &kdata)
 
 void KernelReader::BinFileReader(std::ifstream &fin, KernelData & kdata)
 {
-	const size_t num_elements = nind * (nind + 1) / 2;
+	size_t num_elements = nind * (nind + 1) / 2;
 	fin.seekg(0, std::ios::end);
 	std::streampos fileSize = fin.tellg();
-	int bytesize = fileSize / num_elements;
+	unsigned long long bytesize = fileSize / num_elements;
 	fin.seekg(0, std::ios::beg);
 	if (bytesize!=4&&bytesize!=8)
 	{
@@ -72,9 +72,10 @@ void KernelReader::BinFileReader(std::ifstream &fin, KernelData & kdata)
 		}
 	}
 	#pragma omp parallel for shared(kdata,f_buf)
-	for (int k = 0; k < (nind + 1) * nind / 2; k++)
+	for (long long k = 0; k < (nind + 1) * nind / 2; k++)
 	{
-		unsigned long long i = k / nind, j = k % nind;
+		unsigned long long tmp_K = k;
+		unsigned long long i = tmp_K / nind, j = tmp_K % nind;
 		if (j < i) i = nind - i, j = nind - j - 1;
 		unsigned long long id = i + ((j * (j + 1)) / 2);
 		unsigned long long pointer = id * bytesize;
@@ -83,6 +84,7 @@ void KernelReader::BinFileReader(std::ifstream &fin, KernelData & kdata)
 		kdata.kernelMatrix(j, i) = kdata.kernelMatrix(i, j) = *(float*)str2;
 		delete str2;
 	}
+
 	/*
 	for (int i = 0; i < nind; i++)
 	{
@@ -139,14 +141,23 @@ void KernelReader::read()
 		Binifstream.close();
 		throw std::string("Error: can not open the file [" + BinFileName + "] to read.");
 	}
-	printf("Reading the IDs from [ %s ]\n", IDfileName.c_str());
+	std::ostringstream ss_ID;
+	ss_ID << "Reading the IDs from  [ " + IDfileName + " ].";
+	std::cout << ss_ID.str()+"\n";
+	LOG(INFO) << ss_ID.str();
+	//printf("Reading the IDs from [ %s ]\n", IDfileName.c_str());
 	IDfileReader(IDifstream, Kernels);
+	//printf("Reading the IDs from [ %s ] : Done. \n", IDfileName.c_str());
 	Kernels.kernelMatrix.resize(nind, nind);
-	Kernels.VariantCountMatrix.resize(nind, nind);
+//	std::cout << "Resizing the matrix." << std::endl;
+//	LOG(INFO) << "Resizing the matrix.";
+	//Kernels.VariantCountMatrix.resize(nind, nind);
 	Kernels.kernelMatrix.setZero();
-	Kernels.VariantCountMatrix.setZero();
-//	std::cout << "Reading the kernel matrix from [" + BinFileName + "]." << std::endl;;
-	printf("Reading the kernel matrix from[%s ]\n", BinFileName.c_str());
+	std::ostringstream ss_bin;
+	ss_bin << "Reading the kernel matrix from [ " + BinFileName + " ].";
+	std::cout << ss_bin.str()+"\n";
+	LOG(INFO) << ss_bin.str();
+	//printf("a.Reading the kernel matrix from [ %s ]\n", BinFileName.c_str());
 	BinFileReader(Binifstream, Kernels);
 	//std::ifstream Nifstream(NfileName, std::ios::binary);
 	//if (Nifstream.is_open())
