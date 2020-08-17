@@ -10,6 +10,8 @@ minque1::minque1(int DecompositionMode, int altDecompositionMode, bool allowPseu
 
 void minque1::estimateVCs()
 {
+	VW = Eigen::MatrixXf(nind, nind);
+	VW.setZero();
 	Eigen::MatrixXf Identity(nind, nind);
 	Identity.setIdentity();
 	vcs.resize(nVi);
@@ -19,13 +21,14 @@ void minque1::estimateVCs()
 		W.setOnes();
 	}
 	float* pr_VW = VW.data();
-	float* pr_Identity = Identity.data();
+	float* pr_Identity = Identity.data();// Vi.at(nVi - 1)->data();
 	//std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
 	for (int i = 0; i < nVi; i++)
 	{
 		float* pr_Vi = (*Vi[i]).data();
 		cblas_sgemm(CblasColMajor, CblasNoTrans, CblasNoTrans, nind, nind, nind, W[i], pr_Vi, nind, pr_Identity, nind, 1, pr_VW, nind);
 	}
+	Identity.resize(0, 0);
 	int status=Inverse(VW, Decomposition, altDecomposition, allowPseudoInverse);
 	CheckInverseStatus("V matrix",status, allowPseudoInverse);
 	std::vector<Eigen::MatrixXf> RV(nVi);
@@ -70,7 +73,7 @@ void minque1::estimateVCs()
 		//inv_XtB_Bt=inv(XtB)*Bt
 		cblas_sgemm(CblasColMajor, CblasNoTrans, CblasTrans, X.cols(), nind, X.cols(), 1, pr_Xt_B, X.cols(), pr_B, nind, 0, pr_inv_XtB_Bt, X.cols());
 		//inv_VM=inv_VM-B*inv(XtB)*Bt
-		cblas_sgemm(CblasColMajor, CblasNoTrans, CblasNoTrans, nind, nind, X.cols(), -1, pr_B, nind, pr_inv_XtB_Bt, X.cols(), 1, pr_VW, nind);	
+		cblas_sgemm(CblasColMajor, CblasNoTrans, CblasNoTrans, nind, nind, X.cols(), -1, pr_B, nind, pr_inv_XtB_Bt, X.cols(), 1, pr_VW, nind);
 		//MKL_free(pr_VWp);
 		cblas_sgemv(CblasColMajor, CblasNoTrans, nind, nind, 1, pr_VW, nind, pr_Y, 1, 0, pr_RY, 1);
 		//Ry = VW *Y; 
@@ -111,7 +114,6 @@ void minque1::estimateVCs()
 		F(i, j) = (float)sum;
 		F(j, i) = F(i, j);
 	}
-
 	status = Inverse(F, Cholesky,  SVD, true);
 	CheckInverseStatus("S matrix",status,true);
 	vcs = F * u;
