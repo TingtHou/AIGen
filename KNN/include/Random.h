@@ -17,6 +17,7 @@ public:
 	float Uniform(float min, float max);
 	float Normal();
 	float Normal(float mean, float sd);
+	int Uniform(int min, int max);
 };
 
 class mvnorm

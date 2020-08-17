@@ -46,6 +46,15 @@ float Random::Uniform(float min, float max)
 	return rd;
 }
 
+int Random::Uniform(int min, int max)
+{
+	boost::uniform_int<>* u01 = new boost::uniform_int<>(min, max);
+	boost::variate_generator<boost::mt19937&, boost::uniform_int<> > die = boost::variate_generator<boost::mt19937&, boost::uniform_int<> >(*engine, *u01);
+	int rd = die();
+	delete u01;
+	return rd;
+}
+
 float Random::Normal()
 {
 	boost::normal_distribution<> *u01 = new boost::normal_distribution<>();
