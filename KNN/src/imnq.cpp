@@ -2,7 +2,7 @@
 
 void imnq::estimateVCs()
 {
-	Iterate();
+	IterateTimes=Iterate();
 }
 
 void imnq::setOptions(MinqueOptions mnqoptions)
@@ -16,7 +16,7 @@ void imnq::setOptions(MinqueOptions mnqoptions)
 
 int imnq::getIterateTimes()
 {
-	return initIterate;
+	return IterateTimes;
 }
 
 void imnq::isEcho(bool isecho)
@@ -25,7 +25,7 @@ void imnq::isEcho(bool isecho)
 
 }
 
-
+/*
 Eigen::VectorXf imnq::initVCS()
 {
 	if (ncov == 0)
@@ -60,10 +60,13 @@ Eigen::VectorXf imnq::initVCS()
 	vc1(0) = mse;
 	return vc0;
 }
+*/
 
-void imnq::Iterate()
+int  imnq::Iterate()
 {
+	int initIterate = 0;
 	Eigen::VectorXf vc0(nVi),vc1(nVi);
+	vcs.resize(nVi);
 	if (W.size()!=0)
 	{
 		vc0 = W;
@@ -73,8 +76,9 @@ void imnq::Iterate()
 	
 		vc0.setOnes();
 	}
+	LOG(WARNING) << " inital weight" << vc0;
 	float diff = 0;
-	minque1 *mnq=nullptr;
+	//minque1 *mnq=nullptr;
 	if (isecho)
 	{
 		printf("Starting Iterate MINQUE Algorithm at thread %d \n", ThreadId);
@@ -83,47 +87,51 @@ void imnq::Iterate()
 	bool isConverge = false;
 	while (initIterate <itr)
 	{
-		mnq = new minque1(Decomposition,altDecomposition, allowPseudoInverse);
-		mnq->importY(Y);
+		LOG(WARNING) << "new mnq class for "<< initIterate;
+		auto mnq = minque1(Decomposition,altDecomposition, allowPseudoInverse);
+		mnq.importY(Y);
 		for (int i=0;i<nVi;i++)
 		{
-			mnq->pushback_Vi(Vi[i]);
+			mnq.pushback_Vi(Vi[i]);
 		}
 		if (ncov!=0)
 		{
-			mnq->pushback_X(X,false);
+			mnq.pushback_X(X,false);
 		}
-		mnq->pushback_W(vc0);
-		mnq->setThreadId(ThreadId);
-		mnq->estimateVCs();
-		vc1=mnq->getvcs();
+		mnq.pushback_W(vc0);
+		mnq.setThreadId(ThreadId);
+		mnq.estimateVCs();
+		vc1=mnq.getvcs();
 	    diff = (vc1 - vc0).squaredNorm() / vc0.squaredNorm();
 		std::stringstream ss;
 		ss << std::fixed << "Thread ID: " << ThreadId << std::setprecision(3) << "\tIt: " << initIterate << "\t" << vc1.transpose() << "\tdiff: ";
 		ss << std::scientific << diff;
+		LOG(INFO) << " vc0=vc1";
 		vc0 = vc1;
+		LOG(INFO) << "initIterate++";
 		initIterate++;
 		if (isecho)
 		{
-			printf("%s\n", ss.str().c_str());
+			std::cout << ss.str()+"\n";
 		}
 		LOG(INFO) << ss.str();
 		if (diff<tol)
 		{
 			isConverge = true;
+			LOG(INFO) << "Iterate Converged";
 			break;
 		}
-
+		LOG(INFO) << "Finish iterate " << initIterate;
 	}
+	LOG(INFO) << "Iterate done" << initIterate;
 	if (!isConverge)
 	{
 		std::stringstream ss;
-		ss << "[Error]: iteration not converged (stop after " << itr << " iterations). You can specify the option --iter to allow for more iterations\n";
-		throw std::string(ss.str().c_str());
+		ss << "[Warning]: iteration not converged (stop after " << itr << " iterations). You can specify the option --iter to allow for more iterations\n";
+		std::cout << ss.str();
+		LOG(WARNING) << ss.str();
 	}
-	vcs = mnq->getvcs();
-//	mnq->estimateFix();
-//	fix = mnq->getfix();
-	delete mnq;
-	
+	LOG(WARNING) << "vcs = vc0";
+	vcs = vc0;
+	return initIterate;
 }

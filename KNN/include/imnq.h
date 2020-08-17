@@ -31,11 +31,11 @@ private:
 	float tol = 1e-5; //convergence tolerence (def=1e-5)
 	int itr = 20;	//iterations allowed (def=20)
 
-	int initIterate = 0;
+	int IterateTimes = 0;
 	bool isecho=true;
 	bool MINQUE1 = false;
 private:
-	Eigen::VectorXf initVCS(); //initialize variance components
-	void Iterate();
+//	Eigen::VectorXf initVCS(); //initialize variance components
+	int Iterate();
 };
 
