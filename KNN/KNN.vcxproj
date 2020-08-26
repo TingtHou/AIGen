@@ -215,6 +215,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="src\Batch.cpp" />
+    <ClCompile Include="src\Bootstrap.cpp" />
     <ClCompile Include="src\CommonFunc.cpp" />
     <ClCompile Include="src\cuimnq.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
@@ -265,6 +266,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\Batch.h" />
+    <ClInclude Include="include\Bootstrap.h" />
     <ClInclude Include="include\CommonFunc.h" />
     <ClInclude Include="include\cuimnq.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>

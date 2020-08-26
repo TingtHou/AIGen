@@ -73,6 +73,9 @@
     <ClCompile Include="src\cuMINQUE0.cpp">
       <Filter>Source</Filter>
     </ClCompile>
+    <ClCompile Include="src\Bootstrap.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="eigen_autoexp_part.dat" />
@@ -159,6 +162,9 @@
       <Filter>Header</Filter>
     </ClInclude>
     <ClInclude Include="include\helper_string.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Bootstrap.h">
       <Filter>Header</Filter>
     </ClInclude>
   </ItemGroup>
