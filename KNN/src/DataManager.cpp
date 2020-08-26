@@ -536,7 +536,9 @@ void DataManager::readmkernel(std::string mkernel)
 	klistifstream.open(mkernel, std::ios::in);
 	if (!klistifstream.is_open())
 	{
-		throw std::string("Error: cannot open the file [" + mkernel + "] to read.");
+		std::stringstream ss;
+		ss << "Error: cannot open the file [" + mkernel + "] to read.";
+		throw ss.str().c_str();
 	}
 	std::vector<std::string> filenames;
 	while (!klistifstream.eof())
