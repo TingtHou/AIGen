@@ -10,6 +10,8 @@ minque1::minque1(int DecompositionMode, int altDecompositionMode, bool allowPseu
 
 void minque1::estimateVCs()
 {
+	VW = Eigen::MatrixXf(nind, nind);
+	VW.setZero();
 	Eigen::MatrixXf Identity(nind, nind);
 	Identity.setIdentity();
 	vcs.resize(nVi);
@@ -19,15 +21,16 @@ void minque1::estimateVCs()
 		W.setOnes();
 	}
 	float* pr_VW = VW.data();
-	float* pr_Identity = Identity.data();
+	float* pr_Identity = Identity.data();// Vi.at(nVi - 1)->data();
 	//std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
 	for (int i = 0; i < nVi; i++)
 	{
 		float* pr_Vi = (*Vi[i]).data();
 		cblas_sgemm(CblasColMajor, CblasNoTrans, CblasNoTrans, nind, nind, nind, W[i], pr_Vi, nind, pr_Identity, nind, 1, pr_VW, nind);
 	}
+	Identity.resize(0, 0);
 	int status=Inverse(VW, Decomposition, altDecomposition, allowPseudoInverse);
-	CheckInverseStatus(status);
+	CheckInverseStatus("V matrix",status, allowPseudoInverse);
 	std::vector<Eigen::MatrixXf> RV(nVi);
 	Eigen::VectorXf Ry(nind);
 	std::vector<float*> pr_rv_list(nVi);
@@ -39,7 +42,6 @@ void minque1::estimateVCs()
 		RV[i].setZero();
 		pr_rv_list[i] = RV[i].data();
 		pr_vi_list[i] = Vi[i]->data();
-
 	}
 	if (ncov == 0)
 	{
@@ -66,20 +68,32 @@ void minque1::estimateVCs()
 		//XtB=Xt*B
 		cblas_sgemm(CblasColMajor, CblasTrans, CblasNoTrans, X.cols(), X.cols(), nind, 1, pr_X, nind, pr_B, nind, 0, pr_Xt_B, X.cols());
 		//inv(XtB)
-		int status = Inverse(Xt_B, Decomposition, altDecomposition, allowPseudoInverse);
-		CheckInverseStatus(status);
+		int status = Inverse(Xt_B, Cholesky , SVD, false);
+		CheckInverseStatus("P matrix",status, false);
 		//inv_XtB_Bt=inv(XtB)*Bt
 		cblas_sgemm(CblasColMajor, CblasNoTrans, CblasTrans, X.cols(), nind, X.cols(), 1, pr_Xt_B, X.cols(), pr_B, nind, 0, pr_inv_XtB_Bt, X.cols());
 		//inv_VM=inv_VM-B*inv(XtB)*Bt
-		cblas_sgemm(CblasColMajor, CblasNoTrans, CblasNoTrans, nind, nind, X.cols(), -1, pr_B, nind, pr_inv_XtB_Bt, X.cols(), 1, pr_VW, nind);	
+		cblas_sgemm(CblasColMajor, CblasNoTrans, CblasNoTrans, nind, nind, X.cols(), -1, pr_B, nind, pr_inv_XtB_Bt, X.cols(), 1, pr_VW, nind);
 		//MKL_free(pr_VWp);
-		Ry = VW *Y; 
+		cblas_sgemv(CblasColMajor, CblasNoTrans, nind, nind, 1, pr_VW, nind, pr_Y, 1, 0, pr_RY, 1);
+		//Ry = VW *Y; 
+	}
+	int nthread = omp_get_max_threads();
+	//	printf("Thread %d, Max threads for mkl %d\n", omp_get_max_threads(), mkl_get_max_threads());
+	int threadInNest = 1;
+	if (nthread != 1)
+	{
+		int tmp_thread = nthread > nVi ? nVi : nthread;
+		omp_set_num_threads(tmp_thread);
+		threadInNest = nthread/ nVi;
 	}
 	#pragma omp parallel for shared(pr_VW)
 	for (int i = 0; i < nVi; i++)
 	{
+		omp_set_num_threads(threadInNest);
 		cblas_ssymm(CblasColMajor, CblasLeft, CblasUpper, nind, nind, 1, pr_VW, nind, pr_vi_list[i], nind, 0, pr_rv_list[i], nind);
 	}
+	omp_set_num_threads(nthread);
 	Eigen::VectorXf u(nVi);
 	u.setZero();
 	#pragma omp parallel for shared(Ry)
@@ -90,31 +104,18 @@ void minque1::estimateVCs()
 	}
 	Eigen::MatrixXf F(nVi, nVi);
 	//Eigen::MatrixXf F_(nVi, nVi);
-	#pragma omp parallel for
-	for (int i = 0; i < nVi; i++)
+	#pragma omp parallel for shared(RV,F)
+	for (int k = 0; k < (nVi + 1) * nVi / 2; k++)
 	{
-		for (int j=i;j<nVi;j++)
-		{
-			Eigen::MatrixXf RVij = (RV[i].transpose().cwiseProduct(RV[j]));
-			double sum = 0;
-			for (int m = 0; m < nind; m++)
-			{
-				for (int n = m; n < nind; n++)
-				{
-					sum += RVij(m, n);
-					if (n!=m)
-					{
-						sum+= RVij(m, n); //lower triangle
-					}
-				}
-			}
-			F(i, j) = (float)sum;
-			F(j, i) = F(i, j);
-		}
+		int i = k / nVi, j = k % nVi;
+		if (j < i) i = nVi - i, j = nVi - j - 1;
+		Eigen::MatrixXf RVij = (RV[i].transpose().cwiseProduct(RV[j]));
+		double sum = RVij.cast<double>().sum();
+		F(i, j) = (float)sum;
+		F(j, i) = F(i, j);
 	}
-
-	status = Inverse(F, Decomposition, altDecomposition, allowPseudoInverse);
-	CheckInverseStatus(status);
+	status = Inverse(F, Cholesky,  SVD, true);
+	CheckInverseStatus("S matrix",status,true);
 	vcs = F * u;
 }
 

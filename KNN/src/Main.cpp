@@ -43,6 +43,14 @@
 #include "../include/imnq.h"
 #include "../include/Prediction.h"
 #include "../include/MINQUE0.h"
+#include "../include/Bootstrap.h"
+#include "../include/Random.h"
+#ifndef CPU  
+	#include "../include/cuMINQUE0.h"
+	#include "../include/cuimnq.h" 
+#endif
+
+
 
 INITIALIZE_EASYLOGGINGPP
 
@@ -50,16 +58,25 @@ void readAlgrithomParameter(boost::program_options::variables_map programOptions
 
 void ReadData(boost::program_options::variables_map programOptions, DataManager &dm);
 
-void MINQUEAnalysis(boost::program_options::variables_map programOptions, DataManager &dm, MinqueOptions &minopt,std::string &out);
+int MINQUEAnalysis(boost::program_options::variables_map programOptions, DataManager& dm, MinqueOptions& minopt, Eigen::VectorXf& VarComp, Eigen::VectorXf& predict);
 
-void BatchMINQUE1(MinqueOptions& minque, std::vector<Eigen::MatrixXf>& Kernels, PhenoData& phe, Eigen::MatrixXf& Covs, Eigen::VectorXf& variances, Eigen::VectorXf& coefs, float& iterateTimes, int nsplit, int seed, int nthread, bool isecho);
+void BatchMINQUE1(MinqueOptions& minque, std::vector<Eigen::MatrixXf *>& Kernels, PhenoData& phe, Eigen::MatrixXf& Covs, Eigen::VectorXf& variances, Eigen::VectorXf& coefs, float& iterateTimes, int nsplit, int seed, int nthread, bool isecho);
 
-void cMINQUE1(MinqueOptions& minque, std::vector<Eigen::MatrixXf>& Kernels, PhenoData& phe, Eigen::MatrixXf& Covs, Eigen::VectorXf& variances, Eigen::VectorXf& coefs, float& iterateTimes, bool isecho);
+void cMINQUE1(MinqueOptions& minque, std::vector<Eigen::MatrixXf *>& Kernels, PhenoData& phe, Eigen::MatrixXf& Covs, Eigen::VectorXf& variances, Eigen::VectorXf& coefs, float& iterateTimes, bool isecho);
 
-void BatchMINQUE0(MinqueOptions& minque, std::vector<Eigen::MatrixXf>& Kernels, PhenoData& phe, Eigen::MatrixXf& Covs, Eigen::VectorXf& variances, Eigen::VectorXf& coefs, int nsplit, int seed, int nthread);
 
-void cMINQUE0(MinqueOptions& minque, std::vector<Eigen::MatrixXf>& Kernels, PhenoData& phe, Eigen::MatrixXf& Covs, Eigen::VectorXf& variances, Eigen::VectorXf& coefs);
+void BatchMINQUE0(MinqueOptions& minque, std::vector<Eigen::MatrixXf *>& Kernels, PhenoData& phe, Eigen::MatrixXf& Covs, Eigen::VectorXf& variances, Eigen::VectorXf& coefs, int nsplit, int seed, int nthread);
 
+void cMINQUE0(MinqueOptions& minque, std::vector<Eigen::MatrixXf*>& Kernels, PhenoData& phe, Eigen::MatrixXf& Covs, Eigen::VectorXf& variances, Eigen::VectorXf& coefs);
+
+
+void Bootstraping(boost::program_options::variables_map programOptions, MinqueOptions& minopt, DataManager& dm, int times, Random& seed,
+	std::vector<Eigen::VectorXf> Vars_BP, std::vector<Eigen::VectorXf> Predicts_BP, std::vector<int> iterateTimes_BP);
+
+#ifndef CPU  
+void cudaMINQUE0(MinqueOptions& minque, std::vector<Eigen::MatrixXf>& Kernels, PhenoData& phe, Eigen::MatrixXf& Covs, Eigen::VectorXf& variances, Eigen::VectorXf& coefs);
+void cudaMINQUE1(MinqueOptions& minque, std::vector<Eigen::MatrixXf>& Kernels, PhenoData& phe, Eigen::MatrixXf& Covs, Eigen::VectorXf& variances, Eigen::VectorXf& coefs, float& iterateTimes, bool isecho);
+#endif
 
 void TryMain(int argc, const char *const argv[])
 {
@@ -102,6 +119,18 @@ void TryMain(int argc, const char *const argv[])
 		logfile = programOptions["log"].as < std::string >();
 		programOptions.erase("log");
 	}
+	if (programOptions.count("thread"))
+	{
+		int nthread = programOptions["thread"].as<int>();
+		omp_set_num_threads(nthread);
+		//	mkl_set_num_threads(nthread);
+	}
+	Random rd(0);
+	if (programOptions.count("seed"))
+	{
+		float seed = programOptions["seed"].as<float>();
+		rd.setseed(seed);
+	}
 //////init logger
 	el::Configurations conf;
 	conf.setToDefault();
@@ -114,12 +143,7 @@ void TryMain(int argc, const char *const argv[])
 	ReadData(programOptions, dm);
 	std::vector<KernelData> kernelList; 
 		//generate a built-in kernel or not
-	if (programOptions.count("thread"))
-	{
-		int nthread = programOptions["thread"].as<int>();
-	//	mkl_set_num_threads(nthread);
-		omp_set_num_threads(nthread);
-	}
+	
 	if (programOptions.count("make-kernel"))
 	{
 		int kerneltype=-1;
@@ -147,7 +171,7 @@ void TryMain(int argc, const char *const argv[])
 		}
 		else
 		{
-			throw ("Error: Invalided kernel name \"" + kernelname+"\"");
+			throw std::string("Error: Invalided kernel name \"" + kernelname+"\"");
 		}
 		GenoData gd = dm.getGenotype();
 		if (programOptions.count("std"))
@@ -166,7 +190,7 @@ void TryMain(int argc, const char *const argv[])
 			infile.open(weightVFile);
 			if (!infile.is_open())
 			{
-				throw ("Error: cannot open the file [" + weightVFile + "] to read.");
+				throw std::string("Error: cannot open the file [" + weightVFile + "] to read.");
 			}
 			int id = 0;
 			while (!infile.eof())
@@ -223,24 +247,25 @@ void TryMain(int argc, const char *const argv[])
 	//output kernel matrices as binary format
 	if (programOptions.count("make-bin"))
 	{
+		throw std::string("Error: make-bin function is under maintenance, and will back soon.");
 		std::string outname = programOptions["make-bin"].as < std::string >();
 		bool isfloat = true;
 		if (programOptions.count("precision"))
 		{
 			isfloat = programOptions["precision"].as < int >();
 		}
-		for (int i = 0; i < dm.GetKernel().size(); i++)
+		for (int i = 0; i < dm.GetKernel()->size(); i++)
 		{
 			if (i > 1)
 			{
 				outname += i;
 			}
-			KernelWriter kw(dm.GetKernel()[i]);
+			KernelWriter kw(dm.GetKernel()->at(i));
 
 			kw.setprecision(isfloat);
 			kw.write(outname);
 		}
-
+		
 	}
 	//if the phenotype is inputed, the estimation will be started.
 	if (dm.getPhenotype().fid_iid.size() != 0)
@@ -248,7 +273,116 @@ void TryMain(int argc, const char *const argv[])
 		dm.match();
 		if (!programOptions.count("skip"))
 		{
-			MINQUEAnalysis(programOptions, dm, minopt, result);
+			Eigen::VectorXf VarComp;
+			Eigen::VectorXf predict;
+			int iterateTimes=MINQUEAnalysis(programOptions, dm, minopt, VarComp,predict);
+
+			//////////////////////////////////////////////////////////
+		
+
+			if (programOptions.count("bootstrap"))
+			{
+				int times = programOptions["bootstrap"].as < int >();
+				std::vector<Eigen::VectorXf> Vars_BP;
+				std::vector<Eigen::VectorXf> Predicts_BP;
+				std::vector<int> iterateTimes_BP;
+				std::cout << "---Bootstraping--" << std::endl;
+				LOG(INFO) << "---Bootstraping----";
+				Bootstraping(programOptions, minopt, dm, times, rd, Vars_BP, Predicts_BP, iterateTimes_BP);
+				ofstream bp;
+				bp.open("bootstrap.txt", ios::out);
+				for (int i = 0; i < times; i++)
+				{
+					float VG = 0;
+					float VP = 0;
+					int j = 0;
+					for (j; j < Vars_BP[i].size() - 1; j++)
+					{
+						//	std::cout << VarComp.at(i) << " ";
+						VG += Vars_BP[i](j);
+					}
+					VP = VG;
+					VP+= Vars_BP[i](j);
+					bp << "# " << i << Vars_BP[i].transpose() << " " << VG / VP << std::endl;
+				}
+				bp.close();
+			}
+
+
+			ofstream out;
+			out.open(result, ios::out);
+			LOG(INFO) << "---Result----";
+			std::cout << "---Result----" << std::endl;
+			out << "Source\tVariance" << std::endl;
+			LOG(INFO) << "Source\tVariance";
+			int i = 0;
+			float VG = 0;
+			float VP = 0;
+			std::stringstream ss;
+			for (; i < VarComp.size() - 1; i++)
+			{
+				//	std::cout << VarComp.at(i) << " ";
+				int index = i + 1;
+				ss.str("");
+				ss << "V(G" << index << ")\t" << VarComp(i);
+				out << ss.str() << std::endl;
+				std::cout << ss.str() << std::endl;
+				LOG(INFO) << ss.str();
+				VG += VarComp(i);
+			}
+			VP = VG;
+			ss.str("");
+			ss << "V(e)\t" << VarComp(i);
+			out << ss.str() << std::endl;
+			std::cout << ss.str() << std::endl;
+			LOG(INFO) << ss.str();
+			VP += VarComp(i);
+			ss.str("");
+			ss << "Vp\t" << VP;
+			out << ss.str() << std::endl;
+			std::cout << ss.str() << std::endl;
+			LOG(INFO) << ss.str();
+			for (i = 0; i < VarComp.size() - 1; i++)
+			{
+				int index = i + 1;
+				ss.str("");
+				ss << "V(G" << index << ")/Vp\t" << VarComp(i) / VP;
+				out << ss.str() << std::endl;
+				std::cout << ss.str() << std::endl;
+				LOG(INFO) << ss.str();
+			}
+			ss.str("");
+			ss << "Sum of V(G)/Vp\t" << VG / VP;
+			out << ss.str() << std::endl;
+			std::cout << ss.str() << std::endl;
+			LOG(INFO) << ss.str();
+			ss.str("");
+			ss << "Iterate Times:\t" << iterateTimes;
+			out << ss.str() << std::endl;
+			std::cout << ss.str() << std::endl;
+			LOG(INFO) << ss.str();
+			if (programOptions.count("predict"))
+			{
+				int mode = programOptions["predict"].as<int>();
+				std::cout << "---Prediction----" << std::endl;
+				out << "---Prediction----" << std::endl;
+
+				std::stringstream ss;
+				if (dm.getPhenotype().isbinary)
+				{
+					ss << "misclassification error:\t" << predict[0] << std::endl << "AUC:\t" << predict[1] << std::endl;
+				}
+				else
+				{
+					ss << "MSE:\t" << predict[0] << std::endl << "Correlation:\t" << predict[1] << std::endl;
+				}
+				std::cout << ss.str();
+				LOG(INFO) << ss.str();
+				out << ss.str();
+			}
+			out.close();
+
+		
 		}
 
 	}
@@ -257,8 +391,6 @@ void TryMain(int argc, const char *const argv[])
 
 int main(int argc, const char *const argv[])
 {
-//	clock_t t1 = clock();
-	
 	/////////////////////////////////////////////////////////////////////
 	std::cout<<"\n"
 		"@----------------------------------------------------------@\n"
@@ -297,13 +429,15 @@ int main(int argc, const char *const argv[])
 	std::chrono::duration<double, std::ratio<1, 1>> duration_s(end - start);
 	//std::cout << "Total elapse Time : " << (clock() - t1) * 1.0 / CLOCKS_PER_SEC * 1000 << " ms" << std::endl;
 	cout << "Computational time: " << duration_s.count() <<" second(s)."<< endl;
-	return 1;
+	return 0;
 }
 
 void ReadData(boost::program_options::variables_map programOptions, DataManager &dm)
 {
 	std::vector<std::string> GFile;
 	bool isImpute = false;
+	std::string qcovariatefile;
+	std::string dcovariatefile;
 	if (programOptions.count("phe"))
 	{
 		std::string reponsefile = programOptions["phe"].as < std::string >();
@@ -311,14 +445,15 @@ void ReadData(boost::program_options::variables_map programOptions, DataManager 
 		LOG(INFO) << "Reading Phenotype from [" + reponsefile + "].";
 		dm.readPhe(reponsefile);
 	}
-	if (programOptions.count("covs"))
+	if (programOptions.count("covar"))
 	{
-		std::string covariatesfile = programOptions["covs"].as < std::string >();
-		std::cout << "Reading Covariates from [" + covariatesfile + "]." << std::endl;
-		LOG(INFO) << "Reading Covariates from [" + covariatesfile + "].";
-		dm.readCovariates(covariatesfile);
-
+		dcovariatefile = programOptions["covar"].as < std::string >();
 	}
+	if (programOptions.count("qcovar"))
+	{
+		qcovariatefile = programOptions["qcovar"].as < std::string >();
+	}
+	dm.readCovariates(qcovariatefile, dcovariatefile);
 	if (programOptions.count("kernel"))
 	{
 		std::string kernelfiles = programOptions["kernel"].as<std::string >();
@@ -339,6 +474,13 @@ void ReadData(boost::program_options::variables_map programOptions, DataManager 
 		std::cout << "Reading weights from [" + weightfile + "]." << std::endl;
 		LOG(INFO) << "Reading weights from [" + weightfile + "].";
 		dm.readWeight(weightfile);
+	}
+	if (programOptions.count("keep"))
+	{
+		std::string keepingfile = programOptions["keep"].as < std::string >();
+		std::cout << "Reading keeping individuals from [" + keepingfile + "]." << std::endl;
+		LOG(INFO) << "Reading keeping individuals from [" + keepingfile + "].";
+		dm.readkeepFile(keepingfile);
 	}
 	if (programOptions.count("bfile"))
 	{
@@ -382,6 +524,7 @@ void ReadData(boost::program_options::variables_map programOptions, DataManager 
 	{
 		isImpute = programOptions["impute"].as<bool>();
 	}
+	
 	if (GFile.size()!=0)
 	{
 		dm.readGeno(GFile, isImpute);
@@ -389,41 +532,54 @@ void ReadData(boost::program_options::variables_map programOptions, DataManager 
 	
 }
 
-void MINQUEAnalysis(boost::program_options::variables_map programOptions, DataManager &dm, MinqueOptions &minopt, std::string &result)
+int MINQUEAnalysis(boost::program_options::variables_map programOptions, DataManager &dm, MinqueOptions &minopt, Eigen::VectorXf &VarComp, Eigen::VectorXf &predict)
 {
 	bool GPU = false;
 	if (programOptions.count("GPU"))
 	{
 		GPU = true;
 	}
-	PhenoData phe = dm.getPhenotype();
-	std::vector<KernelData> kd = dm.GetKernel();
-	Eigen::MatrixXf Covs = dm.GetCovariates();
-	Eigen::VectorXf VarComp = dm.GetWeights();			// initialize the variance components vector with pre-set weights
-	Eigen::VectorXf fix(Covs.cols());
+	PhenoData phe=dm.getPhenotype();
+	std::vector<KernelData>* kd;
+	kd= dm.GetKernel();
+	CovData Covs=dm.GetCovariates();
+	VarComp=dm.GetWeights();
+		// initialize the variance components vector with pre-set weights
+	Eigen::VectorXf fix(Covs.npar);
 	fix.setZero();
 	fix[0] = -999;
 	float iterateTimes = 0;
-	bool isecho;
-	std::vector<Eigen::MatrixXf> Kernels;
+	bool isecho = false;
+	std::vector<Eigen::MatrixXf *> Kernels;
+	if (programOptions.count("echo"))
+	{
+		isecho = programOptions["echo"].as<bool>();
+	}
 	if (programOptions.count("alphaKNN"))
 	{
+	//	throw std::string("Error: alphaKNN function is under maintenance, and will back soon.");
+		
 		int alpha = programOptions["alphaKNN"].as<int>();
 		KernelExpansion ks(kd, alpha);
-		Kernels = ks.GetExtendMatrix();
+	//	Kernels = ks.GetExtendMatrix();
+		auto Kmatrices = ks.GetExtendMatrix();
+		for (int i = 0; i < Kmatrices->size(); i++)
+		{
+			Kernels.push_back(&(Kmatrices->at(i)));
+		}
 	}
 	else
 	{
-		for (int i = 0; i < kd.size(); i++)
+		for (int i = 0; i < kd->size(); i++)
 		{
-			Kernels.push_back(kd[i].kernelMatrix);
+			Kernels.push_back(&(kd->at(i).kernelMatrix));
 		}
 	}
 	if (VarComp.size() != 0)
 	{
 		if (VarComp.size() != (Kernels.size() + 1))
 		{
-			throw ("Error: The size of pre-specified weight vector is not equal to the number of variance components.");
+			throw std::string("Error: The size of pre-specified weight vector is not equal to the number of variance components.");
 		}
 	}
 	if (programOptions.count("fix"))
@@ -434,36 +590,39 @@ void MINQUEAnalysis(boost::program_options::variables_map programOptions, DataMa
 	{
 		if (!programOptions.count("fix"))
 		{
-			throw std::runtime_error("Error: arguments [--fix] and [--predict] must be used at the same time.");
+			throw std::string("Error: arguments [--fix] and [--predict] must be used at the same time.");
 		}
 		
 	}
 	if (GPU)
 	{
-		// 		cuMINQUE cuvarest;
-		// 		cuvarest.importY(Response.data(), Response.size());
-		// 		cuvarest.pushback_Vi(e.data(), e.rows());
-		// 		for (int i = 0; i < Kmatrix.size(); i++)
-		// 		{
-		// 			cuvarest.pushback_Vi(Kmatrix[i].data(), Kmatrix[i].rows());
-		// 		}
-		// 		std::cout << "Starting MINQUE estimate using GPU" << std::endl;
-		// 		clock_t t1 = clock();
-		// 		cuvarest.estimate();
-		// 		std::cout << fixed << setprecision(2) << "GPU Elapse Time : " << (clock() - t1) * 1.0 / CLOCKS_PER_SEC * 1000 << " ms" << std::endl;
-		// 		logout << setprecision(2) << "GPU Elapse Time : " << (clock() - t1) * 1.0 / CLOCKS_PER_SEC * 1000 << " ms" << std::endl;
-		// 
-		// 		VarComp = cuvarest.GetTheta();
+#ifndef CPU  
+		if (programOptions.count("minque0"))
+		{
+			cudaMINQUE0(minopt, Kernels, phe, Covs.Covariates, VarComp, fix);
+			iterateTimes = 1;
+		}
+		else
+		{
+			cudaMINQUE1(minopt, Kernels, phe, Covs.Covariates, VarComp, fix, iterateTimes, isecho);
+		}
+#else
+		throw std::string("This is a CPU program. Please use GPU version.");
+#endif
 	}
 	else
 	{
-		
-
 		if (programOptions.count("batch"))
 		{
+	//		throw std::string("Error: batch function is under maintenance, and will back soon.");
+			
 			int nthread = 10;
 			int nsplit= programOptions["batch"].as<int>();
 			int seed = 0;
+			if (!programOptions.count("pseudo"))
+			{
+				minopt.allowPseudoInverse = 0;
+			}
 			if (programOptions.count("thread"))
 			{
 				nthread = programOptions["thread"].as<int>();
@@ -472,20 +631,16 @@ void MINQUEAnalysis(boost::program_options::variables_map programOptions, DataMa
 			{
 				seed = programOptions["seed"].as<int>();
 			}
-			isecho = false;
-			if (programOptions.count("echo"))
-			{
-				isecho = programOptions["echo"].as<bool>();
-			}
 			if (programOptions.count("minque0"))
 			{
-				BatchMINQUE0(minopt, Kernels, phe, Covs, VarComp, fix, nsplit, seed, nthread);
+				BatchMINQUE0(minopt, Kernels, phe, Covs.Covariates, VarComp, fix, nsplit, seed, nthread);
 				iterateTimes = 1;
 			}
 			else
 			{
-				BatchMINQUE1(minopt, Kernels, phe, Covs, VarComp, fix, iterateTimes, nsplit, seed, nthread, isecho);
+				BatchMINQUE1(minopt, Kernels, phe, Covs.Covariates, VarComp, fix, iterateTimes, nsplit, seed, nthread, isecho);
 			}
+			
 			
 		}
 		else
@@ -497,92 +652,227 @@ void MINQUEAnalysis(boost::program_options::variables_map programOptions, DataMa
 			}	
 			if (programOptions.count("minque0"))
 			{
-				cMINQUE0(minopt, Kernels, phe, Covs, VarComp, fix);
+				cMINQUE0(minopt, Kernels, phe, Covs.Covariates, VarComp, fix);
 				iterateTimes = 1;
 			}
 			else
 			{
-				cMINQUE1(minopt, Kernels, phe, Covs, VarComp, fix, iterateTimes, isecho);
+				if (!VarComp.size())
+				{
+					std::cout << "Using results from MINQUE(0) as inital value." << std::endl;
+					LOG(INFO) << "Using results from MINQUE(0) as inital value.";
+					cMINQUE0(minopt, Kernels, phe, Covs.Covariates, VarComp, fix);
+				}
+				
+				cMINQUE1(minopt, Kernels, phe, Covs.Covariates, VarComp, fix, iterateTimes, isecho);
 			}
 			
 		}
 	}
-	ofstream out;
-	out.open(result, ios::out);
-	LOG(INFO) << "---Result----";
-	std::cout << "---Result----" << std::endl;
-	out << "Source\tVariance" << std::endl;
-	LOG(INFO) << "Source\tVariance";
-	int i = 0;
-	float VG = 0;
-	float VP = 0;
-	std::stringstream ss;
-	for (; i < VarComp.size() - 1; i++)
-	{
-	//	std::cout << VarComp.at(i) << " ";
-		int index = i + 1;
-		ss.str("");
-		ss << "V(G" << index << ")\t" << VarComp(i);
-		out << ss.str() << std::endl;
-		std::cout << ss.str() << std::endl;
-		LOG(INFO) << ss.str();
-		VG += VarComp(i);
-	}
-	VP = VG;
-	ss.str("");
-	ss << "V(e)\t" << VarComp(i);
-	out << ss.str() << std::endl;
-	std::cout << ss.str() << std::endl;
-	LOG(INFO) << ss.str();
-	VP += VarComp(i);
-	ss.str("");
-	ss << "Vp\t" << VP;
-	out << ss.str() << std::endl;
-	std::cout << ss.str() << std::endl;
-	LOG(INFO) << ss.str();
-	for (i = 0; i < VarComp.size() - 1; i++)
-	{
-		int index = i + 1;
-		ss.str("");
-		ss << "V(G" << index << ")/Vp\t" << VarComp(i) / VP;
-		out << ss.str() << std::endl;
-		std::cout << ss.str() << std::endl;
-		LOG(INFO) << ss.str();
-	}
-	ss.str("");
-	ss << "Sum of V(G)/Vp\t" << VG / VP;
-	out << ss.str() << std::endl;
-	std::cout << ss.str() << std::endl;
-	LOG(INFO) << ss.str();
-	ss.str("");
-	ss << "Iterate Times:\t" << iterateTimes;
-	out << ss.str() << std::endl;
-	std::cout << ss.str() << std::endl;
-	LOG(INFO) << ss.str();
+	
 	if (programOptions.count("predict"))
 	{
 		int mode = programOptions["predict"].as<int>();
 		std::cout << "---Prediction----" << std::endl;
-		out<< "---Prediction----" << std::endl;
-		Prediction pred(phe.Phenotype, Kernels, VarComp, Covs, fix, phe.isbinary,mode);
+	//	out<< "---Prediction----" << std::endl;
+		Prediction pred(phe.Phenotype, Kernels, VarComp, Covs.Covariates, fix, phe.isbinary,mode);
+		predict.resize(2);
+		
 		std::stringstream ss;
 		if (phe.isbinary)
 		{
-			ss << "misclassification error:\t" << pred.getMSE() << std::endl << "AUC:\t" << pred.getAUC() << std::endl;
+			predict[0] = pred.getMSE();
+			predict[1] = pred.getAUC();
+			//ss << "misclassification error:\t" << pred.getMSE() << std::endl << "AUC:\t" << pred.getAUC() << std::endl;
 		}
 		else
 		{
-			ss << "MSE:\t" << pred.getMSE() << std::endl << "Correlation:\t" << pred.getCor() << std::endl;
+			predict[0] = pred.getMSE();
+			predict[1] = pred.getCor();
+			//ss << "MSE:\t" << pred.getMSE() << std::endl << "Correlation:\t" << pred.getCor() << std::endl;
 		}
-		std::cout << ss.str();
-		LOG(INFO) << ss.str();
-		out<<  ss.str();
+//		std::cout << ss.str();
+//		LOG(INFO) << ss.str();
+//		out<<  ss.str();
 	}
-	
-	out.close();
+	return iterateTimes;
+//	out.close();
+}
+int MINQUEAnalysis(boost::program_options::variables_map programOptions, Bootstrap& dm, MinqueOptions& minopt, Eigen::VectorXf& VarComp, Eigen::VectorXf& predict)
+{
+	bool GPU = false;
+	if (programOptions.count("GPU"))
+	{
+		GPU = true;
+	}
+	PhenoData phe = dm.getPhenotype();
+	std::vector<KernelData>* kd;
+	kd = dm.GetKernel();
+	CovData Covs = dm.GetCovariates();
+	VarComp = dm.GetWeights();
+	// initialize the variance components vector with pre-set weights
+	Eigen::VectorXf fix(Covs.npar);
+	fix.setZero();
+	fix[0] = -999;
+	float iterateTimes = 0;
+	bool isecho = false;
+	std::vector<Eigen::MatrixXf*> Kernels;
+	if (programOptions.count("echo"))
+	{
+		isecho = programOptions["echo"].as<bool>();
+	}
+	if (programOptions.count("alphaKNN"))
+	{
+		//	throw std::string("Error: alphaKNN function is under maintenance, and will back soon.");
+
+		int alpha = programOptions["alphaKNN"].as<int>();
+		KernelExpansion ks(kd, alpha);
+		//	Kernels = ks.GetExtendMatrix();
+		auto Kmatrices = ks.GetExtendMatrix();
+		for (int i = 0; i < Kmatrices->size(); i++)
+		{
+			Kernels.push_back(&(Kmatrices->at(i)));
+		}
+	}
+	else
+	{
+		for (int i = 0; i < kd->size(); i++)
+		{
+			Kernels.push_back(&(kd->at(i).kernelMatrix));
+		}
+	}
+	if (VarComp.size() != 0)
+	{
+		if (VarComp.size() != (Kernels.size() + 1))
+		{
+			throw std::string("Error: The size of pre-specified weight vector is not equal to the number of variance components.");
+		}
+	}
+	if (programOptions.count("fix"))
+	{
+		fix[0] = 1;
+	}
+	if (programOptions.count("predict"))
+	{
+		if (!programOptions.count("fix"))
+		{
+			throw std::string("Error: arguments [--fix] and [--predict] must be used at the same time.");
+		}
+
+	}
+	if (GPU)
+	{
+#ifndef CPU  
+		if (programOptions.count("minque0"))
+		{
+			cudaMINQUE0(minopt, Kernels, phe, Covs.Covariates, VarComp, fix);
+			iterateTimes = 1;
+		}
+		else
+		{
+			cudaMINQUE1(minopt, Kernels, phe, Covs.Covariates, VarComp, fix, iterateTimes, isecho);
+		}
+#else
+		throw std::string("This is a CPU program. Please use GPU version.");
+#endif
+	}
+	else
+	{
+		if (programOptions.count("batch"))
+		{
+			//		throw std::string("Error: batch function is under maintenance, and will back soon.");
+
+			int nthread = 10;
+			int nsplit = programOptions["batch"].as<int>();
+			int seed = 0;
+			if (!programOptions.count("pseudo"))
+			{
+				minopt.allowPseudoInverse = 0;
+			}
+			if (programOptions.count("thread"))
+			{
+				nthread = programOptions["thread"].as<int>();
+			}
+			if (programOptions.count("seed"))
+			{
+				seed = programOptions["seed"].as<int>();
+			}
+			if (programOptions.count("minque0"))
+			{
+				BatchMINQUE0(minopt, Kernels, phe, Covs.Covariates, VarComp, fix, nsplit, seed, nthread);
+				iterateTimes = 1;
+			}
+			else
+			{
+				BatchMINQUE1(minopt, Kernels, phe, Covs.Covariates, VarComp, fix, iterateTimes, nsplit, seed, nthread, isecho);
+			}
+
+
+		}
+		else
+		{
+			isecho = true;
+			if (programOptions.count("echo"))
+			{
+				isecho = programOptions["echo"].as<bool>();
+			}
+			if (programOptions.count("minque0"))
+			{
+				cMINQUE0(minopt, Kernels, phe, Covs.Covariates, VarComp, fix);
+				iterateTimes = 1;
+			}
+			else
+			{
+				if (!VarComp.size())
+				{
+					std::cout << "Using results from MINQUE(0) as inital value." << std::endl;
+					LOG(INFO) << "Using results from MINQUE(0) as inital value.";
+					std::vector<Eigen::MatrixXf*> Kernels_imq;
+					int nind = phe.fid_iid.size();
+					for (int i = 0; i < Kernels.size(); i++)
+					{
+						Kernels_imq[i] = new Eigen::MatrixXf(nind,nind);
+						*Kernels_imq[i] = *Kernels[i];
+					}
+					cMINQUE0(minopt, Kernels_imq, phe, Covs.Covariates, VarComp, fix);
+				}
+
+				cMINQUE1(minopt, Kernels, phe, Covs.Covariates, VarComp, fix, iterateTimes, isecho);
+			}
+
+		}
+	}
+
+	if (programOptions.count("predict"))
+	{
+		int mode = programOptions["predict"].as<int>();
+		std::cout << "---Prediction----" << std::endl;
+		//	out<< "---Prediction----" << std::endl;
+		Prediction pred(phe.Phenotype, Kernels, VarComp, Covs.Covariates, fix, phe.isbinary, mode);
+		predict.resize(2);
+
+		std::stringstream ss;
+		if (phe.isbinary)
+		{
+			predict[0] = pred.getMSE();
+			predict[1] = pred.getAUC();
+			//ss << "misclassification error:\t" << pred.getMSE() << std::endl << "AUC:\t" << pred.getAUC() << std::endl;
+		}
+		else
+		{
+			predict[0] = pred.getMSE();
+			predict[1] = pred.getCor();
+			//ss << "MSE:\t" << pred.getMSE() << std::endl << "Correlation:\t" << pred.getCor() << std::endl;
+		}
+		//		std::cout << ss.str();
+		//		LOG(INFO) << ss.str();
+		//		out<<  ss.str();
+	}
+	return iterateTimes;
+	//	out.close();
 }
 
-void BatchMINQUE1(MinqueOptions &minque, std::vector<Eigen::MatrixXf>& Kernels, PhenoData & phe, Eigen::MatrixXf& Covs, Eigen::VectorXf& variances, Eigen::VectorXf& coefs, float & iterateTimes, int nsplit,int seed, int nthread, bool isecho)
+void BatchMINQUE1(MinqueOptions &minque, std::vector<Eigen::MatrixXf *>& Kernels, PhenoData & phe, Eigen::MatrixXf& Covs, Eigen::VectorXf& variances, Eigen::VectorXf& coefs, float & iterateTimes, int nsplit,int seed, int nthread, bool isecho)
 {
     int nkernel = Kernels.size();
 	bool nofix = coefs[0] == -999 ? true : false;
@@ -715,26 +1005,25 @@ void BatchMINQUE1(MinqueOptions &minque, std::vector<Eigen::MatrixXf>& Kernels, 
 	iterateTimes = accumulate(time.begin(), time.end(), 0.0) / time.size(); ;
 }
 
-void cMINQUE1(MinqueOptions & minque, std::vector<Eigen::MatrixXf>& Kernels, PhenoData & phe, Eigen::MatrixXf & Covs, Eigen::VectorXf& variances, Eigen::VectorXf& coefs,float & iterateTimes,  bool isecho)
+void cMINQUE1(MinqueOptions & minque, std::vector<Eigen::MatrixXf *>& Kernels, PhenoData & phe, Eigen::MatrixXf & Covs, Eigen::VectorXf& variances, Eigen::VectorXf& coefs,float & iterateTimes,  bool isecho)
 {
 	imnq varest;
 	varest.setOptions(minque);
 	varest.isEcho(isecho);
 	varest.importY(phe.Phenotype);
 	varest.pushback_X(Covs, false);
-	if (variances.size()!=0)
-	{
-		varest.pushback_W(variances);
-	}
 	for (int i = 0; i < Kernels.size(); i++)
 	{
-		varest.pushback_Vi(&Kernels[i]);
+		varest.pushback_Vi(Kernels[i]);
 	}
-	
 	Eigen::MatrixXf e(phe.fid_iid.size(), phe.fid_iid.size());
 	e.setIdentity();
 	varest.pushback_Vi(&e);
-	std::cout << "starting CPU MINQUE " << std::endl;
+	if (variances.size() != 0)
+	{
+		varest.pushback_W(variances);
+	}
+	std::cout << "starting CPU MINQUE(1) " << std::endl;
 	varest.estimateVCs();
 	variances = varest.getvcs();
 	iterateTimes = varest.getIterateTimes();
@@ -746,7 +1035,9 @@ void cMINQUE1(MinqueOptions & minque, std::vector<Eigen::MatrixXf>& Kernels, Phe
 	
 }
 
-void BatchMINQUE0(MinqueOptions& minque, std::vector<Eigen::MatrixXf>& Kernels, PhenoData& phe, Eigen::MatrixXf& Covs, Eigen::VectorXf& variances, Eigen::VectorXf& coefs,  int nsplit, int seed, int nthread)
+
+
+void BatchMINQUE0(MinqueOptions& minque, std::vector<Eigen::MatrixXf *>& Kernels, PhenoData& phe, Eigen::MatrixXf& Covs, Eigen::VectorXf& variances, Eigen::VectorXf& coefs,  int nsplit, int seed, int nthread)
 {
 	int nkernel = Kernels.size();
 	bool nofix = coefs[0] == -999 ? true : false;
@@ -872,19 +1163,20 @@ void BatchMINQUE0(MinqueOptions& minque, std::vector<Eigen::MatrixXf>& Kernels, 
 	
 }
 
-void cMINQUE0(MinqueOptions& minque, std::vector<Eigen::MatrixXf>& Kernels, PhenoData& phe, Eigen::MatrixXf& Covs, Eigen::VectorXf& variances, Eigen::VectorXf& coefs)
+void cMINQUE0(MinqueOptions& minque, std::vector<Eigen::MatrixXf *> &Kernels, PhenoData& phe, Eigen::MatrixXf& Covs, Eigen::VectorXf& variances, Eigen::VectorXf& coefs)
 {
 	MINQUE0 varest(minque.MatrixDecomposition,minque.altMatrixDecomposition, minque.allowPseudoInverse);
 	varest.importY(phe.Phenotype);
 	varest.pushback_X(Covs, false);
 	for (int i = 0; i < Kernels.size(); i++)
 	{
-		varest.pushback_Vi(&Kernels[i]);
+		varest.pushback_Vi(Kernels[i]);
 	}
-	Eigen::MatrixXf e(phe.fid_iid.size(), phe.fid_iid.size());
+	Eigen::MatrixXf e(phe.Phenotype.size(), phe.Phenotype.size());
 	e.setIdentity();
 	varest.pushback_Vi(&e);
-	std::cout << "starting CPU MINQUE " << std::endl;
+	std::cout << "starting CPU MINQUE(0) " << std::endl;
+	LOG(INFO) << "starting CPU MINQUE(0) ";
 	varest.estimateVCs();
 	variances = varest.getvcs();
 	if (coefs[0]!=-999)
@@ -898,6 +1190,86 @@ void cMINQUE0(MinqueOptions& minque, std::vector<Eigen::MatrixXf>& Kernels, Phen
 	LOG(INFO) << ss.str();
 }
 
+void Bootstraping(boost::program_options::variables_map programOptions, MinqueOptions& minopt, DataManager& dm, int times, Random &seed, 
+					std::vector<Eigen::VectorXf> Vars_BP,std::vector<Eigen::VectorXf> Predicts_BP,std::vector<int> iterateTimes_BP)
+{
+
+	Bootstrap bo(dm, &seed);
+	for (int i = 0; i < times; i++)
+	{
+		std::cout << "Bootstrap # " << i << std::endl;
+		LOG(INFO)<< "Bootstrap # " << i ;
+		bo.generate();
+		Eigen::VectorXf VarComp;
+		Eigen::VectorXf predict;
+		int iterateTimes = MINQUEAnalysis(programOptions, bo, minopt, VarComp, predict);
+		Vars_BP.push_back(VarComp);
+		Predicts_BP.push_back(predict);
+		iterateTimes_BP.push_back(iterateTimes);
+	}
+
+}
+
+#ifndef CPU  
+void cudaMINQUE0(MinqueOptions& minque, std::vector<Eigen::MatrixXf>& Kernels, PhenoData& phe, Eigen::MatrixXf& Covs, Eigen::VectorXf& variances, Eigen::VectorXf& coefs)
+{
+
+	cuMINQUE0 cuvarest(minque.MatrixDecomposition, minque.altMatrixDecomposition, minque.allowPseudoInverse);
+	cuvarest.importY(phe.Phenotype);
+	cuvarest.pushback_X(Covs, false);
+	for (int i = 0; i < Kernels.size(); i++)
+	{
+		cuvarest.pushback_Vi(Kernels[i]);
+	}
+	Eigen::MatrixXf e(phe.fid_iid.size(), phe.fid_iid.size());
+	e.setIdentity();
+	cuvarest.pushback_Vi(e);
+	std::cout << "starting GPU MINQUE " << std::endl;
+	cuvarest.init();
+	cuvarest.estimateVCs();
+	variances = cuvarest.getvcs();
+	if (coefs[0] != -999)
+	{
+		cuvarest.estimateFix();
+		coefs = cuvarest.getfix();
+	}
+	std::stringstream ss;
+	ss << std::fixed << "Thread ID: 0" << std::setprecision(3) << "\tIt: " << 0 << "\t" << cuvarest.getvcs().transpose();
+	printf("%s\n", ss.str().c_str());
+	LOG(INFO) << ss.str();
+}
+
+void cudaMINQUE1(MinqueOptions& minque, std::vector<Eigen::MatrixXf>& Kernels, PhenoData& phe, Eigen::MatrixXf& Covs, Eigen::VectorXf& variances, Eigen::VectorXf& coefs, float& iterateTimes, bool isecho)
+{
+	cuimnq cuvarest;
+	cuvarest.setOptions(minque);
+	cuvarest.isEcho(isecho);
+	cuvarest.importY(phe.Phenotype);
+	cuvarest.pushback_X(Covs, false);
+	if (variances.size() != 0)
+	{
+		cuvarest.pushback_W(variances);
+	}
+	for (int i = 0; i < Kernels.size(); i++)
+	{
+		cuvarest.pushback_Vi(Kernels[i]);
+	}
+
+	Eigen::MatrixXf e(phe.fid_iid.size(), phe.fid_iid.size());
+	e.setIdentity();
+	cuvarest.pushback_Vi(e);
+	std::cout << "starting GPU MINQUE " << std::endl;
+	cuvarest.estimateVCs();
+	variances = cuvarest.getvcs();
+	iterateTimes = cuvarest.getIterateTimes();
+	if (coefs[0] != -999)
+	{
+		cuvarest.estimateFix();
+		coefs = cuvarest.getfix();
+	}
+
+}
+#endif
 
 
 
@@ -940,8 +1312,7 @@ void readAlgrithomParameter(boost::program_options::variables_map programOptions
 				break;
 			default:
 			{
-				logic_error emsg("The parameter \"--inverse "+ Decomposition+"\" is not correct, please check it. More detail --help");
-				throw std::exception(emsg);
+				throw std::string("The parameter \"--inverse " + Decomposition + "\" is not correct, please check it. More detail --help");
 				break;
 			}
 			}
@@ -967,8 +1338,7 @@ void readAlgrithomParameter(boost::program_options::variables_map programOptions
 			}
 			else
 			{
-				logic_error emsg("The parameter \"--inverse " + Decomposition + "\" is not correct, please check it. More detail --help");
-				throw std::exception(emsg);
+				throw  std::string("The parameter \"--inverse " + Decomposition + "\" is not correct, please check it. More detail --help");
 			}
 		}
 
@@ -992,7 +1362,7 @@ void readAlgrithomParameter(boost::program_options::variables_map programOptions
 				minque.altMatrixDecomposition = 3;
 				break;
 			default:
-				throw std::exception(logic_error("The argument \"--ginverse " + Decomposition + "\" is not correct, please check it. More detail --help"));
+				throw std::string("The argument \"--ginverse " + Decomposition + "\" is not correct, please check it. More detail --help");
 				break;
 			}
 		}
@@ -1009,7 +1379,7 @@ void readAlgrithomParameter(boost::program_options::variables_map programOptions
 			}
 			else
 			{
-				throw std::exception(logic_error("The parameter \"--ginverse " + Decomposition + "\" is not correct, please check it. More detail --help"));
+				throw  std::string("The parameter \"--ginverse " + Decomposition + "\" is not correct, please check it. More detail --help");
 			}
 		}
 	}

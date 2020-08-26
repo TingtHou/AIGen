@@ -9,7 +9,7 @@
 class Prediction
 {
 public:
-	Prediction(Eigen::VectorXf& Real_Y, std::vector<Eigen::MatrixXf>& Kernels, Eigen::VectorXf& vcs, Eigen::MatrixXf& X, Eigen::VectorXf& fixed, bool isbinary, int mode);
+	Prediction(Eigen::VectorXf& Real_Y, std::vector<Eigen::MatrixXf *>& Kernels, Eigen::VectorXf& vcs, Eigen::MatrixXf& X, Eigen::VectorXf& fixed, bool isbinary, int mode);
 	float getMSE();
 	float getCor();
 	float getAUC();
@@ -18,7 +18,7 @@ public:
 private:
 	Eigen::VectorXf Real_Y;
 	Eigen::VectorXf Predict_Y;
-	std::vector<Eigen::MatrixXf> Kernels;
+	std::vector<Eigen::MatrixXf *> Kernels;
 	Eigen::VectorXf vcs;
 	Eigen::MatrixXf X;
 	Eigen::VectorXf fixed;

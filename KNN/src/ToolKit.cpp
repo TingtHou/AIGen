@@ -128,6 +128,7 @@ bool ToolKit::comput_inverse_logdet_LDLT_mkl(Eigen::MatrixXf &Vi)
 {
 
 	int n = Vi.cols();
+//	long long sizes = ((long long)n + 1) * (long long)n / 2;
 	float* Vi_mkl = Vi.data();
 	// MKL's Cholesky decomposition
 	int info = 0, int_n = (int)n;
@@ -143,22 +144,34 @@ bool ToolKit::comput_inverse_logdet_LDLT_mkl(Eigen::MatrixXf &Vi)
 		}
 		else 
 		{
+			Vi = Vi.selfadjointView<Eigen::Lower>();
+			/*
+			#pragma omp parallel for shared(Vi_mkl)
+			for (long long k = 0; k < sizes; k++)
+			{
+				long long i = k / n, j = k % n;
+				if (j < i) i = n - i, j = n - j - 1;
+				Vi_mkl[j * n + i] = Vi_mkl[i * n + j];
+			}
+			/*
 			#pragma omp parallel for
 			for (int i = 0; i < n; i++) //row
 			{
 				for (int j = i; j <n; j++) //col
 					Vi_mkl[j * n + i]=Vi_mkl[i * n + j];
 			}
+			*/
 		}
 	}
 	return true;
-
 }
+
 bool ToolKit::comput_inverse_logdet_LDLT_mkl(Eigen::MatrixXd & Vi)
 {
 
 	int n = Vi.cols();
 	double* Vi_mkl = Vi.data();
+//	long long sizes = ((long long)n + 1) * (long long)n / 2;
 	// MKL's Cholesky decomposition
 	int info = 0, int_n = (int)n;
 	char uplo = 'L';
@@ -173,12 +186,23 @@ bool ToolKit::comput_inverse_logdet_LDLT_mkl(Eigen::MatrixXd & Vi)
 		}
 		else
 		{
-#pragma omp parallel for
+			Vi = Vi.selfadjointView<Eigen::Lower>();
+/*
+			#pragma omp parallel for shared(Vi_mkl)
+			for (long long k = 0; k < sizes; k++)
+			{
+				long long i = k / n, j = k % n;
+				if (j < i) i = n - i, j = n - j - 1;
+				Vi_mkl[j * n + i] = Vi_mkl[i * n + j];
+			}
+			/*
+			#pragma omp parallel for
 			for (int i = 0; i < n; i++) //row
 			{
 				for (int j = i; j < n; j++) //col
 					Vi_mkl[j * n + i] = Vi_mkl[i * n + j];
 			}
+			*/
 		}
 	}
 	return true;
@@ -200,7 +224,6 @@ bool ToolKit::comput_inverse_logdet_LU_mkl(Eigen::MatrixXf &Vi)
 {
 	int n = Vi.cols();
 	float* Vi_mkl = Vi.data();
-
 	int N = (int)n;
 	int *IPIV = new int[n + 1];
 	int LWORK = N * N;
@@ -261,7 +284,7 @@ bool ToolKit::comput_inverse_logdet_QR_mkl(Eigen::MatrixXf& Vi)
 	if (INFO != 0)
 	{
 		delete[] tau;
-		throw ("Error: QR decomposition failed. Invalid values found in the matrix.\n");
+		throw  std::string("Error: QR decomposition failed. Invalid values found in the matrix.\n");
 	}
 	cblas_strsm(CblasColMajor, CblasLeft, CblasUpper, CblasNoTrans, CblasNonUnit, n, n, 1, Vi_mkl, n, pr_Rinv, n);
 	LAPACKE_sormqr(LAPACK_COL_MAJOR, 'L', 'T', n, n, n, Vi_mkl, n, tau, pr_Qt, n);
@@ -285,7 +308,7 @@ bool ToolKit::comput_inverse_logdet_QR_mkl(Eigen::MatrixXd& Vi)
 	if (INFO != 0)
 	{
 		delete[] tau;
-		throw ("Error: QR decomposition failed. Invalid values found in the matrix.\n");
+		throw  std::string("Error: QR decomposition failed. Invalid values found in the matrix.\n");
 	}
 	cblas_dtrsm(CblasColMajor, CblasLeft, CblasUpper, CblasNoTrans, CblasNonUnit, n, n, 1, Vi_mkl, n, pr_Rinv, n);
 	LAPACKE_dormqr(LAPACK_COL_MAJOR, 'L', 'T', n, n, n, Vi_mkl, n, tau, pr_Qt, n);
@@ -318,14 +341,14 @@ bool ToolKit::comput_inverse_logdet_SVD_mkl(Eigen::MatrixXf& Vi)
 		free(s);
 		free(u);
 		free(vt);
-		throw ("The algorithm computing SVD failed to converge.\n");
+		throw  std::string("The algorithm computing SVD failed to converge.\n");
 	}
 	if (info < 0)
 	{
 		free(s);
 		free(u);
 		free(vt);
-		throw ("Error: SVD decomposition failed. Invalid values found in the matrix.\n");
+		throw  std::string("Error: SVD decomposition failed. Invalid values found in the matrix.\n");
 	}
 	//u=(s^-1)*U
 	MKL_INT incx = 1;
@@ -372,14 +395,14 @@ bool ToolKit::comput_inverse_logdet_SVD_mkl(Eigen::MatrixXd& Vi)
 		free(s);
 		free(u);
 		free(vt);
-		throw ("The algorithm computing SVD failed to converge.\n");
+		throw  std::string("The algorithm computing SVD failed to converge.\n");
 	}
 	if (info < 0)
 	{
 		free(s);
 		free(u);
 		free(vt);
-		throw ("Error: SVD decomposition failed. Invalid values found in the matrix.\n");
+		throw  std::string("Error: SVD decomposition failed. Invalid values found in the matrix.\n");
 	}
 	//u=(s^-1)*U
 	MKL_INT incx = 1;

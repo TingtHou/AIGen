@@ -17,7 +17,6 @@ int Inverse(Eigen::MatrixXf & Ori_Matrix, int DecompositionMode, int AltDecompos
 	{
 	case Cholesky:
 	{
-		float det;
 		statusInverse = ToolKit::comput_inverse_logdet_LDLT_mkl(Ori_Matrix);
 	//	statusInverse = ToolKit::Inv_Cholesky(Ori_Matrix);
 		status += !statusInverse;
@@ -37,7 +36,6 @@ int Inverse(Eigen::MatrixXf & Ori_Matrix, int DecompositionMode, int AltDecompos
 	break;
 	case LU:
 	{
-		float det;
 		statusInverse = ToolKit::comput_inverse_logdet_LU_mkl(Ori_Matrix);
 		status += !statusInverse;
  		if (!statusInverse&&allowPseudoInverse)
@@ -265,6 +263,51 @@ void set_difference(boost::bimap<int, std::string>& map1, boost::bimap<int, std:
 	}
 }
 
+boost::bimap<int, std::string> set_difference(boost::bimap<int, std::string>& map1, boost::bimap<int, std::string>& map2)
+{
+	boost::bimap<int, std::string> overlap;
+	int id = 0;
+	for (auto it = map1.left.begin(); it != map1.left.end(); it++)
+	{
+		if (map2.right.count(it->second))
+		{
+			overlap.insert({ id++ ,it->second });
+		}
+	}
+	return overlap;
+}
+
+boost::bimap<int, std::string> set_difference(std::vector<boost::bimap<int, std::string>>& mapList)
+{
+	boost::bimap<int, std::string> overlap;
+	if (mapList.size()==1)
+	{
+		overlap = mapList.back();
+		mapList.pop_back();
+	}
+	else
+	{
+		boost::bimap<int, std::string> map1 = mapList.back();
+		mapList.pop_back();
+		boost::bimap<int, std::string> map2 = set_difference(mapList);
+		overlap=set_difference(map1, map2);
+	}
+	return overlap;
+}
+
+void set_difference(boost::bimap<int, std::string>& map1, boost::bimap<int, std::string>& map2, boost::bimap<int, std::string>& map3, std::vector<std::string>& overlap)
+{
+	for (auto it = map1.left.begin(); it != map1.left.end(); it++)
+	{
+		if (map2.right.count(it->second))
+		{
+			if (map3.right.count(it->second))
+			{
+				overlap.push_back(it->second);
+			}
+		}
+	}
+}
 
 //@brief:	Get a subset of a float matrix given specific row IDs and column IDs;
 //@param:	oMatrix			The original matrix;
@@ -272,13 +315,13 @@ void set_difference(boost::bimap<int, std::string>& map1, boost::bimap<int, std:
 //@param:	rowIds			A vector containing row IDs to be kept;
 //@param:	colIDs			A vector containing column IDs to be kept;
 //@ret:		void	
-void GetSubMatrix(Eigen::MatrixXf & oMatrix, Eigen::MatrixXf & subMatrix, std::vector<int> rowIds, std::vector<int> colIDs)
+void GetSubMatrix(Eigen::MatrixXf*  oMatrix, Eigen::MatrixXf* subMatrix, std::vector<int> rowIds, std::vector<int> colIDs)
 {
 	for (int i=0;i<rowIds.size();i++)
 	{
 		for (int j=0;j<colIDs.size();j++)
 		{
-			subMatrix(i, j) = oMatrix(rowIds[i], colIDs[j]);
+			(*subMatrix)(i, j) = (*oMatrix)(rowIds[i], colIDs[j]);
 		}
 	}
 }
@@ -288,13 +331,13 @@ void GetSubMatrix(Eigen::MatrixXf & oMatrix, Eigen::MatrixXf & subMatrix, std::v
 //@param:	subMatrix		A subset matrix of the origianl matrix;
 //@param:	rowIds			A vector containing row IDs to be kept;
 //@ret:		void	
-void GetSubMatrix(Eigen::MatrixXf& oMatrix, Eigen::MatrixXf& subMatrix, std::vector<int> rowIds)
+void GetSubMatrix(Eigen::MatrixXf* oMatrix, Eigen::MatrixXf* subMatrix, std::vector<int> rowIds)
 {
 	for (int i = 0; i < rowIds.size(); i++)
 	{
-		for (int j = 0; j < oMatrix.cols(); j++)
+		for (int j = 0; j < oMatrix->cols(); j++)
 		{
-			subMatrix(i, j) = oMatrix(rowIds[i], j);
+			(*subMatrix)(i, j) = (*oMatrix)(rowIds[i], j);
 		}
 	}
 }
@@ -334,6 +377,13 @@ float Cor(Eigen::VectorXf& Y1, Eigen::VectorXf& Y2)
 	lower = std::sqrt(nind * Y1_squre_sum - Y1_sum * Y1_sum) * std::sqrt(nind * Y2_squre_sum - Y2_sum * Y2_sum);
 	float cor = (float)upper / lower;
 	return cor;
+}
+
+std::vector<std::string> UniqueCount(std::vector<std::string> vec)
+{
+	sort(vec.begin(), vec.end());
+	vec.erase(unique(vec.begin(), vec.end()), vec.end());
+	return vec;
 }
 
 //@brief:	Initialize class ROC;

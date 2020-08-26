@@ -58,9 +58,30 @@
     <ClCompile Include="src\MINQUE0.cpp">
       <Filter>Source</Filter>
     </ClCompile>
+    <ClCompile Include="src\cuimnq.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cuMINQUE1.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cuMinqueBase.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cuToolkit.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cuMINQUE0.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Bootstrap.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="eigen_autoexp_part.dat" />
+    <None Include="include\cuMatrix.cuh">
+      <Filter>Header</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Header">
@@ -122,5 +143,34 @@
     <ClInclude Include="include\MINQUE0.h">
       <Filter>Header</Filter>
     </ClInclude>
+    <ClInclude Include="include\cuimnq.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="include\cuMINQUE1.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="include\cuMinqueBase.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="include\cuToolkit.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="include\cuMINQUE0.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="include\helper_cuda.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="include\helper_string.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Bootstrap.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="src\cuMatrix.cu">
+      <Filter>Source</Filter>
+    </CudaCompile>
   </ItemGroup>
 </Project>

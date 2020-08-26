@@ -11,11 +11,11 @@ KernelExpansion::KernelExpansion(std::vector<Eigen::MatrixXf> &MatrixHList, int 
 	Expanse(dimension, ExtendedMatrix);
 }
 
-KernelExpansion::KernelExpansion(std::vector<KernelData> &kernels, int dimension)
+KernelExpansion::KernelExpansion(std::vector<KernelData> *kernels, int dimension)
 {
-	for (int i=0;i<kernels.size();i++)
+	for (int i=0;i<kernels->size();i++)
 	{
-		OriKernelList.push_back(kernels[i].kernelMatrix);
+		OriKernelList.push_back(kernels->at(i).kernelMatrix);
 	}
 	KernelCount = OriKernelList.size();
 	this->dimension = dimension;
@@ -27,7 +27,7 @@ KernelExpansion::KernelExpansion(std::vector<KernelData> &kernels, int dimension
 KernelExpansion::~KernelExpansion()
 {
 }
-
+/*
 void KernelExpansion::test()
 {
 	float a[] = { 1,2,3,4,5,6,7,8,11,12 };
@@ -50,7 +50,7 @@ void KernelExpansion::test()
 		std::cout << "\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\" << std::endl;
 	}
 }
-
+*/
 void KernelExpansion::GetFullIndex(int degree, int M, int *Index, std::vector<std::vector<int>> &Comb)
 {
 	if (degree>0)

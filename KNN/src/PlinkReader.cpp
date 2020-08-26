@@ -91,7 +91,7 @@ void PlinkReader::readPedfile(std::string pedfile)
 	std::ifstream Ped(pedfile.c_str());
 	if (!Ped)
 	{
-		throw ("Error: can not open the file [" + pedfile + "] to read!" );
+		throw  std::string("Error: can not open the file [" + pedfile + "] to read!" );
 	}
 	std::cout << "Reading genotype file from [" + pedfile + "]." << endl;
 	for (int i=0;i<nmarker;i++)
@@ -176,7 +176,7 @@ void PlinkReader::ReadMapFile(std::string mapfile)
 	std::ifstream Map(mapfile.c_str());
 	if (!Map)
 	{
-		throw ("Error: can not open the file [" + mapfile + "] to read!");
+		throw  std::string("Error: can not open the file [" + mapfile + "] to read!");
 		
 	}
 	std::cout << "Reading map file from [" + mapfile + "]." << endl;
@@ -210,7 +210,7 @@ void PlinkReader::ReadFamFile(std::string famfile)
 	std::ifstream Fam(famfile.c_str());
 	if (!Fam)
 	{
-		throw ("Error: can not open the file [" + famfile + "] to read.");
+		throw  std::string("Error: can not open the file [" + famfile + "] to read.");
 	}
 	std::cout << "Reading pedigree information from [" << famfile << "]." << endl;
 	fid_iid_index.clear();
@@ -278,7 +278,7 @@ void PlinkReader::ReadBimFile(std::string bimfile)
 	if (!Bim)
 	{
 		Bim.close();
-		throw ("Error: can not open the file [" + bimfile + "] to read!");
+		throw  std::string("Error: can not open the file [" + bimfile + "] to read!");
 	}
 	std::cout << "Reading map (extended format) from [" + bimfile + "]." << endl;
 	chr.clear();
@@ -317,7 +317,7 @@ void PlinkReader::ReadBedFile(std::string bedfile)
 	if (!Bed)
 	{
 		Bed.close();
-		throw ("Error: can not open the file [" + bedfile + "] to read.");
+		throw  std::string("Error: can not open the file [" + bedfile + "] to read.");
 	}
 	std::cout << "Reading genotype bitfile from [" + bedfile + "]." << endl;
 	char byte_buf;
@@ -336,7 +336,7 @@ void PlinkReader::ReadBedFile(std::string bedfile)
 	}
 	else
 	{
-		throw ("Error: bed file [" + bedfile + "] is neither in SNP-major mode nor in individual-major mode.");
+		throw  std::string("Error: bed file [" + bedfile + "] is neither in SNP-major mode nor in individual-major mode.");
 	}
 	std::cout << "Detected that binary PED file is v1.00 SNP - major mode" << std::endl;
 	int sampleCounter = 0;
@@ -585,7 +585,7 @@ void PlinkReader::savepedfile(std::string pedfile)
 	if (!Ped)
 	{
 		Ped.close();
-		throw ("Error: can not open the file [" + pedfile + "] to write.");
+		throw  std::string("Error: can not open the file [" + pedfile + "] to write.");
 	}
 	std::cout << "Writing PLINK ped file to [" + pedfile + "] ..." << std::endl;
 	for (int i=0;i<nind;i++)
@@ -642,7 +642,7 @@ void PlinkReader::savemapfile(std::string mapfile)
 	if (!Map)
 	{
 		Map.close();
-		throw ("Error: can not open the file [" + mapfile + "] to write.");
+		throw  std::string("Error: can not open the file [" + mapfile + "] to write.");
 	}
 	std::cout << "Writing PLINK map file to [" + mapfile + "] ..." << std::endl;
 	for (int i=0;i<nmarker;i++)

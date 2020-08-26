@@ -7,7 +7,7 @@
 //@param:	seed		The seed for shuffle process;
 //@param:	isclear		Clear old "kernels" or not;
 //@ret:		void;
-Batch::Batch(std::vector<Eigen::MatrixXf>& kernels, Eigen::VectorXf &phe, Eigen::MatrixXf& Covs, int splitnum, int seed, bool isclear)
+Batch::Batch(std::vector<Eigen::MatrixXf *>& kernels, Eigen::VectorXf &phe, Eigen::MatrixXf& Covs, int splitnum, int seed, bool isclear)
 {
 	this->kernels = kernels;
 	this->splitnum = splitnum;
@@ -71,7 +71,7 @@ void Batch::shuffle()
 	}
 	auto rng = std::default_random_engine{};
 	std::shuffle(std::begin(shuffledID), std::end(shuffledID), rng);
-	int nINDinEach = nInd / splitnum;
+	unsigned long nINDinEach = nInd / splitnum;
 	std::vector<std::vector<int>> IDinEach;
 	std::vector<int> IDs;
 	int count = 0;
@@ -107,14 +107,14 @@ void Batch::shuffle()
 		for (int j=0;j<nkernels;j++)
 		{
 			Eigen::MatrixXf subMatrx(IDinEach[i].size(), IDinEach[i].size());
-			GetSubMatrix(kernels[j], subMatrx, IDinEach[i], IDinEach[i]);
+			GetSubMatrix(kernels[j], &subMatrx, IDinEach[i], IDinEach[i]);
 			KerneleachBatch.push_back(subMatrx);
 			
 		}
 		Eigen::VectorXf subVector(IDinEach[i].size());
 		GetSubVector(phe, subVector, IDinEach[i]);
 		Eigen::MatrixXf subCovMatrix(IDinEach[i].size(), Covs.cols());
-		GetSubMatrix(Covs, subCovMatrix, IDinEach[i]);
+		GetSubMatrix(&Covs, &subCovMatrix, IDinEach[i]);
 		pheBatched[i]=(subVector);
 		KernelBatched[i]=(KerneleachBatch);
 		CovsBatched[i] = subCovMatrix;

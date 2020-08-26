@@ -1,13 +1,11 @@
 #include "../include/MinqueBase.h"
 
 
-void MinqueBase::importY(Eigen::VectorXf Y)
+void MinqueBase::importY(Eigen::VectorXf &Y)
 {
 	this->Y = Y;
 	nind = Y.size();
 	Vi.clear();
-	VW = Eigen::MatrixXf(nind, nind);
-	VW.setZero();
 }
 
 void MinqueBase::pushback_Vi(Eigen::MatrixXf *vi)
@@ -16,7 +14,7 @@ void MinqueBase::pushback_Vi(Eigen::MatrixXf *vi)
 	nVi++;
 }
 
-void MinqueBase::pushback_X(Eigen::MatrixXf X, bool intercept)
+void MinqueBase::pushback_X(Eigen::MatrixXf &X, bool intercept)
 {
 	int nrows = X.rows();
 	int ncols = X.cols();
@@ -55,7 +53,7 @@ void MinqueBase::pushback_X(Eigen::MatrixXf X, bool intercept)
 }
 
 
-void MinqueBase::pushback_W(Eigen::VectorXf W)
+void MinqueBase::pushback_W(Eigen::VectorXf &W)
 {
 	int nelmt = W.size();
 	assert(nVi == nelmt);
@@ -95,14 +93,14 @@ void MinqueBase::estimateFix()
 	cblas_sgemm(CblasColMajor, CblasNoTrans, CblasNoTrans, nind, X.cols(), nind, 1, pr_VW, nind, pr_X, nind, 0, pr_B, nind);
 	cblas_sgemm(CblasColMajor, CblasTrans, CblasNoTrans, X.cols(), X.cols(), nind, 1, pr_X, nind, pr_B, nind, 0, pr_Xt_B, X.cols());
 	//inv(XtB)
-	int status = Inverse(Xt_B, Decomposition, altDecomposition, allowPseudoInverse);
-	CheckInverseStatus(status);
+	int status = Inverse(Xt_B, Decomposition, SVD, false);
+	CheckInverseStatus("P matrix in fix estimating", status, false);
 	//inv_XtB_Bt=inv(XtB)*Bt
 	cblas_sgemm(CblasColMajor, CblasNoTrans, CblasTrans, X.cols(), nind, X.cols(), 1, pr_Xt_B, X.cols(), pr_B, nind, 0, pr_inv_XtB_Bt, X.cols());
 	fix = inv_XtB_Bt * Y;
 }
 
-void MinqueBase::CheckInverseStatus(int status)
+void MinqueBase::CheckInverseStatus(std::string MatrixType, int status, bool allowPseudoInverse)
 {
 	
 	switch (status)
@@ -114,32 +112,32 @@ void MinqueBase::CheckInverseStatus(int status)
 		{
 			stringstream ss;
 			ss << "[Warning]: Thread ID: " << ThreadId
-				<< "\tCalculating inverse matrix is failed, using pseudo inverse matrix instead\n";
+				<< "\t"<< MatrixType<<": Calculating inverse matrix fails, using pseudo inverse matrix instead\n";
 			printf("%s", ss.str().c_str());
 			//			logfile->write("Calculating inverse matrix is failed, using pseudo inverse matrix instead", false);
-			LOG(WARNING) << "Thread ID: " << ThreadId << "\tCalculating inverse matrix is failed, using pseudo inverse matrix instead";
+			LOG(WARNING) << ss.str().c_str();
 		}
 		else
 		{
 			stringstream ss;
 			ss << "[Error]: Thread ID: " << ThreadId
-				<< "\tcalculating inverse matrix is failed, and pseudo inverse matrix is not allowed\n";
-			throw std::exception(logic_error(ss.str().c_str()));
+				<< "\t" << MatrixType << ": calculating inverse matrix fails, and pseudo inverse matrix is not allowed\n";
+			throw  std::string(ss.str());
 		}
 		break;
 	case 2:
 	{
 		stringstream ss;
 		ss << "[Error]: Thread ID: " << ThreadId
-			<< "\tcalculating inverse matrix is failed, and pseudo inverse matrix is also failed\n";
-		throw std::exception(logic_error(ss.str().c_str()));
+			<< "\t" << MatrixType << ": calculating inverse matrix fails, and pseudo inverse matrix is also failed\n";
+		throw  std::string(ss.str());
 	}
 	break;
 	default:
 		stringstream ss;
 		ss << "[Error]: Thread ID: " << ThreadId
-			<< "\tunknown code [" << std::to_string(status) << "] from calculating inverse matrix.\n";
-		throw std::exception(logic_error(ss.str().c_str()));
+			<< "\t" << MatrixType << ": unknown code [" << std::to_string(status) << "] from calculating inverse matrix.\n";
+		throw  std::string(ss.str());
 	}
 
 }

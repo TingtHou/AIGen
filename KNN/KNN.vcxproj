@@ -57,16 +57,18 @@
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v142</PlatformToolset>
     <WholeProgramOptimization>false</WholeProgramOptimization>
-    <CharacterSet>Unicode</CharacterSet>
+    <CharacterSet>MultiByte</CharacterSet>
     <UseIntelMKL>Parallel</UseIntelMKL>
     <UseOfMfc>false</UseOfMfc>
     <UseMpiLibrary>INTELMPI</UseMpiLibrary>
     <UseIntelIPP>false</UseIntelIPP>
     <UseILP64Interfaces>false</UseILP64Interfaces>
-    <UseIntelTBB>true</UseIntelTBB>
+    <UseIntelTBB>false</UseIntelTBB>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
-  <ImportGroup Label="ExtensionSettings" />
+  <ImportGroup Label="ExtensionSettings">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 10.2.props" />
+  </ImportGroup>
   <ImportGroup Label="Shared">
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -99,8 +101,8 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>C:\C++ Library\boost_1_71_0;C:\C++ Library\eigen3;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\C++ Library\boost_1_71_0\lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.2\include;C:\C++ Library\boost_1_71_0;C:\C++ Library\eigen3;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.2\lib\x64;C:\C++ Library\boost_1_71_0\lib;$(LibraryPath)</LibraryPath>
     <ExecutablePath>$(ExecutablePath)</ExecutablePath>
     <OutDir>../bin/release</OutDir>
   </PropertyGroup>
@@ -131,18 +133,19 @@
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <SupportJustMyCode>false</SupportJustMyCode>
-      <LanguageStandard>Default</LanguageStandard>
+      <LanguageStandard>stdcpp14</LanguageStandard>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <OpenMPSupport>true</OpenMPSupport>
-      <AdditionalOptions>/Zc:twoPhase-  -DELPP_NO_DEFAULT_LOG_FILE -DELPP_THREAD_SAFE %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/Zc:twoPhase-  -DELPP_NO_DEFAULT_LOG_FILE -DELPP_THREAD_SAFE -DCPU %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>libiomp5md.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libiomp5md.lib;cusolver.lib;cublas.lib;cuda.lib;cudadevrt.lib;cudart.lib;cudart_static.lib;;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <CudaCompile>
       <CodeGeneration>compute_35,sm_35</CodeGeneration>
+      <TargetMachinePlatform>64</TargetMachinePlatform>
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -179,7 +182,7 @@
       <SupportJustMyCode>true</SupportJustMyCode>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <OpenMPSupport>true</OpenMPSupport>
-      <AdditionalOptions>/Zc:twoPhase- %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/Zc:twoPhase- /DCPU %(AdditionalOptions)</AdditionalOptions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OpenMP>GenerateParallelCode</OpenMP>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
@@ -190,12 +193,50 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>mkl_intel_lp64.lib;mkl_intel_thread.lib;mkl_core.lib;libiomp5md.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libiomp5md.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <RandomizedBaseAddress>true</RandomizedBaseAddress>
+      <AdditionalLibraryDirectories>C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.2\lib\x64</AdditionalLibraryDirectories>
     </Link>
+    <CudaCompile>
+      <TargetMachinePlatform>64</TargetMachinePlatform>
+      <Runtime>MT</Runtime>
+      <NvccCompilation>compile</NvccCompilation>
+      <CudaRuntime>Static</CudaRuntime>
+    </CudaCompile>
+    <CudaLink>
+      <PerformDeviceLink>true</PerformDeviceLink>
+      <AdditionalDependencies>
+      </AdditionalDependencies>
+    </CudaLink>
+    <ProjectReference>
+      <UseLibraryDependencyInputs>false</UseLibraryDependencyInputs>
+      <LinkLibraryDependencies>false</LinkLibraryDependencies>
+    </ProjectReference>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="src\Batch.cpp" />
+    <ClCompile Include="src\Bootstrap.cpp" />
     <ClCompile Include="src\CommonFunc.cpp" />
+    <ClCompile Include="src\cuimnq.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="src\cuMINQUE0.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="src\cuMINQUE1.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="src\cuMinqueBase.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="src\cuToolkit.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="src\DataManager.cpp" />
     <ClCompile Include="src\easylogging++.cpp" />
     <ClCompile Include="src\imnq.cpp" />
@@ -218,12 +259,39 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="eigen_autoexp_part.dat" />
+    <None Include="include\cuMatrix.cuh">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\Batch.h" />
+    <ClInclude Include="include\Bootstrap.h" />
     <ClInclude Include="include\CommonFunc.h" />
+    <ClInclude Include="include\cuimnq.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="include\cuMINQUE0.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="include\cuMINQUE1.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="include\cuMinqueBase.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="include\cuToolkit.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClInclude>
     <ClInclude Include="include\DataManager.h" />
     <ClInclude Include="include\easylogging++.h" />
+    <ClInclude Include="include\helper_cuda.h" />
+    <ClInclude Include="include\helper_string.h" />
     <ClInclude Include="include\imnq.h" />
     <ClInclude Include="include\KernelExpansion.h" />
     <ClInclude Include="include\KernelGenerator.h" />
@@ -238,6 +306,14 @@
     <ClInclude Include="include\MINQUE1.h" />
     <ClInclude Include="include\ToolKit.h" />
   </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="src\cuMatrix.cu">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </CudaCompile>
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
-  <ImportGroup Label="ExtensionTargets" />
+  <ImportGroup Label="ExtensionTargets">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 10.2.targets" />
+  </ImportGroup>
 </Project>

@@ -71,8 +71,12 @@ void Options::boostProgramOptionsRoutine(int argc, const char * const argv[])
 	    ("mkernel", po::value<std::string>()->value_name("[filename]"),
 				"Input multiple kernel files in binary format.\n")
 		("weights", po::value<std::string>()->value_name("[filename]"), "Specify full name of weight vector file for iterative MINQUE.\n")
-		("covs", po::value<std::string>()->value_name("[filename]"),
-				"Specify full name of covariates file.\n");
+		("covar", po::value<std::string>()->value_name("[filename]"),
+				"Input discrete covariates from a plain text file.\n")
+		("qcovar", po::value<std::string>()->value_name("[filename]"),
+				"Input quantitative covariates from a plain text file.\n")
+		("keep", po::value<std::string>()->value_name("[filename]"),
+				"Only use individuals in this file for analysis.\n");
 		po::options_description optsFilesOperation("File Operations");
 		optsFilesOperation.add_options()
 		("impute", po::value<bool>()->value_name("True/False"),
@@ -112,10 +116,12 @@ void Options::boostProgramOptionsRoutine(int argc, const char * const argv[])
 														"0: BLUP; 1: Leave one out\n")
 		("alphaKNN", po::value<int>()->value_name("degree"), "Adopt 2-layer KNN with 1 latent feature h and order alpha polynomial kernels.\n")
 		("batch", po::value<int>()->value_name("num"), "Split a super-large kernels into 'num' smaller batch to analysis.\n")
-		("seed", po::value<int>()->value_name("num"), "Set seed for random process.\n")
+		("seed", po::value<float>()->value_name("num"), "Set seed for random process.\n")
 		("echo", po::value<bool>()->value_name("True/False"), "Print the results at each iterate or not")
 		("fix",  "Skip fixed effects estimation.\n")
-		("thread", po::value<int>()->value_name("num"), "Set a 'num' size thread pool for multi-thread analysis.\n");
+		("thread", po::value<int>()->value_name("num"), "Set a 'num' size thread pool for multi-thread analysis.\n")
+	//	("page", po::value<int>()->value_name("num"),"the mix memory could be used.\n")
+		("bootstrap", po::value<int>()->value_name("times"), "The bootstrap times.\nDefault to 100.\n");
 	po::options_description optsComputerDevice("Computing Device Options");
 	optsComputerDevice.add_options()
 		("GPU", " Use CPU for computation.\n")

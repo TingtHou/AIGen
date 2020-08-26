@@ -24,7 +24,15 @@ Random::Random(float seed)
 
 Random::~Random()
 {
-	delete engine;
+	if (engine) delete engine;
+	engine = NULL;
+}
+
+void Random::setseed(float seed)
+{
+	if (engine) delete engine;
+	engine = NULL;
+	engine = new boost::mt19937(seed);
 }
 
 float Random::Uniform()
@@ -42,6 +50,15 @@ float Random::Uniform(float min, float max)
 	boost::uniform_real<> *u01 = new boost::uniform_real<>(min,max);
 	boost::variate_generator<boost::mt19937&, boost::uniform_real<> > die =  boost::variate_generator<boost::mt19937&, boost::uniform_real<> >(*engine, *u01);
 	float rd = die();
+	delete u01;
+	return rd;
+}
+
+int Random::Uniform(int min, int max)
+{
+	boost::uniform_int<>* u01 = new boost::uniform_int<>(min, max);
+	boost::variate_generator<boost::mt19937&, boost::uniform_int<> > die = boost::variate_generator<boost::mt19937&, boost::uniform_int<> >(*engine, *u01);
+	int rd = die();
 	delete u01;
 	return rd;
 }
@@ -90,7 +107,7 @@ void mvnorm::generate()
 	for (unsigned int i = 0; i < singularValues.size(); ++i)
 	{
 		if (singularValues(i) < -10E-6)
-			throw("The variance covariance matrix is not positive definite.");
+			throw  std::string("The variance covariance matrix is not positive definite.");
 	}
 	Eigen::MatrixXf Lower = svd.matrixU() * singularValues.cwiseSqrt().asDiagonal();
 	for (int i = 0; i < n; i++)

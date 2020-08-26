@@ -32,7 +32,7 @@ KernelGenerator::KernelGenerator(GenoData & gd, int KernelName, Eigen::VectorXf 
 	//	throw std::exception("Error: this kernel generator does not work now.");
 		break;
 	default:
-		throw std::exception(logic_error("Invalided kernel name!"));
+		throw std::string("Invalided kernel name!");
 		break;
 	}
 	for (auto it=gd.fid_iid.begin();it!=gd.fid_iid.end();it++)
