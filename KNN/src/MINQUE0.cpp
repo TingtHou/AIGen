@@ -17,23 +17,38 @@ void MINQUE0::estimateVCs()
 	Eigen::VectorXf Ry(nind);
 	std::vector<float*> pr_rv_list(nVi);
 	std::vector<float*> pr_vi_list(nVi);
-	#pragma omp parallel for
+	Eigen::VectorXf u(nVi);
+	Eigen::MatrixXf F(nVi, nVi);
+
+	u.setZero();
+	LOG(INFO) << "Getting pointer of Vi";
+//	#pragma omp parallel for
 	for (int i = 0; i < nVi; i++)
 	{
-		RV[i].resize(nind, nind);
-		RV[i].setZero();
-		pr_rv_list[i] = RV[i].data();
+//		RV[i].resize(nind, nind);
+//		RV[i].setZero();
+//		pr_rv_list[i] = RV[i].data();
 		pr_vi_list[i] = Vi[i]->data();
 
 	}
 	if (ncov == 0)
 	{
 		Ry =  Y;
+		for (int i = 0; i < nVi; i++)
+		{
+			Eigen::VectorXd Ry_Vi_Ry = (Ry.cwiseProduct((*Vi[i]) * Ry)).cast<double>();
+			u[i] = (float)Ry_Vi_Ry.sum();
+		}
 	}
 	else
 	{
+		LOG(INFO) << "Initial Xt_X";
 		Eigen::MatrixXf Xt_X(X.cols(), X.cols());
+
+		LOG(INFO) << "Initial X_inv_XtX";
 		Eigen::MatrixXf X_inv_XtX(nind, X.cols());
+
+		LOG(INFO) << "Initial X_inv_XtX_Xt";
 		Eigen::MatrixXf X_inv_XtX_Xt(nind, nind);
 		float* pr_X = X.data();
 		float* pr_Y = Y.data();
@@ -41,13 +56,31 @@ void MINQUE0::estimateVCs()
 		float* pr_Xt_X = Xt_X.data();
 		float* pr_X_inv_XtX = X_inv_XtX.data();
 		float* pr_X_inv_XtX_Xt = X_inv_XtX_Xt.data();
+
+		LOG(INFO) << "Calculate Xt_X=Xt*X";
 		//Xt_X=Xt*X
 		cblas_sgemm(CblasColMajor, CblasTrans, CblasNoTrans, X.cols(), X.cols(), nind, 1, pr_X, nind, pr_X, nind, 0, pr_Xt_X, X.cols());
+		LOG(INFO) << "Inverse Xt_X";
 		//inv(XtX)
 		int status = Inverse(Xt_X, Cholesky, SVD, false);
 		CheckInverseStatus("P matrix",status, false);
+
+		LOG(INFO) << "Calculate X_inv_XtX=X*inv(XtX)";
 		//X_inv_XtX=X*inv(XtX)
 		cblas_sgemm(CblasColMajor, CblasNoTrans, CblasNoTrans, nind, X.cols(), X.cols(), 1, pr_X, nind, pr_Xt_X, X.cols(), 0, pr_X_inv_XtX, nind);
+		LOG(INFO) << "Calculate X_inv_XtX_Xt=X_inv_XtX * Xt";
+		cblas_sgemm(CblasColMajor, CblasNoTrans, CblasTrans, nind, nind, X.cols(), 1, pr_X_inv_XtX, nind, pr_X, nind, 0, pr_X_inv_XtX_Xt, nind);
+
+		LOG(INFO) << "Calculate Ry";
+		Ry = Y - X_inv_XtX_Xt * Y;
+		for (int i = 0; i < nVi; i++)
+		{
+			LOG(INFO) << "Calculate u "<<i ;
+			Eigen::VectorXd Ry_Vi_Ry = (Ry.cwiseProduct((*Vi[i]) * Ry)).cast<double>();
+			u[i] = (float)Ry_Vi_Ry.sum();
+		}
+
+		/*
 		int nthread = omp_get_max_threads();
 	//	printf("Thread %d, Max threads for mkl %d\n", omp_get_max_threads(), mkl_get_max_threads());
 		int threadInNest = 1;
@@ -58,58 +91,53 @@ void MINQUE0::estimateVCs()
 			threadInNest =nthread/ nVi;
 		}
 		#pragma omp parallel for shared(pr_X_inv_XtX,threadInNest)
+		*/
 		for (int i = 0; i < nVi; i++)
 		{
-			omp_set_num_threads(threadInNest);
+	///		omp_set_num_threads(threadInNest);
 	//		printf("Thread %d, Max threads for mkl %d\n", omp_get_thread_num(), mkl_get_max_threads());
+			LOG(INFO) << "initial tmp " << i;
 			float* tmp;
 			tmp = (float*)malloc(sizeof(float) * nind * X.cols());
 			memset(tmp, 0, sizeof(float) * nind * X.cols());
 			//pr_VW = Vi * X*inv(XtX)
+			LOG(INFO) << "Calculate tmp = Vi * X*inv(XtX)";
 			cblas_ssymm(CblasColMajor, CblasLeft, CblasUpper, nind, X.cols(), 1, pr_vi_list[i] , nind, pr_X_inv_XtX , nind, 0, tmp, nind);
-			cblas_sgemm(CblasColMajor, CblasNoTrans, CblasTrans, nind, nind, X.cols() , 1, tmp, nind, pr_X, nind, 0, pr_rv_list[i], nind);
-			RV[i] = (*Vi[i]) - RV[i];
+			LOG(INFO) << "Calculate Vi = Vi- Vi * X*inv(XtX)";
+			cblas_sgemm(CblasColMajor, CblasNoTrans, CblasTrans, nind, nind, X.cols() , -1, tmp, nind, pr_X, nind, 1, pr_vi_list[i], nind);
+		//	RV[i] = (*Vi[i]) - RV[i];
+			LOG(INFO) << "free tmp";
 			free(tmp);
 		}
-		omp_set_num_threads(nthread);
+	//	omp_set_num_threads(nthread);
 //		printf("Thread %d, Max threads for mkl %d\n", omp_get_max_threads(), mkl_get_max_threads());
 		//MKL_free(pr_VWp);
-		cblas_sgemm(CblasColMajor, CblasNoTrans, CblasTrans, nind, nind, X.cols(), 1, pr_X_inv_XtX, nind, pr_X, nind, 0, pr_X_inv_XtX_Xt, nind);
-		Ry = Y-X_inv_XtX_Xt * Y;
+	
 	}
-	Eigen::VectorXf u(nVi);
-	u.setZero();
-	#pragma omp parallel for shared(Ry)
+	/*
+//	#pragma omp parallel for shared(Ry)
 	for (int i = 0; i < nVi; i++)
 	{
 		Eigen::VectorXd Ry_Vi_Ry = (Ry.cwiseProduct((*Vi[i]) * Ry)).cast<double>();
 		u[i] = (float)Ry_Vi_Ry.sum();
 	}
-	Eigen::MatrixXf F(nVi, nVi);
+	*/
+	
 	//Eigen::MatrixXf F_(nVi, nVi);
-	#pragma omp parallel for shared(RV,F)
+//	#pragma omp parallel for shared(RV,F)
 	for (int k = 0; k < (nVi+1) * nVi / 2; k++) 
 	{
 		int i = k / nVi, j = k % nVi;
 		if (j < i) i = nVi - i , j = nVi - j - 1;
-		Eigen::MatrixXf RVij = (RV[i].transpose().cwiseProduct(RV[j]));
+		LOG(INFO) << "Calculate RVij "<< i<<" "<<j;
+		Eigen::MatrixXf RVij = (*Vi[i]).transpose().cwiseProduct(*Vi[j]);
+		LOG(INFO) << "sum element in RVij";
 		double sum = RVij.cast<double>().sum();
+		LOG(INFO) << " calculate F " << i << " " << j;
 		F(i, j) = (float)sum;
 		F(j, i) = F(i, j);
 	}
-	/*
-	#pragma omp parallel for collapse(2)
-	for (int i = 0; i < nVi; i++)
-	{
-		for (int j = 0; j < nVi; j++)
-		{
-			Eigen::MatrixXf RVij = (RV[i].transpose().cwiseProduct(RV[j]));
-			double sum = RVij.cast<double>().sum();
-			F(i, j) = (float)sum;
-			F(j, i) = F(i, j);
-		}
-	}
-	*/
+	LOG(INFO) << "Inverse F";
 	int status = Inverse(F, Cholesky, SVD, true);
 	CheckInverseStatus("S matrix", status,true);
 	vcs = F * u;
