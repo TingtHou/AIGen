@@ -10,9 +10,11 @@ class Random
 public:
 	Random();
 	Random(float seed);
+	
 	boost::mt19937 *engine;
 	~Random();
 public:
+	void setseed(float seed);
 	float Uniform();
 	float Uniform(float min, float max);
 	float Normal();

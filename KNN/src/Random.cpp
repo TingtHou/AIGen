@@ -24,7 +24,15 @@ Random::Random(float seed)
 
 Random::~Random()
 {
-	delete engine;
+	if (engine) delete engine;
+	engine = NULL;
+}
+
+void Random::setseed(float seed)
+{
+	if (engine) delete engine;
+	engine = NULL;
+	engine = new boost::mt19937(seed);
 }
 
 float Random::Uniform()
