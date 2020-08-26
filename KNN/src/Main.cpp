@@ -71,7 +71,7 @@ void cMINQUE0(MinqueOptions& minque, std::vector<Eigen::MatrixXf*>& Kernels, Phe
 
 
 void Bootstraping(boost::program_options::variables_map programOptions, MinqueOptions& minopt, DataManager& dm, int times, Random& seed,
-	std::vector<Eigen::VectorXf> Vars_BP, std::vector<Eigen::VectorXf> Predicts_BP, std::vector<int> iterateTimes_BP);
+	std::vector<Eigen::VectorXf> &Vars_BP, std::vector<Eigen::VectorXf> &Predicts_BP, std::vector<int> &iterateTimes_BP);
 
 #ifndef CPU  
 void cudaMINQUE0(MinqueOptions& minque, std::vector<Eigen::MatrixXf>& Kernels, PhenoData& phe, Eigen::MatrixXf& Covs, Eigen::VectorXf& variances, Eigen::VectorXf& coefs);
@@ -303,7 +303,7 @@ void TryMain(int argc, const char *const argv[])
 					}
 					VP = VG;
 					VP+= Vars_BP[i](j);
-					bp << "# " << i << Vars_BP[i].transpose() << " " << VG / VP << std::endl;
+					bp << "# " << i <<"\t"<< Vars_BP[i].transpose() << "\t" << VG / VP << std::endl;
 				}
 				bp.close();
 			}
@@ -1191,7 +1191,7 @@ void cMINQUE0(MinqueOptions& minque, std::vector<Eigen::MatrixXf *> &Kernels, Ph
 }
 
 void Bootstraping(boost::program_options::variables_map programOptions, MinqueOptions& minopt, DataManager& dm, int times, Random &seed, 
-					std::vector<Eigen::VectorXf> Vars_BP,std::vector<Eigen::VectorXf> Predicts_BP,std::vector<int> iterateTimes_BP)
+					std::vector<Eigen::VectorXf> &Vars_BP,std::vector<Eigen::VectorXf> &Predicts_BP,std::vector<int> &iterateTimes_BP)
 {
 
 	Bootstrap bo(dm, &seed);
