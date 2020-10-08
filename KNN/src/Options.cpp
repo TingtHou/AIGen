@@ -120,7 +120,7 @@ void Options::boostProgramOptionsRoutine(int argc, const char * const argv[])
 		("echo", po::value<bool>()->value_name("True/False"), "Print the results at each iterate or not")
 		("fix",  "Skip fixed effects estimation.\n")
 		("thread", po::value<int>()->value_name("num"), "Set a 'num' size thread pool for multi-thread analysis.\n")
-	//	("page", po::value<int>()->value_name("num"),"the mix memory could be used.\n")
+		("page", po::value<int>()->value_name("num"),"the mix memory could be used.\n")
 		("bootstrap", po::value<int>()->value_name("times"), "The bootstrap times.\nDefault to 100.\n");
 	po::options_description optsComputerDevice("Computing Device Options");
 	optsComputerDevice.add_options()
