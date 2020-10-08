@@ -661,7 +661,19 @@ int MINQUEAnalysis(boost::program_options::variables_map programOptions, DataMan
 				{
 					std::cout << "Using results from MINQUE(0) as inital value." << std::endl;
 					LOG(INFO) << "Using results from MINQUE(0) as inital value.";
-					cMINQUE0(minopt, Kernels, phe, Covs.Covariates, VarComp, fix);
+					std::vector<Eigen::MatrixXf*> Kernels_imq(Kernels.size());
+					int nind = phe.fid_iid.size();
+					for (int i = 0; i < Kernels.size(); i++)
+					{
+						Kernels_imq[i] = new Eigen::MatrixXf(nind, nind);
+						*Kernels_imq[i] = *Kernels[i];
+					}
+					cMINQUE0(minopt, Kernels_imq, phe, Covs.Covariates, VarComp, fix);
+					for (int i = 0; i < Kernels.size(); i++)
+					{
+						delete Kernels_imq[i];
+						Kernels_imq[i] = nullptr;
+					}
 				}
 				
 				cMINQUE1(minopt, Kernels, phe, Covs.Covariates, VarComp, fix, iterateTimes, isecho);
@@ -698,6 +710,7 @@ int MINQUEAnalysis(boost::program_options::variables_map programOptions, DataMan
 	return iterateTimes;
 //	out.close();
 }
+
 int MINQUEAnalysis(boost::program_options::variables_map programOptions, Bootstrap& dm, MinqueOptions& minopt, Eigen::VectorXf& VarComp, Eigen::VectorXf& predict)
 {
 	bool GPU = false;
@@ -828,11 +841,11 @@ int MINQUEAnalysis(boost::program_options::variables_map programOptions, Bootstr
 					std::cout << "Using results from MINQUE(0) as inital value." << std::endl;
 					LOG(INFO) << "Using results from MINQUE(0) as inital value.";
 					std::vector<Eigen::MatrixXf*> Kernels_imq;
-					int nind = phe.fid_iid.size();
+					long long nind = phe.fid_iid.size();
 					for (int i = 0; i < Kernels.size(); i++)
 					{
 						Kernels_imq[i] = new Eigen::MatrixXf(nind,nind);
-						*Kernels_imq[i] = *Kernels[i];
+						memcpy(Kernels_imq[i]->data(), Kernels[i]->data(), nind* nind * sizeof(float));
 					}
 					cMINQUE0(minopt, Kernels_imq, phe, Covs.Covariates, VarComp, fix);
 				}
