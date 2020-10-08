@@ -136,7 +136,7 @@ void KernelReader::read()
 		throw std::string("Error: can not open the file [" + IDfileName + "] to read.");
 	}
 	std::ifstream Binifstream(BinFileName, std::ios::binary);
-	if (!IDifstream.is_open())
+	if (!Binifstream.is_open())
 	{
 		Binifstream.close();
 		throw std::string("Error: can not open the file [" + BinFileName + "] to read.");
