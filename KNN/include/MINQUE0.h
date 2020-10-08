@@ -10,6 +10,7 @@
 #include <thread>
 #include "mkl_types.h"
 #include "mkl_cblas.h"
+//#include <boost/multiprecision/mpfr.hpp>
 
 class MINQUE0 :
 	public MinqueBase
