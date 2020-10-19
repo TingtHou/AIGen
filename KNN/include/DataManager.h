@@ -47,6 +47,8 @@ private:
 	CovData Covs;																	//intercept + all covariates
 	Eigen::VectorXf Weights;														//Weights for Interative MINQUE
 	boost::bimap<int, std::string> fid_iid_keeping;										// keep individuals ID for analysis
+	
+	
 private:
 	void readResponse(std::string resopnsefile, PhenoData &phe);					//as named
 	void readmkernel(std::string mkernel);											//read multiple kernels

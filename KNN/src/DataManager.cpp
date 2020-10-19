@@ -516,7 +516,10 @@ void DataManager::readResponse(std::string resopnsefile, PhenoData & phe)
 	std::stringstream ss;
 	if (phe.isbinary)
 	{
-		ss << "The Phenotype is considered as binary traits." << std::endl;
+	
+		float sum = std::accumulate(yvector.begin(), yvector.end(), 0.0);
+		phe.prevalence = sum / yvector.size();
+		ss << "The Phenotype is considered as binary traits, whose prevalence is "<< phe.prevalence <<"."<< std::endl;
 	}
 	ss << "Reading "<< nind << " individuals, and missing "<< missing << std::endl;
 	std::cout << ss.str();
