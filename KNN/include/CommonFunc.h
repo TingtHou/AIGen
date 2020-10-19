@@ -52,6 +52,7 @@ struct PhenoData
 	Eigen::VectorXf Phenotype;
 	int missing=0;
 	bool isbinary = true;
+	float prevalence = 0;
 };
 
 struct GenoData
