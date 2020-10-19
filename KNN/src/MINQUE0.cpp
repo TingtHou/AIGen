@@ -63,6 +63,7 @@ void MINQUE0::estimateVCs()
 		LOG(INFO) << "Inverse Xt_X";
 		//inv(XtX)
 		int status = Inverse(Xt_X, Cholesky, SVD, false);
+		LOG(WARNING) << "Check inverse status";
 		CheckInverseStatus("P matrix",status, false);
 
 		LOG(INFO) << "Calculate X_inv_XtX=X*inv(XtX)";

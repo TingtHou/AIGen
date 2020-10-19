@@ -76,6 +76,7 @@ void minque1::estimateVCs()
 		//inv(XtB)
 		LOG(INFO) << "inverse XtB";
 		int status = Inverse(Xt_B, Cholesky , SVD, false);
+		LOG(WARNING) << "Check inverse status";
 		CheckInverseStatus("P matrix",status, false);
 		//inv_XtB_Bt=inv(XtB)*Bt
 		LOG(INFO) << "calc inv_XtB_Bt=inv(XtB)*Bt";

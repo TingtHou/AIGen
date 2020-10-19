@@ -110,15 +110,18 @@ void MinqueBase::CheckInverseStatus(std::string MatrixType, int status, bool all
 	case 1:
 		if (allowPseudoInverse)
 		{
+			LOG(WARNING) << 1;
 			stringstream ss;
 			ss << "[Warning]: Thread ID: " << ThreadId
 				<< "\t"<< MatrixType<<": Calculating inverse matrix fails, using pseudo inverse matrix instead\n";
-			printf("%s", ss.str().c_str());
+			std::cout << ss.str();
+		//	printf("%s", ss.str().c_str());
 			//			logfile->write("Calculating inverse matrix is failed, using pseudo inverse matrix instead", false);
-			LOG(WARNING) << ss.str().c_str();
+			LOG(WARNING) << ss.str();
 		}
 		else
 		{
+			LOG(WARNING) << 10;
 			stringstream ss;
 			ss << "[Error]: Thread ID: " << ThreadId
 				<< "\t" << MatrixType << ": calculating inverse matrix fails, and pseudo inverse matrix is not allowed\n";
@@ -127,6 +130,7 @@ void MinqueBase::CheckInverseStatus(std::string MatrixType, int status, bool all
 		break;
 	case 2:
 	{
+		LOG(WARNING) << 2;
 		stringstream ss;
 		ss << "[Error]: Thread ID: " << ThreadId
 			<< "\t" << MatrixType << ": calculating inverse matrix fails, and pseudo inverse matrix is also failed\n";
@@ -134,10 +138,12 @@ void MinqueBase::CheckInverseStatus(std::string MatrixType, int status, bool all
 	}
 	break;
 	default:
+		LOG(WARNING) << 3;
 		stringstream ss;
 		ss << "[Error]: Thread ID: " << ThreadId
 			<< "\t" << MatrixType << ": unknown code [" << std::to_string(status) << "] from calculating inverse matrix.\n";
 		throw  std::string(ss.str());
+	break;
 	}
 
 }
