@@ -78,10 +78,11 @@ void Batch::shuffle()
 	}
 	auto rng = std::default_random_engine{};
 	std::shuffle(std::begin(shuffledID), std::end(shuffledID), rng);
+	std::vector<std::vector<int>> IDinEach(splitnum);
 	unsigned long nINDinEach = nInd / splitnum;
-	std::vector<std::vector<int>> IDinEach;
 	std::vector<int> IDs;
 	int count = 0;
+	int gid = 0;
 	for (int i = 0; i < nInd; i++)
 	{
 		if (count < nINDinEach)
@@ -91,18 +92,20 @@ void Batch::shuffle()
 		}
 		else
 		{
-			IDinEach.push_back(IDs);
+			IDinEach[gid].insert(IDinEach[gid].end(), IDs.begin(), IDs.end());
+			//IDinEach.push_back(IDs);
 			IDs.clear();
 			count = 0;
 			IDs.push_back(shuffledID[i]);
 			count++;
+			gid++;
 		}
 	}
-	int gid = 0;
+	gid = 0;
 	for (int i = 0; i < IDs.size(); i++)
 	{
 		IDinEach[gid].insert(IDinEach[gid].end(), IDs[i]);
-		if (gid>= splitnum)
+		if (gid >= splitnum)
 		{
 			gid++;
 		}
@@ -168,6 +171,7 @@ void Batch::shuffle_binary()
 	std::vector<std::vector<int>> IDinEach;
 	std::vector<int> IDs;
 	int count = 0;
+	int gid = 0;
 	for (int i = 0; i < fid_iid_case.size(); i++)
 	{
 		if (count < nINDinEach_case)
@@ -177,15 +181,17 @@ void Batch::shuffle_binary()
 		}
 		else
 		{
+			IDinEach[gid].insert(IDinEach[gid].end(), IDs.begin(), IDs.end());
 			IDinEach.push_back(IDs);
 			IDs.clear();
 			count = 0;
 			IDs.push_back(fid_iid_case[i]);
 			count++;
+			gid++;
 		}
 	}
 
-	int gid = 0;
+	gid = 0;
 	for (int i = 0; i < IDs.size(); i++)
 	{
 		IDinEach[gid].insert(IDinEach[gid].end(), IDs[i]);
