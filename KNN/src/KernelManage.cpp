@@ -245,6 +245,7 @@ void KernelWriter::write()
 		Binofstream.close();
 		throw std::string("Error: can not open the file [" + BinFileName + "] to write.");
 	}
+	/*
 	std::ofstream Nofstream;
 	Nofstream.open(NfileName, std::ios::out | std::ios::binary);
 	if (!Nofstream.is_open())
@@ -252,16 +253,17 @@ void KernelWriter::write()
 		Nofstream.close();
 		throw std::string("Error: can not open the file [" + NfileName + "] to write.");
 	}
+	*/
 	std::cout << "Writing the IDs to [" + IDfileName + "].\n" << std::endl;
 	IDfileWriter(IDsfstram, Kernels);
 	std::cout << "Writing the kernel matrix to the binary file [" + BinFileName + "].\n" << std::endl;
 	BinFileWriter(Binofstream, Kernels);
-	std::cout << "Writing the number of SNPs for the kernel to the binary file [" + NfileName + "]." << std::endl;
-	NfileWriter(Nofstream, Kernels);
+	//std::cout << "Writing the number of SNPs for the kernel to the binary file [" + NfileName + "]." << std::endl;
+	//NfileWriter(Nofstream, Kernels);
 	IDsfstram.close();
 	Binofstream.close();
 	std::cout << "Kernel of " << nind << " individuals has been saved in the file [" + prefix + "] (in binary format)." << std::endl;
-	Nofstream.close();
+	//Nofstream.close();
 //	std::cout << "Number of SNPs to calcuate the genetic relationship between each pair of individuals has been saved in the file [" + prefix + "] (in binary format)." << std::endl;
 
 }
@@ -286,6 +288,7 @@ void KernelWriter::write(std::string prefix)
 		Binofstream.close();
 		throw std::string("Error: can not open the file [" + BinFileName + "] to write.");
 	}
+	/*
 	std::ofstream Nofstream;
 	Nofstream.open(NfileName, std::ios::out | std::ios::binary);
 	if (!Nofstream.is_open())
@@ -293,16 +296,17 @@ void KernelWriter::write(std::string prefix)
 		Nofstream.close();
 		throw std::string("Error: can not open the file [" + NfileName + "] to write.");
 	}
+	*/
 	std::cout << "Writing the IDs to [" + IDfileName + "]." << std::endl;
 	IDfileWriter(IDsfstram, Kernels);
 	std::cout << "Writing the kernel matrix to the binary file [" + BinFileName + "]." << std::endl;
 	BinFileWriter(Binofstream, Kernels);
-	std::cout << "Writing the number of SNPs for the kernel to the binary file [" + NfileName + "]." << std::endl;
-	NfileWriter(Nofstream, Kernels);
+//	std::cout << "Writing the number of SNPs for the kernel to the binary file [" + NfileName + "]." << std::endl;
+//	NfileWriter(Nofstream, Kernels);
 	IDsfstram.close();
 	Binofstream.close();
 	std::cout << "Kernel of " << nind << " individuals has been saved in the file [" + prefix + "] (in binary format)." << std::endl;
-	Nofstream.close();
+//	Nofstream.close();
 //	std::cout << "Number of SNPs to calcuate the genetic relationship between each pair of individuals has been saved in the file [" + prefix + "] (in binary format)." << std::endl;
 }
 
