@@ -250,7 +250,7 @@ void TryMain(int argc, const char *const argv[])
 	//output kernel matrices as binary format
 	if (programOptions.count("make-bin"))
 	{
-		throw std::string("Error: make-bin function is under maintenance, and will back soon.");
+	//	throw std::string("Error: make-bin function is under maintenance, and will back soon.");
 		std::string outname = programOptions["make-bin"].as < std::string >();
 		bool isfloat = true;
 		if (programOptions.count("precision"))
@@ -576,10 +576,14 @@ int MINQUEAnalysis(boost::program_options::variables_map programOptions, DataMan
 		KernelExpansion ks(kd, alpha);
 	//	Kernels = ks.GetExtendMatrix();
 		auto Kmatrices = ks.GetExtendMatrix();
+		Kernels.resize(Kmatrices->size());
 		for (int i = 0; i < Kmatrices->size(); i++)
 		{
-			Kernels.push_back(&(Kmatrices->at(i)));
+			Kernels[i] = new Eigen::MatrixXf(Kmatrices->at(i).rows(), Kmatrices->at(i).cols());
+		   //	Kernels.push_back(&(Kmatrices->at(i)));
+			*Kernels[i] = Kmatrices->at(i);
 		}
+		kd->clear();
 	}
 	else
 	{
