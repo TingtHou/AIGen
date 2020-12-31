@@ -119,14 +119,14 @@ void Options::boostProgramOptionsRoutine(int argc, const char * const argv[])
 		("seed", po::value<float>()->value_name("num"), "Set seed for random process.\n")
 		("echo", po::value<bool>()->value_name("True/False"), "Print the results at each iterate or not")
 		("fix",  "Skip fixed effects estimation.\n")
-		("thread", po::value<int>()->value_name("num"), "Set a 'num' size thread pool for multi-thread analysis.\n")
-		("page", po::value<int>()->value_name("num"),"the mix memory could be used.\n")
-		("bootstrap", po::value<int>()->value_name("times"), "The bootstrap times.\nDefault to 100.\n");
+		("thread", po::value<int>()->value_name("num"), "Set a 'num' size thread pool for multi-thread analysis.\n");
+	/*
 	po::options_description optsComputerDevice("Computing Device Options");
 	optsComputerDevice.add_options()
 		("GPU", " Use CPU for computation.\n")
 		("e", po::value<int>()->value_name("[dev]"), "Select GPUs to use.\n");
 
+*/
 
 	po::options_description optsDescOutFiles("Output Files");
 	optsDescOutFiles.add_options()
@@ -143,7 +143,7 @@ void Options::boostProgramOptionsRoutine(int argc, const char * const argv[])
 		add(optsFilesOperation).
 		add(optsKernelGenr).
 		add(optsAlgorithm).
-		add(optsComputerDevice).
+	//	add(optsComputerDevice).
 		add(optsDescOutFiles);
 //		add(optsCheckingParametr);
 	try
