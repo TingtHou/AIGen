@@ -1,5 +1,6 @@
 #include "../include/DataManager.h"
 
+
 DataManager::DataManager()
 {
 }
@@ -16,7 +17,15 @@ void DataManager::match()
 		IDLists.push_back(KernelList[i].fid_iid);
 	}
 	IDLists.push_back(phe.fid_iid);
-	IDLists.push_back(Covs.fid_iid);
+	if (Covs.fid_iid.size()>0)
+	{
+		IDLists.push_back(Covs.fid_iid);
+	}
+	
+	if (geno.fid_iid.size()>0)
+	{
+		IDLists.push_back(geno.fid_iid);
+	}
 	bool isSame = 1;
 	for (int i = 1; i < IDLists.size(); i++)
 	{
@@ -40,31 +49,172 @@ void DataManager::match()
 	std::cout << "Matching files" << std::endl;
 	PhenoData tmpPhe = phe;
 	CovData tmpCovs = Covs;
+	GenoData tmpGen = geno;
 	int nind = overlapped.size(); //overlap FID_IID
 
-	phe.Phenotype.resize(nind);
+	if (tmpPhe.isBalance)
+	{
+		phe.Phenotype.resize(nind, tmpPhe.Phenotype.cols());
+	}
+	else
+	{
+		phe.vPhenotype.clear();
+		phe.vloc.clear();
+	}
 	phe.fid_iid.clear();
 	Covs.fid_iid.clear();
+	geno.fid_iid.clear();
 	Covs.Covariates.resize(nind, tmpCovs.npar);
+	geno.Geno.resize(nind, tmpGen.pos.size());
 	int i = 0;
 	for (auto it_row = overlapped.left.begin(); it_row != overlapped.left.end(); it_row++)
 	{
 		std::string rowID = it_row->second;
 		auto itcov = tmpCovs.fid_iid.right.find(rowID);
-		int cov_ID = itcov->second;
-		Covs.Covariates.row(i) << tmpCovs.Covariates.row(cov_ID);
-
+		auto itgen = tmpGen.fid_iid.right.find(rowID);
+	//	int gen_ID = itgen->second;
+	//	int cov_ID = itcov->second;
+		if (itcov!= tmpCovs.fid_iid.right.end())
+		{
+			Covs.Covariates.row(i) << tmpCovs.Covariates.row(itcov->second);
+		}
+		if (itgen != tmpGen.fid_iid.right.end())
+		{
+			geno.Geno.row(i) << tmpGen.Geno.row(itgen->second);
+		}
+	
 		auto it = tmpPhe.fid_iid.right.find(rowID);
 		int OriPheID = it->second;
-		phe.Phenotype[i++] = tmpPhe.Phenotype[OriPheID];
+		if (tmpPhe.isBalance)
+		{
+			phe.Phenotype.row(i++) = tmpPhe.Phenotype.row(OriPheID);
+		}
+		else
+		{
+			phe.vPhenotype.push_back(tmpPhe.vPhenotype[OriPheID]);
+			phe.vloc.push_back(tmpPhe.vloc[OriPheID]);
+		}
+	
 	}
 	phe.fid_iid = overlapped;
 	Covs.fid_iid = overlapped;
+	geno.fid_iid = overlapped;
 	i = 0;
 	for (; i < KernelList.size(); i++)
 	{
 		match_Kernels(KernelList[i], overlapped);
 	}
+	std::cout << "After matching, there are " << overlapped.size() << " individuals included for the analysis." << std::endl;
+	LOG(INFO) << "After matching, there are " << overlapped.size() << " individuals included for the analysis.";
+}
+
+std::tuple<std::shared_ptr<Dataset>, std::shared_ptr<Dataset>>  DataManager::split(float seed,float ratio)
+{
+	std::stringstream ss;
+	ss << "Split the dataset into two sub-dataset, training, testing";
+	std::cout << ss.str() << std::endl;
+	LOG(INFO) << ss.str();
+	std::default_random_engine e(seed);
+	int64_t num = phe.fid_iid.size();
+	int64_t train_num = (float)num * ratio;
+	std::vector<int64_t> fid_iid_split(num);
+	std::iota(std::begin(fid_iid_split), std::end(fid_iid_split), 0); // Fill with 0, 1, ..., 99.
+	std::shuffle(fid_iid_split.begin(), fid_iid_split.end(), e);
+	std::shared_ptr<Dataset> train=std::make_shared<Dataset>();
+	std::shared_ptr<Dataset> test = std::make_shared<Dataset>();
+	train->phe = phe;
+	train->cov = Covs;
+	train->geno = geno;
+	test->phe = phe;
+	test->cov = Covs;
+	test->geno = geno;
+	if (phe.isBalance)
+	{
+		train->phe.Phenotype.resize(train_num, phe.Phenotype.cols());
+		test->phe.Phenotype.resize(num-train_num, phe.Phenotype.cols());
+	}
+	else
+	{
+		train->phe.vPhenotype.clear();
+		train->phe.vloc.clear();
+		test->phe.vPhenotype.clear();
+		test->phe.vloc.clear();
+	}
+	train->phe.fid_iid.clear();
+	train->cov.fid_iid.clear();
+	train->geno.fid_iid.clear();
+	train->cov.Covariates.resize(train_num, Covs.npar);
+	train->geno.Geno.resize(train_num, geno.pos.size());
+	////////////////////////////////////////
+	test->phe.fid_iid.clear();
+	test->cov.fid_iid.clear();
+	test->geno.fid_iid.clear();
+	test->cov.Covariates.resize(num-train_num, Covs.npar);
+	test->geno.Geno.resize(num-train_num, geno.pos.size());
+	boost::bimap<int, std::string> fid_iid_train;
+	boost::bimap<int, std::string> fid_iid_test;
+	int64_t train_id = 0;
+	int64_t test_id = 0;
+	for (int64_t i=0;i<num;i++)
+	{
+		//std::string rowID = it_row->second;
+		int row_index = fid_iid_split[i];
+		auto fid_iid = phe.fid_iid.left.find(row_index);
+		if (i <train_num)
+		{
+			if (Covs.nind)
+			{
+				train->cov.Covariates.row(train_id) << Covs.Covariates.row(row_index);
+			}
+			if (geno.fid_iid.size()!=0)
+			{
+				train->geno.Geno.row(train_id) << geno.Geno.row(row_index);
+			}
+		
+			if (phe.isBalance)
+			{
+				train->phe.Phenotype.row(train_id++) = phe.Phenotype.row(row_index);
+			}
+			else
+			{
+				train->phe.vPhenotype.push_back(phe.vPhenotype[row_index]);
+				train->phe.vloc.push_back(phe.vloc[row_index]);
+			}
+			fid_iid_train.insert({ fid_iid->first,fid_iid->second });
+		}
+		else
+		{
+			if (Covs.nind)
+			{
+				test->cov.Covariates.row(test_id) << Covs.Covariates.row(row_index);
+			}
+			if (geno.fid_iid.size() != 0)
+			{
+				test->geno.Geno.row(test_id) << geno.Geno.row(row_index);
+			}
+			if (phe.isBalance)
+			{
+				test->phe.Phenotype.row(test_id++) = phe.Phenotype.row(row_index);
+			}
+			else
+			{
+				test->phe.vPhenotype.push_back(phe.vPhenotype[row_index]);
+				test->phe.vloc.push_back(phe.vloc[row_index]);
+			}
+			fid_iid_test.insert({ fid_iid->first,fid_iid->second });
+		}
+	}
+	train->phe.fid_iid = fid_iid_train;
+	train->cov.fid_iid = fid_iid_train;
+	train->geno.fid_iid = fid_iid_train;
+	test->phe.fid_iid = fid_iid_test;
+	test->cov.fid_iid = fid_iid_test;
+	test->geno.fid_iid = fid_iid_test;
+	std::stringstream ss1;
+	ss1 << "Spliting Completed. There are "<< train_num <<" individuals in the training dataset, and "<<num-train_num<< " individuals in the testing dataset";
+	std::cout << ss1.str() << std::endl;
+	LOG(INFO) << ss1.str();
+	return std::make_tuple(train, test);
 }
 
 void DataManager::match_Kernels(KernelData & kernel, boost::bimap<int, std::string> &overlapped)
@@ -319,7 +469,6 @@ void DataManager::readWeight(std::string filename)
 		{
 			std::stringstream ss;
 			ss << "Error: The " << i << "th element in " << filename << " is not a number.\nPlease check it again.";
-			LOG(ERROR) << ss.str();
 			throw std::string(ss.str());
 		}
 		WVector.push_back(stof(strVec[i]));
@@ -332,12 +481,20 @@ void DataManager::readWeight(std::string filename)
 	Weights = Eigen::Map<Eigen::VectorXf, Eigen::Unaligned>(WVector.data(), WVector.size());
 }
 
-void DataManager::readCovariates(std::string qfilename, std::string dfilename)
+void DataManager::readCovariates(std::string qfilename, std::string dfilename, bool intercept)
 {
 	CovData qCov;
 	CovData dCov;
 	if (qfilename.empty() && dfilename.empty())
 	{
+		if (intercept)
+		{
+			Covs.Covariates.resize(phe.fid_iid.size(), 1);
+			Covs.Covariates.setOnes();
+			Covs.fid_iid = phe.fid_iid;
+			Covs.nind = Covs.fid_iid.size();
+			Covs.npar = Covs.Covariates.cols();
+		}
 		return;
 	}
 	if (!qfilename.empty())
@@ -377,15 +534,24 @@ void DataManager::readCovariates(std::string qfilename, std::string dfilename)
 	{
 		if (qCov.fid_iid == dCov.fid_iid)
 		{
-			Covs.Covariates.resize(dCov.nind, dCov.npar + qCov.npar + 1);
-			Covs.names.resize(dCov.npar + qCov.npar + 1);
-			Covs.names[0] = "intercept";
-			std::copy(qCov.names.begin(), qCov.names.end(), Covs.names.begin() + 1);
-			std::copy(dCov.names.begin(), dCov.names.end(), Covs.names.begin() + qCov.npar + 1);
+			Covs.Covariates.resize(dCov.nind, dCov.npar + qCov.npar + intercept);
+			Covs.names.resize(dCov.npar + qCov.npar + intercept);
+			
+			std::copy(qCov.names.begin(), qCov.names.end(), Covs.names.begin() + intercept);
+			std::copy(dCov.names.begin(), dCov.names.end(), Covs.names.begin() + qCov.npar + intercept);
 			Covs.fid_iid = dCov.fid_iid;
-			Eigen::MatrixXf intercept(dCov.nind, 1);
-			intercept.setOnes();
-			Covs.Covariates << intercept, qCov.Covariates, dCov.Covariates;
+			if (intercept)
+			{
+				Covs.names[0] = "intercept";
+				Eigen::MatrixXf Ones(dCov.nind, 1);
+				Ones.setOnes();
+				Covs.Covariates << Ones, qCov.Covariates, dCov.Covariates;
+			}
+			else
+			{
+				Covs.Covariates << qCov.Covariates, dCov.Covariates;
+			}
+		
 		}
 		else
 		{
@@ -393,11 +559,14 @@ void DataManager::readCovariates(std::string qfilename, std::string dfilename)
 			set_difference(qCov.fid_iid, dCov.fid_iid, overlapID);
 			int nind = overlapID.size(); //overlap FID_IID
 			Covs.fid_iid.clear();
-			Covs.Covariates.resize(nind, dCov.npar + qCov.npar + 1);
+			Covs.Covariates.resize(nind, dCov.npar + qCov.npar + intercept);
 			Covs.names.resize(dCov.npar + qCov.npar + 1);
-			Covs.names[0] = "intercept";
-			std::copy(qCov.names.begin(), qCov.names.end(), Covs.names.begin() + 1);
-			std::copy(dCov.names.begin(), dCov.names.end(), Covs.names.begin() + qCov.npar + 1);
+			if (intercept)
+			{
+				Covs.names[0] = "intercept";
+			}
+			std::copy(qCov.names.begin(), qCov.names.end(), Covs.names.begin() + intercept);
+			std::copy(dCov.names.begin(), dCov.names.end(), Covs.names.begin() + qCov.npar + intercept);
 			for (int i = 0; i < nind; i++)
 			{
 				std::string ID = overlapID[i];
@@ -405,7 +574,15 @@ void DataManager::readCovariates(std::string qfilename, std::string dfilename)
 				auto dit = dCov.fid_iid.right.find(ID);
 				int q_ID = qit->second;
 				int d_ID = dit->second;
-				Covs.Covariates.row(i) << 1, qCov.Covariates.row(q_ID), dCov.Covariates.row(d_ID);
+				if (intercept)
+				{
+					Covs.Covariates.row(i) << 1, qCov.Covariates.row(q_ID), dCov.Covariates.row(d_ID);
+				}
+				else
+				{
+					Covs.Covariates.row(i) << qCov.Covariates.row(q_ID), dCov.Covariates.row(d_ID);
+				}
+			
 				Covs.fid_iid.insert({ i, ID });
 			}
 		}
@@ -415,14 +592,22 @@ void DataManager::readCovariates(std::string qfilename, std::string dfilename)
 		if (!qCov.nind || !dCov.nind)
 		{
 			CovData tmpCovs = qCov.nind ? qCov : dCov;
-			Covs.Covariates.resize(tmpCovs.nind, tmpCovs.npar + 1);
-			Covs.names.resize(tmpCovs.npar + 1);
-			Covs.names[0] = "intercept";
-			std::copy(tmpCovs.names.begin(), tmpCovs.names.end(), Covs.names.begin() + 1);
+			Covs.Covariates.resize(tmpCovs.nind, tmpCovs.npar + intercept);
+			Covs.names.resize(tmpCovs.npar + intercept);
+		
+			std::copy(tmpCovs.names.begin(), tmpCovs.names.end(), Covs.names.begin() + intercept);
 			Covs.fid_iid = tmpCovs.fid_iid;
-			Eigen::MatrixXf intercept(tmpCovs.nind, 1);
-			intercept.setOnes();
-			Covs.Covariates << intercept, tmpCovs.Covariates;
+			if (intercept)
+			{
+				Covs.names[0] = "intercept";
+				Eigen::MatrixXf Ones(tmpCovs.nind, 1);
+				Ones.setOnes();
+				Covs.Covariates << Ones, tmpCovs.Covariates;
+			}
+			else
+			{
+				Covs.Covariates << tmpCovs.Covariates;
+			}
 		}
 	}
 	Covs.nind = Covs.fid_iid.size();
@@ -469,10 +654,18 @@ void DataManager::readkeepFile(std::string filename)
 	LOG(INFO)<< fid_iid_keeping.size() << " individuals is listed in [" << filename << "]." << std::endl;
 }
 
+CovData DataManager::GetCovariates()
+{
+	return Covs;
+}
+
+
+
 void DataManager::readResponse(std::string resopnsefile, PhenoData & phe)
 {
 	std::ifstream infile;
-	std::vector<float> yvector;
+	std::vector<std::vector<float>> yvector;
+	std::vector<std::vector<float>> locvector;
 	yvector.clear();
 	infile.open(resopnsefile);
 	if (!infile.is_open())
@@ -481,6 +674,7 @@ void DataManager::readResponse(std::string resopnsefile, PhenoData & phe)
 	}
 	int id = 0;
 	int missing = 0;
+	std::vector<double> all_y;
 	while (!infile.eof())
 	{
 		std::string str;
@@ -504,33 +698,108 @@ void DataManager::readResponse(std::string resopnsefile, PhenoData & phe)
 			continue;
 		}
 		std::string fid_iid = strVec[0] + "_" + strVec[1];
-		phe.fid_iid.insert({ id++, fid_iid });
-		if (abs(stof(strVec[2])-0)>1e-7 && abs(stof(strVec[2]) - 1) > 1e-7)
+		auto itrow = phe.fid_iid.right.find(fid_iid);
+		if (itrow == phe.fid_iid.right.end())
 		{
-			phe.isbinary = false;
+			phe.fid_iid.insert({ id++, fid_iid });
+			std::vector<float> newY;
+			double v = std::stod(strVec[2]);
+			all_y.push_back(v);
+			newY.push_back((float) v);
+			yvector.push_back(newY);
+			if (strVec.size() == 4)
+			{
+				std::vector<float> newLoc;
+				double loci = std::stod(strVec[3]);
+				newLoc.push_back((float) loci);
+				locvector.push_back(newLoc);
+			}
 		}
-		yvector.push_back(stof(strVec[2]));
+		else
+		{
+			int64_t index = itrow->second;
+			double v = std::stod(strVec[2]);
+			all_y.push_back(v);
+			yvector[index].push_back((float)v);
+			if (strVec.size() == 4)
+			{
+				double loci = std::stod(strVec[3]);
+				locvector[index].push_back((float)loci);
+			}
+		}
+		if (abs(stod(strVec[2])-0)>1e-7 && abs(stod(strVec[2]) - 1) > 1e-7)
+		{
+			phe.dataType = 0;
+		}
+	
 	}
 	infile.close();
 	int nind = yvector.size();
-	std::stringstream ss;
-	if (phe.isbinary)
-	{
 	
-		float sum = std::accumulate(yvector.begin(), yvector.end(), 0.0);
-		phe.prevalence = sum / yvector.size();
-		ss << "The Phenotype is considered as binary traits, whose prevalence is "<< phe.prevalence <<"."<< std::endl;
+	bool isbalanced=true;
+//	bool same_value = true;
+//	bool same_size = true;
+	for (int64_t i = 0; i < locvector.size(); i++)
+	{
+		phe.vloc.push_back(Eigen::Map<Eigen::VectorXf, Eigen::Unaligned>(locvector[i].data(), locvector[i].size()));
+		
+		if (i>0)
+		{
+			if (locvector[i - 1].size() != locvector[i].size())
+			{
+				isbalanced = false;
+			}
+			else
+			{
+				if (!std::equal(locvector[i - 1].begin(), locvector[i - 1].end(), locvector[i].begin()))
+				{
+					isbalanced = false;
+				}
+			}
+		}
 	}
-	ss << "Reading "<< nind << " individuals, and missing "<< missing << std::endl;
+	phe.isBalance = isbalanced;
+	if (isbalanced)
+	{
+		phe.Phenotype.resize(yvector.size(), yvector[0].size());
+		if (phe.vloc.size())
+		{
+			phe.loc = phe.vloc[0];
+		}
+		
+	}
+	for (int64_t i = 0; i < yvector.size(); i++)
+	{
+		phe.vPhenotype.push_back(Eigen::Map<Eigen::VectorXf, Eigen::Unaligned>(yvector[i].data(), yvector[i].size()));
+		if (isbalanced)
+		{
+			phe.Phenotype.row(i) = Eigen::Map<Eigen::VectorXf, Eigen::Unaligned>(yvector[i].data(), yvector[i].size());
+		}
+	}
+	double sum = std::accumulate(all_y.begin(), all_y.end(), 0.0);
+	double mean = sum / all_y.size();
+
+	std::vector<double> diff(all_y.size());
+	std::transform(all_y.begin(), all_y.end(), diff.begin(), [mean](double x) { return x - mean; });
+	double sq_sum = std::inner_product(diff.begin(), diff.end(), diff.begin(), 0.0);
+	double stdev = std::sqrt(sq_sum / all_y.size());
+
+	phe.mean = mean;
+	phe.std = stdev;
+	std::stringstream ss;
+//	if (phe.dataType ==1)
+//	{
+
+		//float sum = std::accumulate(yvector.begin(), yvector.end(), 0.0);
+//		phe.prevalence = phe.Phenotype.colwise().mean();
+//		ss << "The Phenotype is considered as binary traits, whose prevalence is " << phe.prevalence.transpose() << "." << std::endl;
+//	}
+	ss << "Reading " << nind << " individuals, and missing " << missing <<". Total mean is "<< phe.mean <<" and standard deviation is "<<phe.std<<"."<<std::endl;
 	std::cout << ss.str();
 	LOG(INFO) << ss.str();
-	phe.Phenotype = Eigen::Map<Eigen::VectorXf, Eigen::Unaligned>(yvector.data(), yvector.size());
+	//phe.Phenotype = Eigen::Map<Eigen::VectorXf, Eigen::Unaligned>(yvector.data(), yvector.size());
 	phe.missing = missing;
-	Covs.Covariates.resize(phe.fid_iid.size(),1);
-	Covs.Covariates.setOnes();
-	Covs.fid_iid = phe.fid_iid;
-	Covs.nind = Covs.fid_iid.size();
-	Covs.npar = Covs.Covariates.cols();
+
 }
 
 void DataManager::readmkernel(std::string mkernel)
