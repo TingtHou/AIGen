@@ -4,9 +4,12 @@
 #include <boost/program_options.hpp>
 #include <fstream>
 #include <string>
+#include <random>
+#include <algorithm> 
 #include <boost/algorithm/string.hpp>
 #include <boost/bimap.hpp>
 #include <Eigen/Dense>
+#include <tuple>
 #include "KernelManage.h"
 #include "PlinkReader.h"
 #include "CommonFunc.h"
@@ -29,15 +32,16 @@ public:
 	void readmKernel(std::string mkernelfilename);									//Read multiple kernels
 	void readGeno(std::vector<std::string> filelist, bool isImpute);                //Read genotype data from plink format files, [ped, map] or [bed, bim, fam];
 	void readWeight(std::string filename);							                //Read weight file for Iterative MIQNUE
-	void readCovariates(std::string qfilename,std::string dfilename);				//Read covariates files, including quantitative and discrete covari
+	void readCovariates(std::string qfilename,std::string dfilename, bool intercept);				//Read covariates files, including quantitative and discrete covari
 	void readkeepFile(std::string filename);										//Read specific file containing individuals ID for analysis
-	PhenoData& getPhenotype() {	return phe;	};										//Get phenotype data
+	PhenoData getPhenotype() {	return phe;	};										//Get phenotype data
 	std::vector<KernelData>* GetKernel() { return &KernelList; };						//Get kernel data
-	CovData& GetCovariates() { return Covs; };								//Get covariate data
+	CovData GetCovariates();								//Get covariate data
 	Eigen::VectorXf& GetWeights() { return Weights; };								//Get Weights data
 	void SetKernel(std::vector<KernelData> KernelList)								//Replace internal kernel data with specificed external kernel data
 		{ this->KernelList=KernelList; };
 	void match();																	//match phenotype data and kernel data
+	std::tuple<std::shared_ptr<Dataset>, std::shared_ptr<Dataset>> split(float seed, float ratio=0.8);
 	GenoData getGenotype() { return geno; };										//Get genotype data
 	~DataManager();
 private:
