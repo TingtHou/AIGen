@@ -507,12 +507,22 @@ void PlinkReader::removeMissing()
 			}
 		}
 	}
+	std::vector<int> tmppos=bp;
+	bp.clear();
+	for (size_t i = 0; i < nmarker; i++)
+	{
+		if (!MissinginSNP[i])
+		{
+			bp.push_back(tmppos[i]);
+		}
+	}
 }
 
 GenoData PlinkReader::GetGeno()
 {
 	GenoData gd;
 	gd.Geno.resize(nind,nmarker);
+	gd.pos.resize(nmarker);
 	#pragma omp parallel for
 	for (int i=0;i<nind;i++)
 	{
@@ -521,7 +531,12 @@ GenoData PlinkReader::GetGeno()
 			gd.Geno(i, j) = Marker[i][j];
 		}
 	}
+	for (int j = 0; j < nmarker; j++)
+	{
+		gd.pos(j) = bp[j];
+	}
 	gd.fid_iid = fid_iid_index;
+//	gd.fid_iid.left.insert(fid_iid_index.begin(), fid_iid_index.end());
 	return gd;
 }
 
