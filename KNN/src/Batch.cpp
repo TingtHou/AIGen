@@ -22,15 +22,18 @@ Batch::Batch(std::vector<Eigen::MatrixXf *>& kernels, Eigen::VectorXf &phe, Eige
 //@brief:	Starting to generate subset data for each batch;
 //@param:	void;
 //@ret:		void;
-void Batch::start(bool isbinary)
+void Batch::start(int dataType)
 {
-	if (isbinary)
+	switch (dataType)
 	{
-		shuffle_binary();
-	}
-	else
-	{
+	case 0:
 		shuffle();
+		break;
+	case 1:
+		shuffle_binary();
+		break;
+	case 2:
+		throw std::string("KNN cannot hold categorical data currently.");
 	}
 	if (isclear)
 	{
