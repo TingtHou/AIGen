@@ -10,6 +10,7 @@
 #include "easylogging++.h"
 #include <thread>
 #include <iomanip>
+#include <numeric>
 #include <vector>
 
 
@@ -152,6 +153,24 @@ struct Dataset
 	CovData cov;
 };
 
+
+template <typename T>
+std::vector<size_t> sort_indexes(const std::vector<T>& v) {
+
+	// initialize original index locations
+	std::vector<size_t> idx(v.size());
+	std::iota(idx.begin(), idx.end(), 0);
+
+	// sort indexes based on comparing values in v
+	// using std::stable_sort instead of std::sort
+	// to avoid unnecessary index re-orderings
+	// when v contains elements of equal values 
+	std::stable_sort(idx.begin(), idx.end(),
+		[&v](size_t i1, size_t i2) {return v[i1] < v[i2]; });
+
+	return idx;
+}
+
 int Inverse(Eigen::MatrixXf & Ori_Matrix,int DecompositionMode, int AltDecompositionMode, bool allowPseudoInverse);
 int Inverse(Eigen::MatrixXd & Ori_Matrix, int DecompositionMode, int AltDecompositionMode, bool allowPseudoInverse);
 float Variance(Eigen::VectorXf &Y);
@@ -196,18 +215,23 @@ private:
 class Evaluate
 {
 public:
+	Evaluate();
 	Evaluate(Eigen::VectorXf Response, Eigen::VectorXf Predictor, int dataType);
 	Evaluate(torch::Tensor Response, torch::Tensor Predictor, int dataType);
 	float getMSE() { return mse; };
-	float getCor() { return cor; };
+	Eigen::VectorXf getCor() { return cor; };
 	float getAUC() { return auc; };
+	void test();
 private:
 	float mse = 0;
-	float cor = 0;
+	Eigen::VectorXf cor;
 	float auc = 0;
 	std::shared_ptr<ROC> ROC_ptr=nullptr;
 	float calc_mse(Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic>& Real_Y, Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic>& Predict_Y);
+	Eigen::VectorXf calc_cor(Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic>& Real_Y, Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic>& Predict_Y);
 	float calc_cor(Eigen::VectorXf& Real_Y, Eigen::VectorXf& Predict_Y);
 	Eigen::MatrixXf get_Y(Eigen::MatrixXf pred_y);
-	float misclass(Eigen::VectorXf& Real_Y, Eigen::VectorXf& Predict_Y);
+	float misclass(Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic>& Real_Y, Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic>& Predict_Y);
+	float compute_A_conditional(Eigen::MatrixXf pred_matrix, int i, int j, Eigen::VectorXi ref);
+	float multiclass_auc(Eigen::MatrixXf pred_matrix, Eigen::VectorXi ref);
 };

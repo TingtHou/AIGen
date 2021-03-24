@@ -1,4 +1,5 @@
 #include "../include/CommonFunc.h"
+#include <random>
 
 
 //@brief:	Inverse a float matrix, and rewrite the inversed matrix into original matrix;
@@ -355,29 +356,7 @@ void GetSubVector(Eigen::VectorXf & oVector, Eigen::VectorXf & subVector, std::v
 	}
 }
 
-//@brief:	Calucating correlation coefficient between vector Y1 and vector Y2;
-//@param:	Y1		A vector;
-//@param:	Y2		Another vector;
-//@ret:		float	correlation coefficient
-float Cor(Eigen::VectorXf& Y1, Eigen::VectorXf& Y2)
-{
-	assert(Y1.size() == Y2.size());
-	int nind = Y1.size();
-	double upper = 0;
-	double lower = 0;
-	Eigen::VectorXd Y1_double = Y1.cast<double>();
-	Eigen::VectorXd Y2_double = Y2.cast<double>();
-	Eigen::VectorXd Y1_Y2 = Y1_double.cwiseProduct(Y2_double);
-	double Y1_sum = Y1_double.sum();
-	double Y2_sum = Y2_double.sum();
-	double Y1_squre_sum = Y1_double.cwiseProduct(Y1_double).sum();
-	double Y2_squre_sum = Y2_double.cwiseProduct(Y2_double).sum();
-	double Y1_Y2_sum = Y1_Y2.sum();
-	upper = nind * Y1_Y2_sum - Y1_sum * Y2_sum;
-	lower = std::sqrt(nind * Y1_squre_sum - Y1_sum * Y1_sum) * std::sqrt(nind * Y2_squre_sum - Y2_sum * Y2_sum);
-	float cor = (float)upper / lower;
-	return cor;
-}
+
 
 std::vector<std::string> UniqueCount(std::vector<std::string> vec)
 {
@@ -467,4 +446,272 @@ void ROC::AUC()
 	}
 	this->auc = auc;
 }
+
+Evaluate::Evaluate()
+{
+}
+
+Evaluate::Evaluate(Eigen::VectorXf Response, Eigen::VectorXf Predictor, int dataType)
+{
+	Eigen::MatrixXf y = Eigen::Map<Eigen::MatrixXf>(Response.data(), Response.rows(), 1);
+	Eigen::MatrixXf y_hat = Eigen::Map<Eigen::MatrixXf>(Response.data(), Response.rows(), 1);
+	if (dataType == 0)
+	{
+		mse = calc_mse(y, y_hat);
+		auc = calc_cor(Response, Predictor);
+	}
+	else
+	{
+		Eigen::VectorXf ref = Eigen::Map<Eigen::VectorXf>(y.data(), y.rows(), 1);
+		if (dataType == 1)
+		{
+			Eigen::MatrixXf pred_matrix(y_hat.size(), 2);
+			pred_matrix.setOnes();
+			pred_matrix.col(0) = y_hat.col(0);
+			pred_matrix.col(1) = pred_matrix.col(1) - y_hat.col(0);
+			auc = multiclass_auc(pred_matrix, ref.cast<int>());
+			y_hat = y_hat.array() + 0.5;
+			y_hat = y_hat.cast<int>().cast<float>();
+			mse = calc_mse(y, y_hat);
+		}
+		else
+		{
+			mse = misclass(y, y_hat);
+			auc = -9;
+		}
+		
+	}
+	
+}
+
+Evaluate::Evaluate(torch::Tensor Response, torch::Tensor Predictor, int dataType)
+{
+	Eigen::MatrixXf y = dtt::libtorch2eigen<double>(Response).cast<float>();
+	Eigen::MatrixXf y_hat = dtt::libtorch2eigen<double>(Predictor).cast<float>();
+	if (dataType==0)
+	{
+	//	Eigen::VectorXf ref = Eigen::Map<Eigen::VectorXf>(y.data(), y.rows(), 1);
+	//	Eigen::VectorXf pred = Eigen::Map<Eigen::VectorXf>(y_hat.data(), y_hat.rows(), 1);
+		mse = calc_mse(y, y_hat);
+		cor = calc_cor(y, y_hat);
+	}
+	else
+	{
+		Eigen::VectorXf ref = Eigen::Map<Eigen::VectorXf>(y.data(), y.rows(), 1);
+		if (dataType ==1 )
+		{
+			Eigen::MatrixXf pred_matrix(y_hat.size(), 2);
+			pred_matrix.setOnes();
+			pred_matrix.col(0) = y_hat.col(0);
+			pred_matrix.col(1) = pred_matrix.col(1) - y_hat.col(0);
+			auc = multiclass_auc(pred_matrix, ref.cast<int>());
+			y_hat = y_hat.array() + 0.5;
+			y_hat = y_hat.cast<int>().cast<float>();
+			mse = calc_mse(y, y_hat);
+		}
+		else
+		{
+			auc = multiclass_auc(y_hat, ref.cast<int>());
+			Predictor = torch::argmax(Predictor,1,true);
+			std::cout << Predictor << std::endl;
+			y_hat = dtt::libtorch2eigen<int64_t>(Predictor).cast<float>();
+			mse = misclass(y, y_hat);
+		
+		}
+	}
+	
+}
+
+void Evaluate::test()
+{
+	
+	Eigen::VectorXf Y_binary(10);
+	Eigen::VectorXf Y_multi(10);
+	Eigen::VectorXf Y_continue = Eigen::VectorXf::Random(10);
+	Eigen::MatrixXf pred(10,3);
+	Eigen::VectorXf pred_b(10);
+	Y_binary << 0,
+		0,
+		0,
+		1,
+		0,
+		1,
+		1,
+		0,
+		0,
+		0;
+	Y_multi << 0,
+		2,
+		1,
+		0,
+		2,
+		0,
+		0,
+		0,
+		2,
+		0;
+	pred << 0.2059746, 0.93470523, 0.4820801,
+		0.1765568, 0.21214252, 0.5995658,
+		0.6870228, 0.65167377, 0.4935413,
+		0.3841037, 0.12555510, 0.1862176,
+		0.7698414, 0.26722067, 0.8273733,
+		0.4976992, 0.38611409, 0.6684667,
+		0.7176185, 0.01339033, 0.7942399,
+		0.9919061, 0.38238796, 0.1079436,
+		0.3800352, 0.86969085, 0.7237109,
+		0.7774452, 0.34034900, 0.4112744;
+	pred_b << pred.col(0);
+	torch::Tensor y_b = dtt::eigen2libtorch(Y_binary);
+	torch::Tensor y_m = dtt::eigen2libtorch(Y_multi);
+	torch::Tensor y_c = dtt::eigen2libtorch(Y_continue);
+	torch::Tensor p_m = dtt::eigen2libtorch(pred);
+	torch::Tensor p_b = dtt::eigen2libtorch(pred_b);
+	Evaluate eva(y_b, p_b, 1);
+	std::cout << "misclassification rate: " << eva.getMSE() << " AUC: " << eva.getAUC() << std::endl;
+	Evaluate eva2(y_m, p_m, 2);
+	std::cout << "misclassification rate: " << eva2.getMSE() << " AUC: " << eva2.getAUC() << std::endl;
+
+}
+
+float Evaluate::calc_mse(Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic>& Real_Y, Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic>& Predict_Y)
+{
+	assert(Real_Y.size() == Predict_Y.size());
+	int64_t nind = Real_Y.size();
+	Eigen::MatrixXd residual = (Real_Y - Predict_Y).cast<double>();
+	double mse_tmp = std::pow(residual.norm(),2);
+	mse_tmp /= (double)nind;
+
+	return (float)mse_tmp;;
+}
+
+Eigen::VectorXf Evaluate::calc_cor(Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic>& Real_Y, Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic>& Predict_Y)
+{
+	Eigen::VectorXf corr(Real_Y.cols());
+	for (size_t i = 0; i < Real_Y.cols(); i++)
+	{
+		Eigen::VectorXf Y_col = Real_Y.col(i);
+		Eigen::VectorXf Y_hat_col= Predict_Y.col(i);
+		corr(i) = calc_cor(Y_col, Y_hat_col);
+	}
+	return corr;
+}
+
+//@brief:	Calucating correlation coefficient between vector Y1 and vector Y2;
+//@param:	Real_Y		A vector;
+//@param:	Predict_Y		Another vector;
+//@ret:		float	correlation coefficient
+float Evaluate::calc_cor(Eigen::VectorXf& Real_Y, Eigen::VectorXf& Predict_Y)
+{
+	assert(Real_Y.size() == Predict_Y.size());
+	Eigen::VectorXd Y1_double = Real_Y.cast<double>();
+	Eigen::VectorXd Y2_double = Predict_Y.cast<double>();
+	Y1_double = Y1_double - Y1_double.mean()*Eigen::VectorXd::Ones(Real_Y.size());
+	Y2_double = Y2_double - Y2_double.mean() * Eigen::VectorXd::Ones(Real_Y.size());
+	double cosin = Y1_double.dot(Y2_double);
+	cosin /= Y1_double.lpNorm<2>() * Y2_double.lpNorm<2>();
+		/*
+		double nind = Real_Y.size();
+		double upper = 0;
+		double lower = 0;
+		Eigen::VectorXd Y1_double = Real_Y.cast<double>();
+		Eigen::VectorXd Y2_double = Predict_Y.cast<double>();
+		Eigen::VectorXd Y1_Y2 = Y1_double.cwiseProduct(Y2_double);
+		double Y1_sum = Y1_double.sum();
+		double Y2_sum = Y2_double.sum();
+		double Y1_squre_sum = Y1_double.cwiseProduct(Y1_double).sum();
+		double Y2_squre_sum = Y2_double.cwiseProduct(Y2_double).sum();
+		double Y1_Y2_sum = Y1_Y2.sum();
+		upper = nind * Y1_Y2_sum - Y1_sum * Y2_sum;
+		lower = std::sqrt(nind * Y1_squre_sum - Y1_sum * Y1_sum) * std::sqrt(nind * Y2_squre_sum - Y2_sum * Y2_sum);
+		float cor = (float)upper / lower;
+		return cor;
+		*/
+	return cosin;
+}
+
+Eigen::MatrixXf Evaluate::get_Y(Eigen::MatrixXf pred_y)
+{
+	Eigen::MatrixXf   maxIndex(pred_y.rows(),1);
+	//#pragma omp parallel for
+	for (int64_t i; i < pred_y.rows(); i++)
+	{
+		int index;
+		pred_y.row(i).maxCoeff(&index);
+		maxIndex(i) = index;
+	}
+	return maxIndex;
+}
+
+float Evaluate::misclass(Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic>& Real_Y, Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic>& Predict_Y)
+{
+	Eigen::MatrixXd res = (Real_Y - Predict_Y).cast<double>();
+	res = res.cwiseAbs();
+	res = res.cast<bool>().cast<double>();
+	double miss = res.size()-res.sum();
+	miss /= (double)res.size();
+	return (float) miss;
+}
+
+
+//computes A(i | j), the probability that a randomly
+//chosen member of class j has a lower estimated probability(or score)
+// of belonging to class i than a randomly chosen member of class i
+float Evaluate::compute_A_conditional(Eigen::MatrixXf pred_matrix, int i, int j, Eigen::VectorXi ref)
+{
+	// select predictions of class members
+	std::vector<float> pred_i, pred_j;
+	for (int k = 0; k < ref.size(); k++)
+	{
+		if (ref[k]==i)
+		{
+			pred_i.push_back(pred_matrix(k, i));
+		}
+		if (ref[k] == j)
+		{
+			pred_j.push_back(pred_matrix(k, i));
+		}
+	}
+	double ni = pred_i.size();
+	double nj = pred_j.size();
+	std::vector<int> classes(pred_i.size(), i);
+	classes.insert(classes.end(), pred_j.size(), j);
+	pred_i.insert(pred_i.end(), pred_j.begin(), pred_j.end());
+	auto rank = sort_indexes(pred_i);
+	std::vector<int> classes_rank(classes.size());
+	for (size_t k = 0; k < rank.size(); k++)
+	{
+		classes_rank[k]=classes[rank[k]];
+	}
+	// Si: sum of ranks from class i observations
+	double Si=0;
+	for (size_t k = 1; k <= classes_rank.size(); k++)
+	{
+		if (classes_rank[k-1]==i)
+		{
+			Si += k;
+		}
+	}
+	//calculate A(i | j)
+	double A = ((Si - ((ni * (ni + 1)) / 2)) / (ni * nj));
+	return (float)A;
+}
+
+float Evaluate::multiclass_auc(Eigen::MatrixXf pred_matrix, Eigen::VectorXi ref)
+{
+	int levels = pred_matrix.cols();
+	double auc=0;
+	for (size_t i = 0; i < levels-1; i++)
+	{
+		for (size_t j = i+1; j < levels; j++)
+		{
+//			std::cout << i << "\t" << j << std::endl;
+			double A_ij = compute_A_conditional(pred_matrix, i, j, ref);
+			double A_ji = compute_A_conditional(pred_matrix, j, i, ref);
+			auc += (A_ij + A_ji) / 2.0;
+		}
+	}
+	auc = auc * 2 / (double)(levels * (levels - 1));
+	return (float) auc;
+}
+
 
