@@ -8,17 +8,28 @@ NN::NN(std::vector<int64_t> dims, double lamb)
 	layers.clear();
 }
 
-void NN::build()
+void NN::build(int64_t ncovs)
 {
 	std::string layer_ = "model";
-	for (int64_t i = 0; i < dims.size()-1; i++)
+	int64_t i = 0;
+	std::string layer_name = layer_ + std::to_string(i);
+	models.push_back
+	(
+		register_module<LayerA>
+		(
+			layer_name, std::make_shared<LayerA>(dims[i], dims[i + 1],ncovs)
+		)
+	);
+	layers.push_back(1);
+	i++;
+	for (; i < dims.size()-1; i++)
 	{
 		std::string layer_name = layer_ + std::to_string(i);
 		models.push_back
 		(
 			register_module<LayerA>
 			(
-				layer_name, std::make_shared<LayerA>(dims[i], dims[i+1])
+				layer_name, std::make_shared<LayerA>( dims[i], dims[i+1])
 			)
 		);
 		layers.push_back(1);
