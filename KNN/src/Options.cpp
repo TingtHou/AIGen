@@ -134,7 +134,9 @@ void Options::boostProgramOptionsRoutine(int argc, const char * const argv[])
 		("lambda", po::value<double>()->value_name("num")->default_value(1.0), "define the lambda value for training, default 1.\n")
 		("loss", po::value<int>()->value_name("[0|1|2]")->default_value(0), "define the loss function for training, 0: MSE; 1: BCE; 2: CrossEntropy.\n")
 		("ratio", po::value<float>()->value_name("num")->default_value(0.8), "define the ratio of training dataset to testing dataset\n")
-		("basis", po::value<int>()->value_name("[0|1]")->default_value(0), "define the basis function in the hidden layers, 0: Wavelet basis; 1: B spline basis.\n");
+		("basis", po::value<int>()->value_name("[0|1]")->default_value(0), "define the basis function in the hidden layers, 0: Wavelet basis; 1: B spline basis.\n")
+		("save", po::value<std::string>()->value_name("[filename]"), "save the model.\n")
+		("load", po::value<std::string>()->value_name("[filename]"), "load the model from a file.\n");
 	/*
 	po::options_description optsComputerDevice("Computing Device Options");
 	optsComputerDevice.add_options()
