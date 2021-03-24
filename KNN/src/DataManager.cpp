@@ -132,6 +132,14 @@ std::tuple<std::shared_ptr<Dataset>, std::shared_ptr<Dataset>>  DataManager::spl
 	{
 		train->phe.Phenotype.resize(train_num, phe.Phenotype.cols());
 		test->phe.Phenotype.resize(num-train_num, phe.Phenotype.cols());
+		//Check if the response are 1d, and will be interpolated at a single knot.
+		//If the responses are multivariate, and will be interpolated at same multi-knots, keep the knots vectors in train, and test dataset
+		//otherwise, the knots will be chosen according to response
+		if (phe.Phenotype.cols()==1 && phe.loc.size()>0)
+		{
+			train->phe.loc.resize(train_num);
+			test->phe.loc.resize(num - train_num);
+		}
 	}
 	else
 	{
@@ -173,7 +181,12 @@ std::tuple<std::shared_ptr<Dataset>, std::shared_ptr<Dataset>>  DataManager::spl
 		
 			if (phe.isBalance)
 			{
-				train->phe.Phenotype.row(train_id++) = phe.Phenotype.row(row_index);
+				train->phe.Phenotype.row(train_id) = phe.Phenotype.row(row_index);
+				if (phe.Phenotype.cols() == 1 && phe.loc.size() > 0)
+				{
+					train->phe.loc(train_id) = phe.loc(row_index);
+				}
+				train_id++;
 			}
 			else
 			{
@@ -675,6 +688,7 @@ void DataManager::readResponse(std::string resopnsefile, PhenoData & phe)
 	int id = 0;
 	int missing = 0;
 	std::vector<double> all_y;
+	bool singleResponse=true;
 	while (!infile.eof())
 	{
 		std::string str;
@@ -726,6 +740,7 @@ void DataManager::readResponse(std::string resopnsefile, PhenoData & phe)
 				double loci = std::stod(strVec[3]);
 				locvector[index].push_back((float)loci);
 			}
+			singleResponse = false;
 		}
 		if (abs(stod(strVec[2])-0)>1e-7 && abs(stod(strVec[2]) - 1) > 1e-7)
 		{
@@ -739,10 +754,11 @@ void DataManager::readResponse(std::string resopnsefile, PhenoData & phe)
 	bool isbalanced=true;
 //	bool same_value = true;
 //	bool same_size = true;
+	std::vector<float> loc_all;
 	for (int64_t i = 0; i < locvector.size(); i++)
 	{
 		phe.vloc.push_back(Eigen::Map<Eigen::VectorXf, Eigen::Unaligned>(locvector[i].data(), locvector[i].size()));
-		
+		loc_all.insert(loc_all.end(), locvector[i].begin(), locvector[i].end());
 		if (i>0)
 		{
 			if (locvector[i - 1].size() != locvector[i].size())
@@ -758,7 +774,7 @@ void DataManager::readResponse(std::string resopnsefile, PhenoData & phe)
 			}
 		}
 	}
-	phe.isBalance = isbalanced;
+	phe.isBalance = isbalanced || singleResponse;
 	if (isbalanced)
 	{
 		phe.Phenotype.resize(yvector.size(), yvector[0].size());
@@ -768,10 +784,15 @@ void DataManager::readResponse(std::string resopnsefile, PhenoData & phe)
 		}
 		
 	}
+	if (singleResponse)
+	{
+		phe.Phenotype.resize(yvector.size(), yvector[0].size());
+		phe.loc = Eigen::Map<Eigen::VectorXf, Eigen::Unaligned>(loc_all.data(), loc_all.size());
+	}
 	for (int64_t i = 0; i < yvector.size(); i++)
 	{
 		phe.vPhenotype.push_back(Eigen::Map<Eigen::VectorXf, Eigen::Unaligned>(yvector[i].data(), yvector[i].size()));
-		if (isbalanced)
+		if (phe.isBalance)
 		{
 			phe.Phenotype.row(i) = Eigen::Map<Eigen::VectorXf, Eigen::Unaligned>(yvector[i].data(), yvector[i].size());
 		}

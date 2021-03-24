@@ -35,6 +35,9 @@ public:
 	void readCovariates(std::string qfilename,std::string dfilename, bool intercept);				//Read covariates files, including quantitative and discrete covari
 	void readkeepFile(std::string filename);										//Read specific file containing individuals ID for analysis
 	PhenoData getPhenotype() {	return phe;	};										//Get phenotype data
+	std::shared_ptr< PhenoData> getPhe_prt() { return std::make_shared<PhenoData>(phe); };
+	std::shared_ptr< GenoData> getGeno_prt() { return std::make_shared<GenoData>(geno); };
+	std::shared_ptr< CovData> getCov_prt() { return std::make_shared<CovData>(Covs); };
 	std::vector<KernelData>* GetKernel() { return &KernelList; };						//Get kernel data
 	CovData GetCovariates();								//Get covariate data
 	Eigen::VectorXf& GetWeights() { return Weights; };								//Get Weights data
