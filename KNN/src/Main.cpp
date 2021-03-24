@@ -67,7 +67,7 @@ void readKNNParameter(boost::program_options::variables_map programOptions, Minq
 void ReadData(boost::program_options::variables_map programOptions, DataManager &dm);
 
 int MINQUEAnalysis(boost::program_options::variables_map programOptions, DataManager& dm, Eigen::VectorXf& VarComp, Eigen::VectorXf& predict);
-int FNNAnalysis(boost::program_options::variables_map programOptions, DataManager& dm);
+std::vector<std::shared_ptr<Evaluate>>   FNNAnalysis(boost::program_options::variables_map programOptions, DataManager& dm);
 
 
 
@@ -144,7 +144,66 @@ void TryMain(int argc, const char *const argv[])
 	//////////////////////////////////////////////////////////////////////////////
 	if (programOptions.count("FNN") || programOptions.count("NN"))
 	{
-		FNNAnalysis(programOptions, dm);
+		std::vector<std::shared_ptr<Evaluate>>  error = FNNAnalysis(programOptions, dm);
+		ofstream out;
+		out.open(result, ios::out);
+		LOG(INFO) << "---Result----";
+		std::cout << "---Result----" << std::endl;
+		std::stringstream ss;
+	
+		if (programOptions.count("load"))
+		{
+			LOG(INFO) << "---full dataset----";
+			ss << "---full dataset----" << std::endl;
+			if (dm.getPhenotype().dataType != 0)
+			{
+				ss << "misclassification error:\t" << error[0]->getMSE() << std::endl << "AUC:\t" << error[0]->getAUC() << std::endl;
+			}
+			else
+			{
+				ss << "MSE:\t" << error[0]->getMSE() << std::endl << "Correlation:\t" << error[0]->getCor().transpose() << std::endl;
+			}
+			std::cout << ss.str();
+			LOG(INFO) << ss.str();
+			out << ss.str();
+		}
+		else
+		{
+			if (error[0] != nullptr)
+			{
+				LOG(INFO) << "---Testing dataset----";
+				ss << "---Testing dataset----" << std::endl;
+				if (dm.getPhenotype().dataType != 0)
+				{
+					ss << "misclassification error:\t" << error[0]->getMSE() << std::endl << "AUC:\t" << error[0]->getAUC() << std::endl;
+				}
+				else
+				{
+					ss << "MSE:\t" << error[0]->getMSE() << std::endl << "Correlation:\t" << error[0]->getCor().transpose() << std::endl;
+				}
+			}
+			else
+			{
+			
+				LOG(WARNING) << "Testing dataset does not exist.";
+			}
+			
+			LOG(INFO) << "---full dataset----";
+			ss << "---full dataset----" << std::endl;
+			if (dm.getPhenotype().dataType != 0)
+			{
+				ss << "misclassification error:\t" << error[1]->getMSE() << std::endl << "AUC:\t" << error[1]->getAUC() << std::endl;
+			}
+			else
+			{
+				ss << "MSE:\t" << error[1]->getMSE() << std::endl << "Correlation:\t" << error[1]->getCor().transpose() << std::endl;
+			}
+			std::cout << ss.str();
+			LOG(INFO) << ss.str();
+			out << ss.str();
+		}
+	
+		out.close();
 	}
 
 	/////////////////////////////////////////////////////////
@@ -705,7 +764,7 @@ int MINQUEAnalysis(boost::program_options::variables_map programOptions, DataMan
 		else
 		{
 			predict[0] = Eva.getMSE();
-			predict[1] = Eva.getCor();
+			predict[1] = Eva.getCor()[0];
 			//ss << "MSE:\t" << pred.getMSE() << std::endl << "Correlation:\t" << pred.getCor() << std::endl;
 		}
 //		std::cout << ss.str();
@@ -716,30 +775,46 @@ int MINQUEAnalysis(boost::program_options::variables_map programOptions, DataMan
 //	out.close();
 }
 
-int FNNAnalysis(boost::program_options::variables_map programOptions, DataManager& dm)
+std::vector<std::shared_ptr<Evaluate>>  FNNAnalysis(boost::program_options::variables_map programOptions, DataManager& dm)
 {
+	std::vector<std::shared_ptr<Evaluate>> prediction_error;
  /// All data in FNN/NN framework will be treated as double precision.
 	auto options = torch::TensorOptions().dtype(torch::kFloat64);
 	torch::Tensor one = torch::ones(1, options);
 	torch::set_default_dtype(one.dtype());
-	
+	///////////////////////////////////////////////
 	int basis= programOptions["basis"].as < int >();
 	float seed = programOptions["seed"].as < float >();
 	int epoch= programOptions["epoch"].as < int >();
 	float ratio= programOptions["ratio"].as < float >();
+	double lambda = programOptions["lambda"].as <double>();
+	bool isFNN = programOptions.count("FNN");
+	int64_t ncovs = dm.getCov_prt()->npar;
+	int64_t nSNPs = dm.getGeno_prt()->pos.size();
+	if (!ncovs && !nSNPs)
+	{
+		throw std::string("Error: there is not input data, genotype data and covariates data are missing. Please check the inputs.");
+	}
+	if (ncovs && !nSNPs)
+	{
+		isFNN = false;
+		LOG(WARNING) << "Warning: The genotype data is missing, only the covariates data are used. NN is applied instead.";
+	}
 	std::shared_ptr<Dataset> train;
 	std::shared_ptr<Dataset> test;
-	std::tie(train, test) = dm.split(seed, ratio);
+	
+	std::shared_ptr<TensorData> data = std::make_shared<TensorData>(dm.getPhe_prt(), dm.getGeno_prt(), dm.getCov_prt());
+	bool sinlgeknot = data->isBalanced && data->getLoc().size() > 0;   // univariate analysis, with response is interpolated on different knot.
 
-	//std::shared_ptr<TensorData> d=std::make_shared<TensorData>(dm.getPhenotype(), dm.getGenotype(), dm.GetCovariates());
-	std::cout << "Apply the training data for Analysis." << std::endl;
-	std::shared_ptr<TensorData> train_tensor = std::make_shared<TensorData>(train->phe, train->geno, train->cov);
-	std::shared_ptr<TensorData> test_tensor = std::make_shared<TensorData>(test->phe, test->geno, test->cov);
 	int  loss = programOptions["loss"].as < int >();
+
+	if (loss!=0 && dm.getPhe_prt()->Phenotype.cols()!=1)
+	{
+		throw std::string("The multivarite multiclass analysis does not support!");
+	}
+
 	std::vector<int64_t> dims;
-	train_tensor->dataType = loss;
-	test_tensor->dataType = loss;
-	double lambda = programOptions["lambda"].as <double>();
+	
 	if (programOptions.count("layer"))
 	{
 		std::string layers = programOptions["layer"].as < std::string >();
@@ -749,87 +824,275 @@ int FNNAnalysis(boost::program_options::variables_map programOptions, DataManage
 		{
 			dims.push_back(atoi(strVec.at(i).c_str()));
 		}
-	}
-	if (programOptions.count("FNN"))
-	{
-		std::cout << "Funtional neural network analysis is runing" << std::endl;
-		LOG(INFO) << "Funtional neural network analysis is runing";
-//		std::cout << "========================" << std::endl;
-		std::shared_ptr<FNN> f = std::make_shared<FNN>(dims, lambda);
-		torch::Tensor test_loss;
-		if (!basis)
+		if (dims[dims.size()-1]>1 && dm.getPhe_prt()->loc.size()==0)
 		{
+			throw std::string("Trying to interplote the response, but the knots are missing.");
+		}
+	}
+	if (programOptions.count("load"))
+	{
+		std::string loadNet = programOptions["load"].as < std::string >();
+		//	string model_path = "model.pt";
+		std::cout << "Loading model from ["<<loadNet<<"]." << std::endl;
+		if (isFNN)
+		{
+			
+			std::cout << "Funtional neural network analysis is runing" << std::endl;
+			LOG(INFO) << "Funtional neural network analysis is runing";
+			std::shared_ptr<FNN> f = std::make_shared<FNN>(dims, lambda);
+			if (!basis)
+			{
 
-			f->build<Haar>();
+				f->build<Haar>(sinlgeknot, ncovs);
+			}
+			else
+			{
+				f->build<SplineBasis>(sinlgeknot, ncovs);
+			}
+			torch::serialize::InputArchive archive;
+		//	std::string file("test_model.pt");
+			archive.load_from(loadNet);
+			f->load(archive);
+			std::shared_ptr< Evaluate> Total = nullptr;
+			if (data->isBalanced)
+			{
+				torch::Tensor pred_test = f->forward(data);
+				Total = std::make_shared< Evaluate>(data->getY(), pred_test, data->dataType);
+				//	Evaluate Total(data->getY(), pred_test, data->dataType);
+			}
+			else
+			{
+				if (data->dataType != 0)
+				{
+					size_t i = 0;
+					auto sample = data->getSample(i++);
+					torch::Tensor pred_test = f->forward(sample);
+					for (; i < data->nind; i++)
+					{
+						auto sample = data->getSample(i);
+						torch::Tensor pred_test_new = f->forward(sample);
+						pred_test = torch::cat({ pred_test, pred_test_new }, 0);
+					}
+					Total = std::make_shared< Evaluate>(data->getY(), pred_test, data->dataType);
+				}
+
+			}
+			prediction_error.push_back(Total);
 		}
 		else
 		{
-			f->build<SplineBasis>();
+			std::cout << "Neural network analysis is runing" << std::endl;
+			LOG(INFO) << "Neural network analysis is runing";
+			//	std::cout << "========================" << std::endl;
+			std::shared_ptr<NN> f = std::make_shared<NN>(dims, lambda);
+			f->build(ncovs);
+			torch::serialize::InputArchive archive;
+			//	std::string file("test_model.pt");
+			archive.load_from(loadNet);
+			f->load(archive);
+
+			torch::Tensor pred_total = f->forward(data);
+			std::shared_ptr<Evaluate> Total=std::make_shared<Evaluate>(data->getY(), pred_total, data->dataType);
+					   			
+			prediction_error.push_back(Total);
 		}
-		switch (loss)
-		{
-		case 0:
-			test_loss=training<torch::optim::Adam, FNN, torch::nn::MSELoss>(f, train_tensor, test_tensor, epoch);
-			break;
-		case 1:
-			test_loss = training<torch::optim::Adam, FNN, torch::nn::BCELoss>(f, train_tensor, test_tensor, epoch);
-			//test_loss=Testing<FNN, torch::nn::BCELoss>(f, test_tensor);
-			break;
-		case 2:
-			test_loss = training<torch::optim::Adam, FNN, torch::nn::CrossEntropyLoss>(f, train_tensor, test_tensor, epoch);
-			//test_loss=Testing<FNN, torch::nn::CrossEntropyLoss>(f, test_tensor);
-			break;
-		}
-//		for (const auto& p : f->parameters()) 
-//		{
-//			std::cout << p << std::endl;
-//		}
-		std::cout << "Training completed." << std::endl;
-		std::cout << "========================" << std::endl;
-		std::stringstream ss;
-		ss<<"Training: " << "epoch: " << f->epoch << "\t loss: " << f->loss.item<double>() <<
-			"\n========================\nTesting: loss: "<< test_loss.item<double>();
-		std::cout << ss.str() << std::endl;
-		LOG(INFO)<< ss.str() << std::endl;
 	}
 	else
 	{
-		std::cout << "Neural network analysis is runing" << std::endl;
-		LOG(INFO) << "Neural network analysis is runing";
-	//	std::cout << "========================" << std::endl;
-		std::shared_ptr<NN> f = std::make_shared<NN>(dims, lambda);
-		f->build();
-		torch::Tensor test_loss;
-		switch (loss)
-		{
-		case 0:
-			test_loss = training<torch::optim::Adam, NN, torch::nn::MSELoss>(f, train_tensor, test_tensor, epoch);
+		std::tie(train, test) = dm.split(seed, ratio);
 
-		//	test_loss=Testing<NN, torch::nn::MSELoss>(f, test_tensor);
-			break;
-		case 1:
-			test_loss = training<torch::optim::Adam, NN, torch::nn::BCELoss>(f, train_tensor, test_tensor, epoch);
-			//test_loss=Testing<NN, torch::nn::BCELoss>(f, test_tensor);
-			break;
-		case 2:
-			test_loss = training<torch::optim::Adam, NN, torch::nn::CrossEntropyLoss>(f, train_tensor, test_tensor, epoch);
-			//test_loss=Testing<NN, torch::nn::CrossEntropyLoss>(f, test_tensor);
-			break;
-		}
-		for (const auto& p : f->parameters())
+		//std::shared_ptr<TensorData> d=std::make_shared<TensorData>(dm.getPhenotype(), dm.getGenotype(), dm.GetCovariates());
+		std::cout << "Apply the training data for Analysis." << std::endl;
+		std::shared_ptr<TensorData> train_tensor = std::make_shared<TensorData>(train->phe, train->geno, train->cov);
+		std::shared_ptr<TensorData> test_tensor = std::make_shared<TensorData>(test->phe, test->geno, test->cov);
+		train_tensor->dataType = loss;
+		test_tensor->dataType = loss;
+		if (isFNN)
 		{
-			std::cout << p << std::endl;
+			std::cout << "Funtional neural network analysis is runing" << std::endl;
+			LOG(INFO) << "Funtional neural network analysis is runing";
+			//		std::cout << "========================" << std::endl;
+			std::shared_ptr<FNN> f = std::make_shared<FNN>(dims, lambda);
+			torch::Tensor test_loss;
+			if (!basis)
+			{
+
+				f->build<Haar>(sinlgeknot, ncovs);
+			}
+			else
+			{
+				f->build<SplineBasis>(sinlgeknot, ncovs);
+			}
+			switch (loss)
+			{
+			case 0:
+				test_loss = training<torch::optim::Adam, FNN, torch::nn::MSELoss>(f, train_tensor, test_tensor, epoch);
+				break;
+			case 1:
+				test_loss = training<torch::optim::Adam, FNN, torch::nn::BCELoss>(f, train_tensor, test_tensor, epoch);
+				//test_loss=Testing<FNN, torch::nn::BCELoss>(f, test_tensor);
+				break;
+			case 2:
+				test_loss = training<torch::optim::Adam, FNN, torch::nn::CrossEntropyLoss>(f, train_tensor, test_tensor, epoch);
+				//test_loss=Testing<FNN, torch::nn::CrossEntropyLoss>(f, test_tensor);
+				break;
+			}
+			//		for (const auto& p : f->parameters()) 
+			//		{
+			//			std::cout << p << std::endl;
+			//		}
+			if (programOptions.count("save"))
+			{
+				std::string saveNet = programOptions["save"].as < std::string >();
+				//	string model_path = "model.pt";
+				torch::serialize::OutputArchive output_archive;
+				f->save(output_archive);
+				output_archive.save_to(saveNet);
+			}
+			std::cout << "Training completed." << std::endl;
+			std::cout << "========================" << std::endl;
+			std::stringstream ss;
+			ss << "Training: " << "epoch: " << f->epoch << "\t loss: " << f->loss.item<double>() <<
+				"\nTesting: loss: " << test_loss.item<double>();
+			std::cout << ss.str() << std::endl;
+			LOG(INFO) << ss.str() << std::endl;
+
+		///////////////////////////////////////////////////////////////////////
+			/// evaluate the testing dataset
+			if (test_tensor->nind != 0)
+			{
+
+				std::shared_ptr<Evaluate> test = nullptr;
+				if (test_tensor->isBalanced)
+				{
+					torch::Tensor pred_test = f->forward(test_tensor);
+					test = std::make_shared< Evaluate>(test_tensor->getY(), pred_test, test_tensor->dataType);
+					//	Evaluate Total(data->getY(), pred_test, data->dataType);
+				}
+				else
+				{
+					if (test_tensor->dataType != 0)
+					{
+						size_t i = 0;
+						auto sample = test_tensor->getSample(i++);
+						torch::Tensor pred_test = f->forward(sample);
+						for (; i < test_tensor->nind; i++)
+						{
+							auto sample = test_tensor->getSample(i);
+							torch::Tensor pred_test_new = f->forward(sample);
+							pred_test = torch::cat({ pred_test, pred_test_new }, 0);
+						}
+						test = std::make_shared< Evaluate>(test_tensor->getY(), pred_test, test_tensor->dataType);
+					}
+				}
+				
+				prediction_error.push_back(test);
+			//	prediction_error.push_back(test->getAUC());
+			}
+			else
+			{
+	//			prediction_error.push_back(-9);
+				prediction_error.push_back(nullptr);
+			}
+			////////////////////////////////////////////////////////////
+			// evaluate the total dataset
+			std::shared_ptr<Evaluate> Total = nullptr;
+			if (data->isBalanced)
+			{
+				torch::Tensor pred_total = f->forward(data);
+				Total = std::make_shared< Evaluate>(data->getY(), pred_total, data->dataType);
+				prediction_error.push_back(Total);
+				//	Evaluate Total(data->getY(), pred_test, data->dataType);
+			}
+			else
+			{
+				if (data->dataType != 0)
+				{
+					size_t i = 0;
+					auto sample = data->getSample(i++);
+					torch::Tensor pred_test = f->forward(sample);
+					for (; i < data->nind; i++)
+					{
+						auto sample = data->getSample(i);
+						torch::Tensor pred_test_new = f->forward(sample);
+						pred_test = torch::cat({ pred_test, pred_test_new }, 0);
+					}
+					Total = std::make_shared< Evaluate>(data->getY(), pred_test, data->dataType);
+					prediction_error.push_back(Total);
+
+				}
+				else
+				{
+					prediction_error.push_back(nullptr);
+				}
+			}
+		
+
+			
+		//	prediction_error.push_back(Total->getAUC());
 		}
-		std::cout << "Training completed." << std::endl;
-		std::cout << "========================" << std::endl;
-		std::stringstream ss;
-		ss << "Training: " << "epoch: " << f->epoch << "\t loss: " << f->loss.item<double>() <<
-			"\n========================\Testing: loss: " << test_loss.item<double>();
-		std::cout << ss.str() << std::endl;
-		LOG(INFO) << ss.str() << std::endl;
+		else
+		{
+			std::cout << "Neural network analysis is runing" << std::endl;
+			LOG(INFO) << "Neural network analysis is runing";
+			//	std::cout << "========================" << std::endl;
+			std::shared_ptr<NN> f = std::make_shared<NN>(dims, lambda);
+			f->build(ncovs);
+			torch::Tensor test_loss;
+			switch (loss)
+			{
+			case 0:
+				test_loss = training<torch::optim::Adam, NN, torch::nn::MSELoss>(f, train_tensor, test_tensor, epoch);
+
+				//	test_loss=Testing<NN, torch::nn::MSELoss>(f, test_tensor);
+				break;
+			case 1:
+				test_loss = training<torch::optim::Adam, NN, torch::nn::BCELoss>(f, train_tensor, test_tensor, epoch);
+				//test_loss=Testing<NN, torch::nn::BCELoss>(f, test_tensor);
+				break;
+			case 2:
+				test_loss = training<torch::optim::Adam, NN, torch::nn::CrossEntropyLoss>(f, train_tensor, test_tensor, epoch);
+				//test_loss=Testing<NN, torch::nn::CrossEntropyLoss>(f, test_tensor);
+				break;
+			}
+		//	for (const auto& p : f->parameters())
+		//	{
+		//		std::cout << p << std::endl;
+		//	}
+			std::cout << "Training completed." << std::endl;
+			std::cout << "========================" << std::endl;
+			std::stringstream ss;
+			ss << "Training: " << "epoch: " << f->epoch << "\t loss: " << f->loss.item<double>() <<
+				"\nTesting: loss: " << test_loss.item<double>();
+			std::cout << ss.str() << std::endl;
+			LOG(INFO) << ss.str() << std::endl;
+
+
+
+			if (test_tensor->getY().sizes()[0] != 0)
+			{
+				torch::Tensor pred_test = f->forward(test_tensor);
+				std::shared_ptr<Evaluate> test = std::make_shared<Evaluate>(test_tensor->getY(), pred_test, test_tensor->dataType);
+				prediction_error.push_back(test);
+	//			prediction_error.push_back(test.getAUC());
+			}
+			else
+			{
+				prediction_error.push_back(nullptr);
+				//prediction_error.push_back(-9);
+			}
+
+			
+			torch::Tensor pred_total = f->forward(data);
+			std::shared_ptr<Evaluate> Total = std::make_shared<Evaluate>(data->getY(), pred_total, data->dataType);
+		
+			prediction_error.push_back(Total);
+		//	prediction_error.push_back(Total.getAUC());
+		}
 	}
+
 	
-	return 1;
+	return prediction_error;
 }
 
 void readKNNParameter(boost::program_options::variables_map programOptions, MinqueOptions& minque)
