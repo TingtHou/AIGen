@@ -19,9 +19,16 @@ struct LayerA : torch::nn::Module
 
 	torch::Tensor forward(torch::Tensor x, torch::Tensor z)
 	{
-		if (z.sizes()[1]!=0)
+		if (x.sizes()[0] != 0)
 		{
-			x = torch::cat({ x,z }, 1);
+			x = z;
+		}
+		else
+		{
+			if (z.sizes()[0] != 0)
+			{
+				x = torch::cat({ x,z }, 1);
+			}
 		}
 		return fc(x);
 	}
@@ -51,7 +58,7 @@ struct Layer : torch::nn::Module
 	std::shared_ptr<Basis> bs1;
 	virtual torch::Tensor forward(torch::Tensor x , torch::Tensor cov= torch::empty(0))=0;
 	virtual torch::Tensor pen(double lamb0 = 1, double lamb1 = 1) = 0;
-//	std::vector<int64_t> index;
+	bool singleknot = false;  //each phenotype is interploted at  different single knot
 
 };
 
@@ -64,34 +71,40 @@ struct LayerB : Layer
 		torch::manual_seed(629);
 		this->bs0 = bs0;
 		this->bs1 = bs1;
-		fc0 = register_module("fc0", torch::nn::Linear(torch::nn::LinearOptions(bs0->n_basis + n_covs, bs1->n_basis).bias(bias)));
+		fc0 = register_module("fc0", torch::nn::Linear(torch::nn::LinearOptions(bs0->n_basis , bs1->n_basis).bias(bias)));
+		if (n_covs!=0)
+		{
+			fc1 = register_module("covs", torch::nn::Linear(torch::nn::LinearOptions(n_covs, bs1->n_basis).bias(false)));
+		}
+	
 	}
 
 	torch::Tensor forward(torch::Tensor x, torch::Tensor cov = torch::empty(0))
 	{
 		x = (x.matmul(bs0->mat)) / bs0->length;
-		if (cov.sizes()[1]!=0 && cov.sizes()[0] != 0)
-		{
-			x = torch::cat({ x,cov }, 1);
-		}
 		x = fc0->forward(x);
-		return x.matmul(bs1->mat.t());
-		/*
-		if (index.empty())
+
+		if (cov.sizes()[1] != 0 && cov.sizes()[0] != 0)
+		{
+			//x = torch::cat({ x,cov }, 1);
+			cov = fc1->forward(cov);
+			x = x + cov;
+		}
+		if (!singleknot)
 		{
 			return x.matmul(bs1->mat.t());
 		}
 		else
 		{
-			auto opts = torch::TensorOptions().dtype(torch::kInt32);
-			torch::Tensor index_tensor = torch::from_blob(index.data(), { 3 }, opts).to(torch::kInt64);
-			x = x.index({ index[0] });
+			if (x.sizes()[0]!=0)
+			{
+				x = x * bs1->mat;
+				
+			}
+	//		std::cout << x.sum(1, true).index({ torch::indexing::Slice(torch::indexing::None, 10),torch::indexing::Slice(torch::indexing::None, torch::indexing::None) }) << std::endl;
+			return x.sum(1, true);
 		}
-		x = x *bs1->mat;
-		return x.sum(1, true);*/
- ///////////////////////////////////
-		// add index later
-		//
+
 	}
 
 	torch::Tensor pen(double lamb0 = 1, double lamb1 = 1)
@@ -107,6 +120,7 @@ struct LayerB : Layer
 			{
 				if (name.compare(name.length()- weight_str.length(),weight_str.length(),weight_str)==0)
 				{
+			//		std::cout << param << std::endl;
 					penalty += bs1->pen_2d(param, *bs0,  lamb0,  lamb1);
 				}
 				if (name.compare(name.length() - bias_str.length(), bias_str.length(), bias_str) == 0)
@@ -120,6 +134,7 @@ struct LayerB : Layer
 	}
 
 	torch::nn::Linear fc0{ nullptr };
+	torch::nn::Linear fc1{ nullptr };
 };
 
 
@@ -130,17 +145,23 @@ struct LayerC : Layer
 	{
 		torch::manual_seed(629);
 		this->bs0 = bs0;
-		fc0 = register_module("fc0", torch::nn::Linear(bs0->n_basis + n_covs, 1));
+		fc0 = register_module("fc0", torch::nn::Linear(bs0->n_basis , 1));
+		if (n_covs != 0)
+		{
+			fc1 = register_module("covs", torch::nn::Linear(torch::nn::LinearOptions(n_covs, 1).bias(false)));
+		}
 	}
 
 	torch::Tensor forward(torch::Tensor x, torch::Tensor cov = torch::empty(0))
 	{
 		x = x.matmul(bs0->mat) / bs0->length;
+		x = fc0->forward(x);
 		if (cov.sizes()[1] != 0 && cov.sizes()[0] != 0)
 		{
-			x = torch::cat({ x,cov }, 1);
+			//x = torch::cat({ x,cov }, 1);
+			cov = fc1->forward(cov);
+			x = x + cov;
 		}
-		x = fc0->forward(x);
 		return x;
 	}
 
@@ -174,6 +195,7 @@ struct LayerC : Layer
 	}
 
 	torch::nn::Linear fc0{ nullptr };
+	torch::nn::Linear fc1{ nullptr };
 };
 
 
@@ -189,7 +211,16 @@ struct LayerD : Layer
 	torch::Tensor forward(torch::Tensor x, torch::Tensor cov = torch::empty(0))
 	{
 		x = fc0->bias;
-		return x.matmul(bs1->mat.t());
+		if (!singleknot)
+		{
+			return x.matmul(bs1->mat.t());
+		}
+		else
+		{
+			x = x * bs1->mat;
+			return x.sum(1, true);
+		}
+	//	return x.matmul(bs1->mat.t());
 		////
 		// add index later
 	}
