@@ -1,5 +1,37 @@
 #include "../include/TensorData.h"
 #include <iostream>
+TensorData::TensorData(PhenoData& phe, GenoData& gene, CovData& cov)
+{
+	this->phe = std::make_shared<PhenoData>(phe);
+	this->gene = std::make_shared<GenoData>(gene);;
+	this->cov = std::make_shared<CovData>(cov);;
+	x = dtt::eigen2libtorch(gene.Geno);
+	z = dtt::eigen2libtorch(cov.Covariates);
+	pos = gene.pos.cast<double>();
+	if (pos.size()>0)
+	{
+		double  delta_pos = (pos.maxCoeff() - pos.minCoeff()) / 100;
+		pos0 = pos.minCoeff() - delta_pos;
+		pos1 = pos.maxCoeff() + delta_pos;
+	}
+	
+	isBalanced = phe.isBalance;
+	if (phe.isBalance)
+	{
+		y = dtt::eigen2libtorch(phe.Phenotype);
+	}
+	if (phe.loc.size() > 0)
+	{
+		loc = phe.loc.cast<double>();
+		double  delta_loc = (loc.maxCoeff() - loc.minCoeff()) / 100;
+		loc0 = loc.minCoeff() - delta_loc;
+		loc1 = loc.maxCoeff() + delta_loc;
+	}
+	mean_y = torch::full(1, phe.mean);
+	std_y = torch::full(1, phe.std);
+	nind = phe.fid_iid.size();
+//	std::cout << "mean: " << mean_y << "\n" << "std: " << std_y << std::endl;
+}
 /*
 TensorData::TensorData(PhenoData &phe, GenoData &gene, CovData &cov)
 {
@@ -14,40 +46,40 @@ TensorData::TensorData(PhenoData &phe, GenoData &gene, CovData &cov)
 	
 }
 */
-TensorData::TensorData(PhenoData &phe, GenoData &gene, CovData &cov)
+TensorData::TensorData(std::shared_ptr<PhenoData> phe, std::shared_ptr<GenoData> gene, std::shared_ptr<CovData> cov)
 {
-	this->phe = std::make_shared< PhenoData>(phe);
-	this->gene = std::make_shared<GenoData>(gene);
-	this->cov = std::make_shared<CovData>(cov);
-	x = dtt::eigen2libtorch(gene.Geno);
-	x=x.to(torch::kF64);
-	z = dtt::eigen2libtorch(cov.Covariates);
+	this->phe = phe;
+	this->gene = gene;
+	this->cov = cov;
+	x = dtt::eigen2libtorch(gene->Geno);
+	z = dtt::eigen2libtorch(cov->Covariates);
 	z = z.to(torch::kF64);
-	pos = gene.pos.cast<double>();
-	double  delta_pos = (pos.maxCoeff() - pos.minCoeff()) / 100;
-	pos0 = pos.minCoeff() - delta_pos;
-	pos1 = pos.maxCoeff() + delta_pos;
-	isBalanced = phe.isBalance;
-	if (phe.isBalance)
+	pos = gene->pos.cast<double>();
+	if (pos.size()>0)
 	{
-		y = dtt::eigen2libtorch(phe.Phenotype);
-		y = y.to(torch::kF64);
-		if (phe.loc.size() > 0)
-		{
-			loc = phe.loc.cast<double>();
-			double  delta_loc = (loc.maxCoeff() - loc.minCoeff()) / 100;
-			loc0 = loc.minCoeff() - delta_loc;
-			loc1 = loc.maxCoeff() + delta_loc;
-		}
-	
+		double  delta_pos = (pos.maxCoeff() - pos.minCoeff()) / 100;
+		pos0 = pos.minCoeff() - delta_pos;
+		pos1 = pos.maxCoeff() + delta_pos;
 	}
-	mean_y = torch::full(1, phe.mean);
-	std_y = torch::full(1, phe.std);
-	nind = phe.fid_iid.size();
-	
+	isBalanced = phe->isBalance;
+	if (phe->isBalance)
+	{
+		y = dtt::eigen2libtorch(phe->Phenotype);
+	}
+	if (phe->loc.size() > 0)
+	{
+		loc = phe->loc.cast<double>();
+		double  delta_loc = (loc.maxCoeff() - loc.minCoeff()) / 100;
+		loc0 = loc.minCoeff() - delta_loc;
+		loc1 = loc.maxCoeff() + delta_loc;
+	}
+	mean_y = torch::full(1, phe->mean);
+	std_y = torch::full(1, phe->std);
+	nind = phe->fid_iid.size();
+	//std::cout << "mean: " << mean_y << "\n" << "std: " << std_y << std::endl;
 }
 
-TensorData::TensorData(torch::Tensor phe, torch::Tensor gene, torch::Tensor cov, Eigen::VectorXd pos, Eigen::VectorXd loc)
+TensorData::TensorData(torch::Tensor phe, torch::Tensor gene, torch::Tensor cov, Eigen::VectorXd pos, Eigen::VectorXd loc, double loc0, double loc1)
 {
 	this->y = phe;
 	this->x = gene;
@@ -58,8 +90,8 @@ TensorData::TensorData(torch::Tensor phe, torch::Tensor gene, torch::Tensor cov,
 	pos0 = pos.minCoeff() - delta_pos;
 	pos1 = pos.maxCoeff() + delta_pos;
 	double  delta_loc = (loc.maxCoeff() - loc.minCoeff()) / 100;
-	loc0 = loc.minCoeff() - delta_loc;
-	loc1 = loc.maxCoeff() + delta_loc;
+	this->loc0 = loc0;
+	this->loc1 = loc1;
 	nind = phe.sizes()[0];
 }
 
@@ -83,7 +115,7 @@ std::shared_ptr<TensorData> TensorData::getSample(int64_t index)
 	xi = xi.reshape({ 1, x.sizes()[1] });
 	torch::Tensor zi = z.index({ index, });
 	zi = zi.reshape({ 1, z.sizes()[1] });
-	auto Sample_i = std::make_shared<TensorData>(yi, xi, zi, pos, phe->vloc[index].cast<double>());
+	auto Sample_i = std::make_shared<TensorData>(yi, xi, zi, pos, phe->vloc[index].cast<double>(),loc0,loc1);
 	Sample_i->setMean_STD(mean_y, std_y);
 	return Sample_i;
 }

@@ -5,8 +5,9 @@
 class TensorData
 {
 public:
-	TensorData(PhenoData& phe, GenoData& gene, CovData& cov);
-	TensorData(torch::Tensor phe, torch::Tensor gene, torch::Tensor  cov, Eigen::VectorXd pos, Eigen::VectorXd loc);
+	TensorData(PhenoData &phe, GenoData &gene, CovData &cov);
+	TensorData( std::shared_ptr<PhenoData> phe, std::shared_ptr<GenoData> gene, std::shared_ptr<CovData> cov);
+	TensorData(torch::Tensor phe, torch::Tensor gene, torch::Tensor  cov, Eigen::VectorXd pos, Eigen::VectorXd loc, double loc0,double loc1);
 	void setPos(Eigen::VectorXd pos);
 	void setLoc(Eigen::VectorXd loc);
 //	TensorData(PhenoData& phe, GenoData& gene, CovData& cov, bool isBalance);
