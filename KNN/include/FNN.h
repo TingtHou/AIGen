@@ -18,7 +18,7 @@ public:
 	//void fit_end();
 
 	template<class T>
-	void build()
+	void build(bool singleknot, int64_t ncovs=0)
 	{
 
 		std::string layer_name = "model";
@@ -39,16 +39,17 @@ public:
 			}
 			else
 			{
-				models.push_back(register_module<LayerB>("model0", std::make_shared<LayerB>(std::make_shared<T>(dims[0]), std::make_shared<T>(dims[1]))));
+				models.push_back(register_module<LayerB>("model0", std::make_shared<LayerB>(std::make_shared<T>(dims[0]), std::make_shared<T>(dims[1]),ncovs)));
 				//models.push_back(std::make_shared<LayerB>(new Haar(dims[0]), new Haar(dims[1])));
 				layers.push_back(2);
+				//models[models.size() - 1]->singleknot = singleknot;
 			}
 
 		}
 		if (dims.size() > 2)
 		{
 
-			models.push_back(register_module<LayerB>("model0", std::make_shared<LayerB>(std::make_shared<T>(dims[0]), std::make_shared<T>(dims[1],false), 0, false)));
+			models.push_back(register_module<LayerB>("model0", std::make_shared<LayerB>(std::make_shared<T>(dims[0]), std::make_shared<T>(dims[1],false), ncovs, false)));
 			//models.push_back(std::make_shared<LayerB>(new Haar(dims[0]), new Haar(dims[1],false),false));
 			layers.push_back(2);
 			int i = 1;
@@ -69,6 +70,7 @@ public:
 				std::string layeri = layer_name + std::to_string(i);
 				models.push_back(register_module<LayerB>(layeri, std::make_shared<LayerB>(std::make_shared<T>(dims[dims.size() - 2], false), std::make_shared<T>(dims[dims.size() - 1]))));
 				layers.push_back(2);
+			//	models[models.size() - 1]->singleknot = singleknot;
 			}
 		}
 

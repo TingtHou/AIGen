@@ -268,6 +268,7 @@ void FNN::realization(std::shared_ptr<TensorData> data)
 		}
 		if (i+1< layers.size())
 		{
+			models[i]->singleknot = false;
 			std::vector<double> loc_v;
 	
 			double value = 1 / (double)models[i]->bs1->n_basis / 2;
@@ -285,6 +286,7 @@ void FNN::realization(std::shared_ptr<TensorData> data)
 	i--;
 	if (models[i]->bs1!=nullptr)
 	{
+		models[i]->singleknot = true;
 		if (data->loc0 == -9)
 		{
 			data->loc0 = data->getLoc().minCoeff() - 1 / (double)models[i]->bs1->n_basis / 2;
@@ -297,7 +299,7 @@ void FNN::realization(std::shared_ptr<TensorData> data)
 		Eigen::VectorXd loc = (data->getLoc().array() - data->loc0).array() / (data->loc1 - data->loc0);
 		models[i]->bs1->evaluate(loc);
 	//	models[i]->index.push_back(loc.size()-1);
-//		std::cout << "model " << i << " bs1 mat:\n" << models[i]->bs1->mat << std::endl;
+	//	std::cout << "model " << i << " bs1 mat:\n" << models[i]->bs1->mat.index({ torch::indexing::Slice(torch::indexing::None, 10) }) << std::endl;
 	}
 
 	
