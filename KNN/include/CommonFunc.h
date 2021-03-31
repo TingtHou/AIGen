@@ -35,7 +35,7 @@ namespace dtt {
 	template <typename V>
 	torch::Tensor eigen2libtorch(MatrixX<V>& M) {
 		//auto options = torch::TensorOptions().dtype(torch::kFloat64);
-		Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> E(M.cast <double>());
+		Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> E(M.template cast<double>());
 		std::vector<int64_t> dims = { E.rows(), E.cols() };
 		auto T = torch::from_blob(E.data(), dims).clone();//.to(torch::kCPU);
 		return T;
@@ -44,7 +44,7 @@ namespace dtt {
 	template <typename V>
 	torch::Tensor eigen2libtorch(VectorX<V>& M) {
 		auto options = torch::TensorOptions().dtype(torch::kFloat64);
-		Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> E(M.cast <double>());
+		Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> E(M.template cast<double>());
 		std::vector<int64_t> dims = { E.rows(), E.cols() };
 		auto T = torch::from_blob(E.data(), dims).clone(); //.to(torch::kCPU);
 		return T;
