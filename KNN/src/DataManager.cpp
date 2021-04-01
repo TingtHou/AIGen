@@ -787,8 +787,8 @@ void DataManager::readResponse(std::string resopnsefile, PhenoData & phe)
 	if (singleResponse)
 	{
 		phe.Phenotype.resize(yvector.size(), yvector[0].size());
-		phe.loc = Eigen::Map<Eigen::VectorXf, Eigen::Unaligned>(loc_all.data(), loc_all.size());
 	}
+	phe.loc = Eigen::Map<Eigen::VectorXf, Eigen::Unaligned>(loc_all.data(), loc_all.size());
 	for (int64_t i = 0; i < yvector.size(); i++)
 	{
 		phe.vPhenotype.push_back(Eigen::Map<Eigen::VectorXf, Eigen::Unaligned>(yvector[i].data(), yvector[i].size()));

@@ -222,6 +222,7 @@ public:
 	Eigen::VectorXf getCor() { return cor; };
 	float getAUC() { return auc; };
 	void test();
+	void setMSE(double mse) { this->mse = mse; };
 private:
 	float mse = 0;
 	Eigen::VectorXf cor;

@@ -449,6 +449,8 @@ void ROC::AUC()
 
 Evaluate::Evaluate()
 {
+	cor.resize(1);
+	cor[0] = -9;
 }
 
 Evaluate::Evaluate(Eigen::VectorXf Response, Eigen::VectorXf Predictor, int dataType)

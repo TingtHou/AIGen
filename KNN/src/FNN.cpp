@@ -5,60 +5,7 @@ FNN::FNN(std::vector<int64_t> dims, double lamb)
 {
 	this->lamb = lamb;
 	this->dims = dims;
-//	models.resize(dims.size() - 1);
-	/*
-	std::string layer_name="model";
-	if (dims.size()==1)
-	{
-		models.push_back(register_module<LayerD>("model0", std::make_shared<LayerD>(new Haar(dims[0]))));
-		//models.push_back(std::make_shared<LayerD>(new Haar(dims[0])));
-		layers.push_back(4);
-	}
-	
-	if (dims.size()==2)
-	{
-		if (dims[1]==1)
-		{
-			models.push_back(register_module<LayerC>("model0", std::make_shared<LayerC>(new Haar(dims[0]))));
-		//	models.push_back(std::make_shared<LayerC>( new Haar(dims[0]) ) );
-			layers.push_back(3);
-		}
-		else
-		{
-			models.push_back(register_module<LayerB>("model0", std::make_shared<LayerB>(new Haar(dims[0]), new Haar(dims[1]))));
-			//models.push_back(std::make_shared<LayerB>(new Haar(dims[0]), new Haar(dims[1])));
-			layers.push_back(2);
-		}
 
-	}
-	if (dims.size()>2)
-	{
-		
-		models.push_back(register_module<LayerB>("model0", std::make_shared<LayerB>(new Haar(dims[0]), new Haar(dims[1], false), false)));
-		//models.push_back(std::make_shared<LayerB>(new Haar(dims[0]), new Haar(dims[1],false),false));
-		layers.push_back(2);
-		int i = 1;
-		for (; i < dims.size()-2; i++)
-		{
-			std::string layeri = layer_name + "i";
-			models.push_back(register_module<LayerB>(layeri, std::make_shared<LayerB>(new Haar(dims[i],false), new Haar(dims[i + 1], false))));
-			layers.push_back(2);
-		}
-		if (dims[dims.size()-1]==1)
-		{
-			std::string layeri = layer_name + "i";
-			models.push_back(register_module<LayerC>(layeri, std::make_shared<LayerC>(new Haar(dims[dims.size() - 2],false))));
-			layers.push_back(3);
-		}
-		else
-		{
-			std::string layeri = layer_name + "i";
-			models.push_back(register_module<LayerB>(layeri, std::make_shared<LayerB>(new Haar(dims[dims.size() - 2], false), new Haar(dims[dims.size() - 1]))));
-			layers.push_back(2);
-		}
-	}
-	
-	*/
 }
 
 torch::Tensor FNN::forward(std::shared_ptr<TensorData> data)
@@ -110,7 +57,6 @@ torch::Tensor FNN::forward(std::shared_ptr<TensorData> data)
 		break;
 	}
 	
-//	std::cout << data->std_y << "\t" << data->mean_y;
 	return res;
 }
 
@@ -264,11 +210,10 @@ void FNN::realization(std::shared_ptr<TensorData> data)
 				models[i]->bs0->length = pos.size();
 			}
 			models[i]->bs0->evaluate(pos);
-	//		std::cout << "model " << i << " bs0 mat:\n" << models[i]->bs0->mat << std::endl;
 		}
 		if (i+1< layers.size())
 		{
-			models[i]->singleknot = false;
+		//	models[i]->singleknot = false;
 			std::vector<double> loc_v;
 	
 			double value = 1 / (double)models[i]->bs1->n_basis / 2;
@@ -286,7 +231,7 @@ void FNN::realization(std::shared_ptr<TensorData> data)
 	i--;
 	if (models[i]->bs1!=nullptr)
 	{
-		models[i]->singleknot = true;
+	//	models[i]->singleknot = true;
 		if (data->loc0 == -9)
 		{
 			data->loc0 = data->getLoc().minCoeff() - 1 / (double)models[i]->bs1->n_basis / 2;

@@ -10,6 +10,7 @@ public:
 	TensorData(torch::Tensor phe, torch::Tensor gene, torch::Tensor  cov, Eigen::VectorXd pos, Eigen::VectorXd loc, double loc0,double loc1);
 	void setPos(Eigen::VectorXd pos);
 	void setLoc(Eigen::VectorXd loc);
+	void setBatchNum(int64_t Batch_Num);
 //	TensorData(PhenoData& phe, GenoData& gene, CovData& cov, bool isBalance);
 	std::shared_ptr<TensorData> getSample(int64_t index);
 	torch::Tensor getY();
@@ -23,6 +24,7 @@ public:
 	{
 		return loc;
 	}
+	std::shared_ptr<TensorData> getBatch(int64_t index_batch);
 	void setMean_STD(torch::Tensor mean, torch::Tensor std);
 	double pos0 = -9;
 	double pos1 = -9;
@@ -33,6 +35,7 @@ public:
 	int64_t nind;
 	bool isBalanced = true; // define balance if the knots of y are same, imbalance if the lenght of knots of y are different or the value of knots are different.
 	int dataType=0;
+	int64_t Batch_Num;
 private:
 	torch::Tensor y;
 	torch::Tensor x;
@@ -42,5 +45,5 @@ private:
 	std::shared_ptr<PhenoData> phe;
 	std::shared_ptr<GenoData> gene;
 	std::shared_ptr<CovData> cov;
-
+	std::vector<int64_t> Batch_index;
 };

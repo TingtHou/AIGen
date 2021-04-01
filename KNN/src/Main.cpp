@@ -804,7 +804,7 @@ std::vector<std::shared_ptr<Evaluate>>  FNNAnalysis(boost::program_options::vari
 	std::shared_ptr<Dataset> test;
 	
 	std::shared_ptr<TensorData> data = std::make_shared<TensorData>(dm.getPhe_prt(), dm.getGeno_prt(), dm.getCov_prt());
-	bool sinlgeknot = data->isBalanced && data->getLoc().size() > 0;   // univariate analysis, with response is interpolated on different knot.
+	bool sinlgeknot = (data->isBalanced && data->getLoc().size() == data->nind) ;   // univariate analysis, with response is interpolated on different knot.
 
 	int  loss = programOptions["loss"].as < int >();
 
@@ -824,7 +824,7 @@ std::vector<std::shared_ptr<Evaluate>>  FNNAnalysis(boost::program_options::vari
 		{
 			dims.push_back(atoi(strVec.at(i).c_str()));
 		}
-		if (dims[dims.size()-1]>1 && dm.getPhe_prt()->loc.size()==0)
+		if (dims[dims.size()-1]>1 && dm.getPhe_prt()->vloc.size()==0)
 		{
 			throw std::string("Trying to interplote the response, but the knots are missing.");
 		}
@@ -907,6 +907,14 @@ std::vector<std::shared_ptr<Evaluate>>  FNNAnalysis(boost::program_options::vari
 		std::shared_ptr<TensorData> test_tensor = std::make_shared<TensorData>(test->phe, test->geno, test->cov);
 		train_tensor->dataType = loss;
 		test_tensor->dataType = loss;
+		int64_t batchnum = 1;
+		if (programOptions.count("batch"))
+		{
+	
+			batchnum = programOptions["batch"].as<int>();
+		
+		}
+		train_tensor->setBatchNum(batchnum);
 		if (isFNN)
 		{
 			std::cout << "Funtional neural network analysis is runing" << std::endl;
@@ -952,8 +960,7 @@ std::vector<std::shared_ptr<Evaluate>>  FNNAnalysis(boost::program_options::vari
 			std::cout << "Training completed." << std::endl;
 			std::cout << "========================" << std::endl;
 			std::stringstream ss;
-			ss << "Training: " << "epoch: " << f->epoch << "\t loss: " << f->loss.item<double>() <<
-				"\nTesting: loss: " << test_loss.item<double>();
+			ss << "epoch: " << f->epoch << "\tTesting: loss: " << test_loss.item<double>();
 			std::cout << ss.str() << std::endl;
 			LOG(INFO) << ss.str() << std::endl;
 
@@ -971,18 +978,20 @@ std::vector<std::shared_ptr<Evaluate>>  FNNAnalysis(boost::program_options::vari
 				}
 				else
 				{
-					if (test_tensor->dataType != 0)
+					if (test_tensor->dataType == 0)
 					{
-						size_t i = 0;
-						auto sample = test_tensor->getSample(i++);
-						torch::Tensor pred_test = f->forward(sample);
-						for (; i < test_tensor->nind; i++)
+						
+						torch::Tensor loss=torch::zeros(1);
+						for (size_t i = 0; i < test_tensor->nind; i++)
 						{
+						
 							auto sample = test_tensor->getSample(i);
-							torch::Tensor pred_test_new = f->forward(sample);
-							pred_test = torch::cat({ pred_test, pred_test_new }, 0);
+							torch::Tensor pred_test = f->forward(sample);
+							loss += torch::mse_loss(pred_test, sample->getY());
 						}
-						test = std::make_shared< Evaluate>(test_tensor->getY(), pred_test, test_tensor->dataType);
+						loss=loss/ test_tensor->nind;
+						test = std::make_shared< Evaluate>();
+						test->setMSE(loss.item<double>());
 					}
 				}
 				
@@ -1006,18 +1015,20 @@ std::vector<std::shared_ptr<Evaluate>>  FNNAnalysis(boost::program_options::vari
 			}
 			else
 			{
-				if (data->dataType != 0)
+				if (data->dataType == 0)
 				{
-					size_t i = 0;
-					auto sample = data->getSample(i++);
-					torch::Tensor pred_test = f->forward(sample);
-					for (; i < data->nind; i++)
+					
+					torch::Tensor loss = torch::zeros(1);
+					for (size_t i = 0; i < data->nind; i++)
 					{
 						auto sample = data->getSample(i);
-						torch::Tensor pred_test_new = f->forward(sample);
-						pred_test = torch::cat({ pred_test, pred_test_new }, 0);
+						torch::Tensor pred_test = f->forward(sample);
+						loss += torch::mse_loss(pred_test, sample->getY());
+						
 					}
-					Total = std::make_shared< Evaluate>(data->getY(), pred_test, data->dataType);
+					loss = loss / test_tensor->nind;
+					Total = std::make_shared< Evaluate>();
+					Total->setMSE(loss.item<double>());
 					prediction_error.push_back(Total);
 
 				}
@@ -1062,8 +1073,7 @@ std::vector<std::shared_ptr<Evaluate>>  FNNAnalysis(boost::program_options::vari
 			std::cout << "Training completed." << std::endl;
 			std::cout << "========================" << std::endl;
 			std::stringstream ss;
-			ss << "Training: " << "epoch: " << f->epoch << "\t loss: " << f->loss.item<double>() <<
-				"\nTesting: loss: " << test_loss.item<double>();
+			ss <<  "epoch: " << f->epoch << "\tTesting: loss: " << test_loss.item<double>();
 			std::cout << ss.str() << std::endl;
 			LOG(INFO) << ss.str() << std::endl;
 

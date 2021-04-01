@@ -58,7 +58,7 @@ struct Layer : torch::nn::Module
 	std::shared_ptr<Basis> bs1;
 	virtual torch::Tensor forward(torch::Tensor x , torch::Tensor cov= torch::empty(0))=0;
 	virtual torch::Tensor pen(double lamb0 = 1, double lamb1 = 1) = 0;
-	bool singleknot = false;  //each phenotype is interploted at  different single knot
+	bool singleknot = false;  //each phenotype is interploted at  different single knot, or the model will be each by each individual. 
 
 };
 
@@ -82,8 +82,8 @@ struct LayerB : Layer
 	torch::Tensor forward(torch::Tensor x, torch::Tensor cov = torch::empty(0))
 	{
 		x = (x.matmul(bs0->mat)) / bs0->length;
-		x = fc0->forward(x);
 
+		x = fc0->forward(x);
 		if (cov.sizes()[1] != 0 && cov.sizes()[0] != 0)
 		{
 			//x = torch::cat({ x,cov }, 1);
@@ -96,6 +96,7 @@ struct LayerB : Layer
 		}
 		else
 		{
+		//	std::cout << bs1->mat.sizes() << "\t" << x.sizes() << std::endl;
 			if (x.sizes()[0]!=0)
 			{
 				x = x * bs1->mat;

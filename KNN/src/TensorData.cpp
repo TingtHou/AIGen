@@ -86,14 +86,17 @@ TensorData::TensorData(torch::Tensor phe, torch::Tensor gene, torch::Tensor cov,
 	this->z = cov;
 	this->pos = pos;
 	this->loc = loc;
-	double  delta_pos = (pos.maxCoeff() - pos.minCoeff()) / 100;
-	pos0 = pos.minCoeff() - delta_pos;
-	pos1 = pos.maxCoeff() + delta_pos;
-	double  delta_loc = (loc.maxCoeff() - loc.minCoeff()) / 100;
+	if (pos.size()>0)
+	{
+		double  delta_pos = (pos.maxCoeff() - pos.minCoeff()) / 100;
+		pos0 = pos.minCoeff() - delta_pos;
+		pos1 = pos.maxCoeff() + delta_pos;
+	} 
 	this->loc0 = loc0;
 	this->loc1 = loc1;
 	nind = phe.sizes()[0];
 }
+
 
 void TensorData::setPos(Eigen::VectorXd pos)
 {
@@ -103,6 +106,17 @@ void TensorData::setPos(Eigen::VectorXd pos)
 void TensorData::setLoc(Eigen::VectorXd loc)
 {
 	this->loc = loc;
+}
+
+void TensorData::setBatchNum(int64_t Batch_Num)
+{
+	this->Batch_Num = Batch_Num;
+	int64_t Batch_size = nind / Batch_Num;
+	for (size_t i = 0; i < Batch_Num; i++)
+	{
+		Batch_index.push_back(i* Batch_size);
+	}
+	Batch_index.push_back(nind);
 }
 
 
@@ -134,6 +148,26 @@ torch::Tensor TensorData::getZ()
 {
 	return z;
 	// TODO: insert return statement here
+}
+
+std::shared_ptr<TensorData> TensorData::getBatch(int64_t index_batch)
+{
+	torch::Tensor yi = y.index({ torch::indexing::Slice(Batch_index[index_batch], Batch_index[index_batch+1] - 1), });
+	torch::Tensor xi = x.index({ torch::indexing::Slice(Batch_index[index_batch], Batch_index[index_batch+1] - 1), });
+	torch::Tensor zi = z.index({ torch::indexing::Slice(Batch_index[index_batch], Batch_index[index_batch+1] - 1), });
+	Eigen::VectorXd loci;
+	if (yi.sizes()[1]==1 && loc.size()!=0)
+	{
+		loci.resize(Batch_index[index_batch + 1] -1 - Batch_index[index_batch]);
+		loci << loc.block(Batch_index[index_batch], 0, loci.size(), 1);
+	}
+	else
+	{
+		loci = loc;
+	}
+	auto Sample_i = std::make_shared<TensorData>(yi, xi, zi, pos, loci, loc0, loc1);
+	Sample_i->setMean_STD(yi.mean(), yi.std());
+	return Sample_i;
 }
 
 void TensorData::setMean_STD(torch::Tensor mean, torch::Tensor std)
