@@ -1,18 +1,20 @@
 #pragma once
 #include "CommonFunc.h"
 #include <torch/torch.h>
-
+#include <tuple>
 class TensorData
 {
 public:
 	TensorData(PhenoData &phe, GenoData &gene, CovData &cov);
 	TensorData( std::shared_ptr<PhenoData> phe, std::shared_ptr<GenoData> gene, std::shared_ptr<CovData> cov);
 	TensorData(torch::Tensor phe, torch::Tensor gene, torch::Tensor  cov, Eigen::VectorXd pos, Eigen::VectorXd loc, double loc0,double loc1);
+//	TensorData(std::shared_ptr<PhenoData> phe, torch::Tensor gene, torch::Tensor  cov, Eigen::VectorXd pos, double loc0, double loc1);
 	void setPos(Eigen::VectorXd pos);
 	void setLoc(Eigen::VectorXd loc);
 	void setBatchNum(int64_t Batch_Num);
 //	TensorData(PhenoData& phe, GenoData& gene, CovData& cov, bool isBalance);
 	std::shared_ptr<TensorData> getSample(int64_t index);
+	std::tuple<std::shared_ptr<TensorData>, std::shared_ptr<TensorData>> GetsubTrain(double ratio);
 	torch::Tensor getY();
 	torch::Tensor getX();
 	torch::Tensor getZ();
