@@ -151,6 +151,7 @@ struct Dataset
 	PhenoData phe;
 	GenoData geno;
 	CovData cov;
+	std::tuple<std::shared_ptr<Dataset>, std::shared_ptr<Dataset>> split(float seed, float ratio);
 };
 
 

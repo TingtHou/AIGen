@@ -716,4 +716,120 @@ float Evaluate::multiclass_auc(Eigen::MatrixXf pred_matrix, Eigen::VectorXi ref)
 	return (float) auc;
 }
 
+std::tuple<std::shared_ptr<Dataset>, std::shared_ptr<Dataset>> Dataset::split(float seed, float ratio)
+{
+	
+	std::default_random_engine e(seed);
+	int64_t num = phe.fid_iid.size();
+	int64_t train_num = (float)num * ratio;
+	std::vector<int64_t> fid_iid_split(num);
+	std::iota(std::begin(fid_iid_split), std::end(fid_iid_split), 0); // Fill with 0, 1, ..., 99.
+	std::shuffle(fid_iid_split.begin(), fid_iid_split.end(), e);
+	std::shared_ptr<Dataset> train = std::make_shared<Dataset>();
+	std::shared_ptr<Dataset> test = std::make_shared<Dataset>();
+	train->phe = phe;
+	train->cov = cov;
+	train->geno = geno;
+	test->phe = phe;
+	test->cov = cov;
+	test->geno = geno;
+	if (phe.isBalance)
+	{
+		train->phe.Phenotype.resize(train_num, phe.Phenotype.cols());
+		test->phe.Phenotype.resize(num - train_num, phe.Phenotype.cols());
+		//Check if the response are 1d, and will be interpolated at a single knot.
+		//If the responses are multivariate, and will be interpolated at same multi-knots, keep the knots vectors in train, and test dataset
+		//otherwise, the knots will be chosen according to response
+		if (phe.Phenotype.cols() == 1 && phe.loc.size() > 0)
+		{
+			train->phe.loc.resize(train_num);
+			test->phe.loc.resize(num - train_num);
+		}
+	}
+	else
+	{
+		train->phe.vPhenotype.clear();
+		train->phe.vloc.clear();
+		test->phe.vPhenotype.clear();
+		test->phe.vloc.clear();
+	}
+	train->phe.fid_iid.clear();
+	train->cov.fid_iid.clear();
+	train->geno.fid_iid.clear();
+	train->cov.Covariates.resize(train_num, cov.npar);
+	train->geno.Geno.resize(train_num, geno.pos.size());
+	////////////////////////////////////////
+	test->phe.fid_iid.clear();
+	test->cov.fid_iid.clear();
+	test->geno.fid_iid.clear();
+	test->cov.Covariates.resize(num - train_num, cov.npar);
+	test->geno.Geno.resize(num - train_num, geno.pos.size());
+	boost::bimap<int, std::string> fid_iid_train;
+	boost::bimap<int, std::string> fid_iid_test;
+	int  train_id = 0;
+	int test_id = 0;
+	for (int64_t i = 0; i < num; i++)
+	{
+		//std::string rowID = it_row->second;
+		int row_index = fid_iid_split[i];
+		auto fid_iid = phe.fid_iid.left.find(row_index);
+	//	std::cout << fid_iid->first << "\t" << fid_iid->second << std::endl;
+		if (i < train_num)
+		{
+			if (cov.nind)
+			{
+				train->cov.Covariates.row(train_id) << cov.Covariates.row(row_index);
+			}
+			if (geno.fid_iid.size() != 0)
+			{
+				train->geno.Geno.row(train_id) << geno.Geno.row(row_index);
+			}
 
+			if (phe.isBalance)
+			{
+				train->phe.Phenotype.row(train_id) = phe.Phenotype.row(row_index);
+				if (phe.Phenotype.cols() == 1 && phe.loc.size() > 0)
+				{
+					train->phe.loc(train_id) = phe.loc(row_index);
+				}
+			
+			}
+			else
+			{
+				train->phe.vPhenotype.push_back(phe.vPhenotype[row_index]);
+				train->phe.vloc.push_back(phe.vloc[row_index]);
+			}
+			fid_iid_train.insert({ train_id++,fid_iid->second });
+		}
+		else
+		{
+			if (cov.nind)
+			{
+				test->cov.Covariates.row(test_id) << cov.Covariates.row(row_index);
+			}
+			if (geno.fid_iid.size() != 0)
+			{
+				test->geno.Geno.row(test_id) << geno.Geno.row(row_index);
+			}
+			if (phe.isBalance)
+			{
+				test->phe.Phenotype.row(test_id) = phe.Phenotype.row(row_index);
+			}
+			else
+			{
+				test->phe.vPhenotype.push_back(phe.vPhenotype[row_index]);
+				test->phe.vloc.push_back(phe.vloc[row_index]);
+			}
+			fid_iid_test.insert({ test_id++ ,fid_iid->second });
+		}
+	}
+	train->phe.fid_iid = fid_iid_train;
+	train->cov.fid_iid = fid_iid_train;
+	train->geno.fid_iid = fid_iid_train;
+	train->phe.nind = fid_iid_train.size();
+	test->phe.fid_iid = fid_iid_test;
+	test->cov.fid_iid = fid_iid_test;
+	test->geno.fid_iid = fid_iid_test;
+	test->phe.nind = fid_iid_test.size();
+	return std::make_tuple(train, test);
+}
