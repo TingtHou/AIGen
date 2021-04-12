@@ -40,11 +40,12 @@ public:
 	std::shared_ptr< CovData> getCov_prt() { return std::make_shared<CovData>(Covs); };
 	std::vector<KernelData>* GetKernel() { return &KernelList; };						//Get kernel data
 	CovData GetCovariates();								//Get covariate data
+	std::shared_ptr<Dataset> GetDataset();
 	Eigen::VectorXf& GetWeights() { return Weights; };								//Get Weights data
 	void SetKernel(std::vector<KernelData> KernelList)								//Replace internal kernel data with specificed external kernel data
 		{ this->KernelList=KernelList; };
 	void match();																	//match phenotype data and kernel data
-	std::tuple<std::shared_ptr<Dataset>, std::shared_ptr<Dataset>> split(float seed, float ratio=0.8);
+	//std::tuple<std::shared_ptr<Dataset>, std::shared_ptr<Dataset>> split(float seed, float ratio=0.8);
 	GenoData getGenotype() { return geno; };										//Get genotype data
 	~DataManager();
 private:

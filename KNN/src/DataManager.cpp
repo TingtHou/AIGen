@@ -99,6 +99,7 @@ void DataManager::match()
 	phe.fid_iid = overlapped;
 	Covs.fid_iid = overlapped;
 	geno.fid_iid = overlapped;
+	phe.nind = overlapped.size();
 	i = 0;
 	for (; i < KernelList.size(); i++)
 	{
@@ -108,6 +109,7 @@ void DataManager::match()
 	LOG(INFO) << "After matching, there are " << overlapped.size() << " individuals included for the analysis.";
 }
 
+/*
 std::tuple<std::shared_ptr<Dataset>, std::shared_ptr<Dataset>>  DataManager::split(float seed,float ratio)
 {
 	std::stringstream ss;
@@ -220,16 +222,18 @@ std::tuple<std::shared_ptr<Dataset>, std::shared_ptr<Dataset>>  DataManager::spl
 	train->phe.fid_iid = fid_iid_train;
 	train->cov.fid_iid = fid_iid_train;
 	train->geno.fid_iid = fid_iid_train;
+	train->phe.nind = fid_iid_train.size();
 	test->phe.fid_iid = fid_iid_test;
 	test->cov.fid_iid = fid_iid_test;
 	test->geno.fid_iid = fid_iid_test;
+	test->phe.nind = fid_iid_test.size();
 	std::stringstream ss1;
 	ss1 << "Spliting Completed. There are "<< train_num <<" individuals in the training dataset, and "<<num-train_num<< " individuals in the testing dataset";
 	std::cout << ss1.str() << std::endl;
 	LOG(INFO) << ss1.str();
 	return std::make_tuple(train, test);
 }
-
+*/
 void DataManager::match_Kernels(KernelData & kernel, boost::bimap<int, std::string> &overlapped)
 {
 	KernelData tmpKernel = kernel;
@@ -672,6 +676,15 @@ CovData DataManager::GetCovariates()
 	return Covs;
 }
 
+std::shared_ptr<Dataset> DataManager::GetDataset()
+{
+	auto dataset = std::make_shared<Dataset>();
+	dataset->cov = Covs;
+	dataset->geno = geno;
+	dataset->phe = phe;
+	return dataset;
+}
+
 
 
 void DataManager::readResponse(std::string resopnsefile, PhenoData & phe)
@@ -750,7 +763,7 @@ void DataManager::readResponse(std::string resopnsefile, PhenoData & phe)
 	}
 	infile.close();
 	int nind = yvector.size();
-	
+	phe.nind = nind;
 	bool isbalanced=true;
 //	bool same_value = true;
 //	bool same_size = true;
