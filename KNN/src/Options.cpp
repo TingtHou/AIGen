@@ -35,6 +35,8 @@ std::string Options::print()
 			buffer << *v;
 		else if (auto v = boost::any_cast<float>(&value))
 			buffer << *v;
+		else if (auto v = boost::any_cast<double>(&value))
+			buffer << *v;
 		buffer << std::endl;
 	}
 	return buffer.str();
@@ -131,6 +133,8 @@ void Options::boostProgramOptionsRoutine(int argc, const char * const argv[])
 			"In NN, the number of layers indicates the data points in this layer\n"
 			"If the phenotype is categorical data, the output equals to the number of class.\n")
 		("epoch", po::value<int>()->value_name("num")->default_value(3000), "set Epoch number for the training.\n")
+		("lr", po::value<double>()->value_name("num")->default_value(0.1), "set learning rate for the training.\n")
+		("optim", po::value<int>()->value_name("num")->default_value(1), "set optimizer  for the training, 0 Adam; 1 SGD.\n")
 		("lambda", po::value<double>()->value_name("num")->default_value(1.0), "define the lambda value for training, default 1.\n")
 		("loss", po::value<int>()->value_name("[0|1|2]")->default_value(0), "define the loss function for training, 0: MSE; 1: BCE; 2: CrossEntropy.\n")
 		("ratio", po::value<float>()->value_name("num")->default_value(0.8), "define the ratio of training dataset to testing dataset\n")
