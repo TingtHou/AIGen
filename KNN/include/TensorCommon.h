@@ -7,11 +7,11 @@
 #include <ATen/ATen.h>
 
 template<class Optim, class Net, class Loss>
-torch::Tensor training(std::shared_ptr<Net> net, std::shared_ptr<TensorData> train, std::shared_ptr<TensorData> test, int64_t epoches = 1e6)
+torch::Tensor training(std::shared_ptr<Net> net, std::shared_ptr<TensorData> train, std::shared_ptr<TensorData> valid, double lr, int64_t epoches = 1e6)
 {
 	//net->fit_init(dataset);
 	net->train();
-	Optim optimizer(net->parameters());
+	Optim optimizer(net->parameters(), lr);
 	std::stringstream ss;
 	int64_t epoch = 0;
 	double risk_min = INFINITY;
@@ -62,31 +62,31 @@ torch::Tensor training(std::shared_ptr<Net> net, std::shared_ptr<TensorData> tra
 			net->eval();
 			torch::Tensor loss_test = torch::zeros(1);
 			torch::Tensor pen_test = torch::zeros(1);
-			if (test->nind != 0)
+			if (valid->nind != 0)
 			{
 				
-				if (test->isBalanced)
+				if (valid->isBalanced)
 				{
-					torch::Tensor pred_test = net->forward(test);
-					loss_test += (*f_loss)(pred_test, test->getY());
-					pen_test += net->penalty(test->nind);
+					torch::Tensor pred_test = net->forward(valid);
+					loss_test += (*f_loss)(pred_test, valid->getY());
+					pen_test += net->penalty(valid->nind);
 				}
 				else
 				{
-					for (size_t i = 0; i < test->nind; i++)
+					for (size_t i = 0; i < valid->nind; i++)
 					{
 	//					std::cout << "ind" << i << std::endl;
-						auto sample = test->getSample(i);
+						auto sample = valid->getSample(i);
 						torch::Tensor pred_test = net->forward(sample);
 						pen_test += net->penalty(sample->nind);
 						loss_test += (*f_loss)(pred_test, sample->getY());
 					}
-					loss_test /= (double)test->nind;
-					pen_test /= (double)test->nind;
+					loss_test /= (double)valid->nind;
+					pen_test /= (double)valid->nind;
 				
 				}
 			}
-			torch::Tensor risk_loss = loss_test / test->std_y.pow(2) + pen_test;
+			torch::Tensor risk_loss = loss_test / valid->std_y.pow(2) + pen_test;
 			
 			if (risk_loss.item<double>() < risk_min)
 			{
@@ -109,7 +109,7 @@ torch::Tensor training(std::shared_ptr<Net> net, std::shared_ptr<TensorData> tra
 			}
 			if (epoch % 100 == 0)
 			{
-				std::cout << "===================================\nepoch: " << epoch << "\nTesting loss: " << loss_test.item<double>() << std::endl;
+				std::cout << "===================================\nepoch: " << epoch << "\nTraining loss: " << loss_test.item<double>() << std::endl;
 			}
 	//		std::cout << "===================================\nepoch: " << epoch << "\nTraning loss: " << loss_test.item<double>() << std::endl;
 			net->train();
