@@ -10,6 +10,21 @@ FNN::FNN(std::vector<int64_t> dims, double lamb)
 
 torch::Tensor FNN::forward(std::shared_ptr<TensorData> data)
 {
+	/*
+	if(!realize)
+		realization(data);
+	else
+	{
+		if (!data->isBalanced)
+		{
+			if (models[layers.size() - 1]->bs1 != nullptr)
+			{
+			
+					models[layers.size() - 1]->bs1->mat = LastLayer[subtrain+ID];
+			}
+		}
+	}
+	*/
 	realization(data);
 	std::shared_ptr<Layer> model(nullptr);
 	switch (layers[0])
@@ -243,6 +258,13 @@ void FNN::realization(std::shared_ptr<TensorData> data)
 	
 		Eigen::VectorXd loc = (data->getLoc().array() - data->loc0).array() / (data->loc1 - data->loc0);
 		models[i]->bs1->evaluate(loc);
+		/*
+		if (!data->isBalanced)
+		{
+			LastLayer.push_back(models[i]->bs1->mat);
+		}
+		*/
+	
 	//	models[i]->index.push_back(loc.size()-1);
 	//	std::cout << "model " << i << " bs1 mat:\n" << models[i]->bs1->mat.index({ torch::indexing::Slice(torch::indexing::None, 10) }) << std::endl;
 	}

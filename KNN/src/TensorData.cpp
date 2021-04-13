@@ -146,13 +146,20 @@ void TensorData::setBatchNum(int64_t Batch_Num)
 
 std::shared_ptr<TensorData> TensorData::getSample(int64_t index)
 {
-	Eigen::MatrixXf y_tmp(1, phe->vPhenotype[index].size());
-	y_tmp.row(0) = phe->vPhenotype[index];
+	Eigen::MatrixXf y_tmp( phe->vPhenotype[index].size(),1);
+	y_tmp.col(0) = phe->vPhenotype[index];
 	torch::Tensor yi = dtt::eigen2libtorch(y_tmp);
 	torch::Tensor xi = x.index({ index, });
-	xi = xi.reshape({ 1, x.sizes()[1] });
+//	xi = xi.reshape({ 1, x.sizes()[1] });
+	//std::cout << xi << std::endl;
+	xi = xi.repeat({ y_tmp.size(), 1 });
+	//std::cout << xi << std::endl;
+//	
 	torch::Tensor zi = z.index({ index, });
-	zi = zi.reshape({ 1, z.sizes()[1] });
+//	std::cout << zi.sizes()[0] << "\t" << zi.sizes()[1] << std::endl;
+	zi = zi.repeat({ y_tmp.size(), 1 });
+//	std::cout << zi << std::endl;
+//	zi = zi.reshape({ 1, z.sizes()[1] });
 	auto Sample_i = std::make_shared<TensorData>(yi, xi, zi, pos, phe->vloc[index].cast<double>(),loc0,loc1);
 	Sample_i->setMean_STD(mean_y, std_y);
 	Sample_i->dataType = this->dataType;

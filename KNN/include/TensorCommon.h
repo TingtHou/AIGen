@@ -114,7 +114,10 @@ torch::Tensor training(std::shared_ptr<Net> net, std::shared_ptr<TensorData> tra
 	//		std::cout << "===================================\nepoch: " << epoch << "\nTraning loss: " << loss_test.item<double>() << std::endl;
 			net->train();
 		}
-	
+	//	if (epoch==1)
+	//	{
+	//		net->realize = true;
+	//	}
 		epoch++;
 	}
 

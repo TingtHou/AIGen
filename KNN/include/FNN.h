@@ -83,9 +83,10 @@ private:
 	double lamb=1;
 	std::vector<std::shared_ptr<Layer>> models;
 	std::vector<int> layers;
-	//bool realize = false;
+
+
 	void realization(std::shared_ptr<TensorData> data);
-	
+	std::vector<torch::Tensor> LastLayer;
 	std::vector<int64_t> dims;
 
 };

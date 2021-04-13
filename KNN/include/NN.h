@@ -12,6 +12,7 @@ public:
 	torch::Tensor penalty(int64_t nind);
 	int64_t epoch = 0;
 	torch::Tensor loss;
+	//bool realize = false;
 private:
 	double lamb = 1;
 	std::vector<int64_t> dims;

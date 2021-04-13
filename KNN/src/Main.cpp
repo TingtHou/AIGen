@@ -806,7 +806,8 @@ std::vector<std::shared_ptr<Evaluate>>  FNNAnalysis(boost::program_options::vari
 	std::shared_ptr<Dataset> test =nullptr;
 	
 	std::shared_ptr<TensorData> data = std::make_shared<TensorData>(data_full->phe, data_full->geno, data_full->cov);
-	bool sinlgeknot = (data->isBalanced && data->getLoc().size() == data->nind) ;   // univariate analysis, with response is interpolated on different knot.
+	bool sinlgeknot = (data->isBalanced && data->getLoc().size() == data->nind) || !data->isBalanced;   // univariate analysis, with response is interpolated on different knot.
+																										// if the data is unbalanced, we train the model per object, which will be considered as  univariate analysis, with response is interpolated on different knot.
 
 	int  loss = programOptions["loss"].as < int >();
 
