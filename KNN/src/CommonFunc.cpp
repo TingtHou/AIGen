@@ -814,6 +814,11 @@ std::tuple<std::shared_ptr<Dataset>, std::shared_ptr<Dataset>> Dataset::split(fl
 			if (phe.isBalance)
 			{
 				test->phe.Phenotype.row(test_id) = phe.Phenotype.row(row_index);
+				if (phe.Phenotype.cols() == 1 && phe.loc.size() > 0)
+				{
+					test->phe.loc(test_id) = phe.loc(row_index);
+				}
+
 			}
 			else
 			{

@@ -72,8 +72,8 @@ void DataManager::match()
 		std::string rowID = it_row->second;
 		auto itcov = tmpCovs.fid_iid.right.find(rowID);
 		auto itgen = tmpGen.fid_iid.right.find(rowID);
-	//	int gen_ID = itgen->second;
-	//	int cov_ID = itcov->second;
+		int gen_ID = itgen->second;
+		int cov_ID = itcov->second;
 		if (itcov!= tmpCovs.fid_iid.right.end())
 		{
 			Covs.Covariates.row(i) << tmpCovs.Covariates.row(itcov->second);
@@ -87,13 +87,14 @@ void DataManager::match()
 		int OriPheID = it->second;
 		if (tmpPhe.isBalance)
 		{
-			phe.Phenotype.row(i++) = tmpPhe.Phenotype.row(OriPheID);
+			phe.Phenotype.row(i) = tmpPhe.Phenotype.row(OriPheID);
 		}
 		else
 		{
 			phe.vPhenotype.push_back(tmpPhe.vPhenotype[OriPheID]);
 			phe.vloc.push_back(tmpPhe.vloc[OriPheID]);
 		}
+		i++;
 	
 	}
 	phe.fid_iid = overlapped;
