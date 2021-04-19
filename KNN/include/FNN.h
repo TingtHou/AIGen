@@ -79,6 +79,7 @@ public:
 	
 	int64_t epoch=0;
 	torch::Tensor loss;
+	bool realize = false;
 private:
 	double lamb=1;
 	std::vector<std::shared_ptr<Layer>> models;
@@ -86,7 +87,7 @@ private:
 
 
 	void realization(std::shared_ptr<TensorData> data);
-	std::vector<torch::Tensor> LastLayer;
+	std::vector<torch::Tensor> vMat;
 	std::vector<int64_t> dims;
 
 };

@@ -13,6 +13,7 @@ torch::Tensor FNN::forward(std::shared_ptr<TensorData> data)
 	/*
 	if(!realize)
 		realization(data);
+	
 	else
 	{
 		if (!data->isBalanced)
@@ -42,13 +43,14 @@ torch::Tensor FNN::forward(std::shared_ptr<TensorData> data)
 //	std::cout << data->getX().sizes() << std::endl;
 	torch::Tensor res = model->forward(data->getX(), data->getZ());
 //	std::cout << res.sizes() << std::endl;
-	for (int i = 1; i < layers.size(); i++)
+	int i = 1;
+	for (; i < layers.size()-1; i++)
 	{
 		std::shared_ptr<Layer> model;
 		switch (layers[i])
 		{
 		case 2:
-			model=std::dynamic_pointer_cast<LayerB>(models[i]);
+			model = std::dynamic_pointer_cast<LayerB>(models[i]);
 			break;
 		case 3:
 			model = std::dynamic_pointer_cast<LayerC>(models[i]);
@@ -60,19 +62,67 @@ torch::Tensor FNN::forward(std::shared_ptr<TensorData> data)
 		res = res.sigmoid();
 		res = model->forward(res);
 	}
+	torch::Tensor Final;
+	//std::shared_ptr<Layer> model_final(nullptr);
+	res = res.sigmoid();
+	switch (layers[i])
+	{
+	case 2:
+		Final = torch::zeros({ 0,1 });
+		model = std::dynamic_pointer_cast<LayerB>(models[i]);
+		if (i == (layers.size() - 1) && !data->isBalanced)
+		{
+			int64_t start_p = 0;
+			int64_t expand_size=0;
+			Eigen::VectorXd total_loc = data->getLoc();
+			for (int64_t index = 1; index <= data->nind; index++)
+			{
+				expand_size = std::accumulate(data->nknots.begin(), data->nknots.begin() +index, 0);
+				torch::Tensor xi = res.index({ torch::indexing::Slice(start_p, expand_size ), });
+
+				Eigen::VectorXd loc(expand_size - start_p);
+
+				loc << total_loc.block(start_p, 0, expand_size - start_p, 1);
+				models[i]->bs1->evaluate(loc);
+				
+		
+				torch::Tensor tmp= model->forward(xi);
+
+				Final=torch::cat({ Final,tmp }, 0);
+
+				start_p = expand_size;
+			}
+		}
+		else
+		{
+			Final = model->forward(res);
+		}
+		break;
+	case 3:
+		model = std::dynamic_pointer_cast<LayerC>(models[i]);
+		Final = model->forward(res);
+	//	Final = model->forward(res);
+	//	std::cout << Final << std::endl;
+		break;
+	case 4:
+		model = std::dynamic_pointer_cast<LayerD>(models[i]);
+		Final = model->forward(res);
+		break;
+	}
+
 	switch (data->dataType)
 	{
 	case 0:
-		res = res * data->std_y + data->mean_y;
+		Final = Final * data->std_y + data->mean_y;
 		break;
 	case 1:
-		res = res.sigmoid();
+		Final = Final.sigmoid();
 		break;
 	case 2:
 		break;
 	}
 	
-	return res;
+	return Final;
 }
 
 torch::Tensor FNN::penalty(int64_t nind)
@@ -255,9 +305,13 @@ void FNN::realization(std::shared_ptr<TensorData> data)
 		{
 			data->loc1 = data->getLoc().maxCoeff() + 1 / (double)models[i]->bs1->n_basis / 2;
 		}
+		if (data->isBalanced)
+		{
+			Eigen::VectorXd loc = (data->getLoc().array() - data->loc0).array() / (data->loc1 - data->loc0);
+			models[i]->bs1->evaluate(loc);
+		}
+		
 	
-		Eigen::VectorXd loc = (data->getLoc().array() - data->loc0).array() / (data->loc1 - data->loc0);
-		models[i]->bs1->evaluate(loc);
 		/*
 		if (!data->isBalanced)
 		{
