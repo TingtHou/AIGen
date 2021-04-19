@@ -12,15 +12,20 @@ public:
 	void setPos(Eigen::VectorXd pos);
 	void setLoc(Eigen::VectorXd loc);
 	void setBatchNum(int64_t Batch_Num);
+	//int64_t getNind(int64_t index) { return nknots[index]; };
 //	TensorData(PhenoData& phe, GenoData& gene, CovData& cov, bool isBalance);
 	std::shared_ptr<TensorData> getSample(int64_t index);
-	std::tuple<std::shared_ptr<TensorData>, std::shared_ptr<TensorData>> GetsubTrain(double ratio);
+//	std::tuple<std::shared_ptr<TensorData>, std::shared_ptr<TensorData>> GetsubTrain(double ratio);
 	torch::Tensor getY();
 	torch::Tensor getX();
 	torch::Tensor getZ();
 	Eigen::VectorXd getPos()
 	{
 		return pos;
+	}
+	Eigen::VectorXd getLoc(int64_t index)
+	{
+		return phe->vloc[index].cast<double>();
 	}
 	Eigen::VectorXd getLoc()
 	{
@@ -38,6 +43,7 @@ public:
 	bool isBalanced = true; // define balance if the knots of y are same, imbalance if the lenght of knots of y are different or the value of knots are different.
 	int dataType=0;
 	int64_t Batch_Num;
+	std::vector<int64_t> nknots;  //the reponse number per individual;
 private:
 	torch::Tensor y;
 	torch::Tensor x;
@@ -48,4 +54,6 @@ private:
 	std::shared_ptr<GenoData> gene;
 	std::shared_ptr<CovData> cov;
 	std::vector<int64_t> Batch_index;
+	std::vector<int64_t> nind_in_each_batch;
+	//std::vector<int64_t> nknots;  //the reponse number per individual;
 };
