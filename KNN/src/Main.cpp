@@ -916,7 +916,7 @@ std::vector<std::shared_ptr<Evaluate>>  FNNAnalysis(boost::program_options::vari
 		ss.clear();
 		std::shared_ptr<Dataset> subtrain = nullptr;
 		std::shared_ptr<Dataset> valid = nullptr;
-
+		//std::cout << test->phe.loc << std::endl;
 		ss << "Split the training dataset into two sub-dataset, subtraining, validation.";
 		std::cout << ss.str() << std::endl;
 		LOG(INFO) << ss.str();
@@ -938,6 +938,7 @@ std::vector<std::shared_ptr<Evaluate>>  FNNAnalysis(boost::program_options::vari
 	//	std::shared_ptr<TensorData> valid_tensor =nullptr;
 		std::shared_ptr<TensorData> subtrain_tensor = std::make_shared<TensorData>(subtrain->phe, subtrain->geno, subtrain->cov);
 		std::shared_ptr<TensorData> valid_tensor = std::make_shared<TensorData>(valid->phe, valid->geno, valid->cov);
+//		std::cout << test_tensor->getY() << std::endl;
 		subtrain_tensor->dataType = loss;
 		valid_tensor->dataType = loss;
 		//std::tie(subtrain, valid) = train_tensor->GetsubTrain(ratio);
@@ -1016,10 +1017,10 @@ std::vector<std::shared_ptr<Evaluate>>  FNNAnalysis(boost::program_options::vari
 				//test_loss=Testing<FNN, torch::nn::CrossEntropyLoss>(f, test_tensor);
 				break;
 			}
-			//		for (const auto& p : f->parameters()) 
-			//		{
-			//			std::cout << p << std::endl;
-			//		}
+		//	for (const auto& p : f->parameters()) 
+		//	{
+	//			std::cout << p << std::endl;
+	//		}
 			if (programOptions.count("save"))
 			{
 				std::string saveNet = programOptions["save"].as < std::string >();
@@ -1034,6 +1035,7 @@ std::vector<std::shared_ptr<Evaluate>>  FNNAnalysis(boost::program_options::vari
 			ss << "epoch: " << f->epoch << "\tTraining: loss: " << test_loss.item<double>();
 			std::cout << ss.str() << std::endl;
 			LOG(INFO) << ss.str() << std::endl;
+			f->eval();
 
 		///////////////////////////////////////////////////////////////////////
 			/// evaluate the testing dataset
@@ -1041,6 +1043,9 @@ std::vector<std::shared_ptr<Evaluate>>  FNNAnalysis(boost::program_options::vari
 			{
 
 				std::shared_ptr<Evaluate> test = nullptr;
+				torch::Tensor pred_test = f->forward(test_tensor);
+				test = std::make_shared< Evaluate>(test_tensor->getY(), pred_test, test_tensor->dataType);
+				/*
 				if (test_tensor->isBalanced)
 				{
 					torch::Tensor pred_test = f->forward(test_tensor);
@@ -1051,6 +1056,7 @@ std::vector<std::shared_ptr<Evaluate>>  FNNAnalysis(boost::program_options::vari
 				{
 					if (test_tensor->dataType == 0)
 					{
+					
 						
 						torch::Tensor loss=torch::zeros(1);
 						for (size_t i = 0; i < test_tensor->nind; i++)
@@ -1063,9 +1069,10 @@ std::vector<std::shared_ptr<Evaluate>>  FNNAnalysis(boost::program_options::vari
 						loss=loss/ test_tensor->nind;
 						test = std::make_shared< Evaluate>();
 						test->setMSE(loss.item<double>());
+						
 					}
 				}
-				
+				*/
 				prediction_error.push_back(test);
 			//	prediction_error.push_back(test->getAUC());
 			}
@@ -1077,6 +1084,10 @@ std::vector<std::shared_ptr<Evaluate>>  FNNAnalysis(boost::program_options::vari
 			////////////////////////////////////////////////////////////
 			// evaluate the total dataset
 			std::shared_ptr<Evaluate> Total = nullptr;
+			torch::Tensor pred_total = f->forward(data);
+			Total = std::make_shared< Evaluate>(data->getY(), pred_total, data->dataType);
+			prediction_error.push_back(Total);
+			/*
 			if (data->isBalanced)
 			{
 				torch::Tensor pred_total = f->forward(data);
@@ -1108,7 +1119,7 @@ std::vector<std::shared_ptr<Evaluate>>  FNNAnalysis(boost::program_options::vari
 					prediction_error.push_back(nullptr);
 				}
 			}
-		
+		*/
 
 			
 		//	prediction_error.push_back(Total->getAUC());
