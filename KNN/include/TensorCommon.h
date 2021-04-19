@@ -19,6 +19,22 @@ torch::Tensor training(std::shared_ptr<Net> net, std::shared_ptr<TensorData> tra
 	auto f_loss = std::make_shared<Loss>();
 	while (epoch < epoches)
 	{
+		for (size_t i = 0; i < train->Batch_Num; i++)
+		{
+			optimizer.zero_grad();
+			auto miniBatch = train->getBatch(i);
+			torch::Tensor prediction = net->forward(miniBatch);
+		//	std::cout << miniBatch->getY() << std::endl;
+	//		std::cout << prediction  << std::endl;
+			torch::Tensor pen = net->penalty(miniBatch->nind);
+			torch::Tensor loss = (*f_loss)(prediction, miniBatch->getY());
+		
+			torch::Tensor risk = loss / miniBatch->std_y.pow(2) + pen;
+			risk.backward();
+			optimizer.step();
+		}
+
+		/*
 		if (train->isBalanced)
 		{
 			for (size_t i = 0; i < train->Batch_Num; i++)
@@ -39,15 +55,9 @@ torch::Tensor training(std::shared_ptr<Net> net, std::shared_ptr<TensorData> tra
 			optimizer.zero_grad();
 			torch::Tensor loss = torch::zeros(1);
 			torch::Tensor pen = torch::zeros(1);
-			for (int64_t i = 0; i < train->nind; i++)
-			{
-				
-				auto sample = train->getSample(i);
-				torch::Tensor prediction = net->forward(sample);
-				pen += net->penalty(sample->nind);
-				loss += (*f_loss)(prediction, sample->getY());
-	//			std::cout << sample->getY().sizes() << std::endl;
-			}
+			torch::Tensor prediction = net->forward(sample);
+			pen += net->penalty(sample->nind);
+			loss += (*f_loss)(prediction, sample->getY());
 			loss /= (double)train->nind;
 			pen /= (double)train->nind;
 			torch::Tensor risk = loss / train->std_y.pow(2) + pen;
@@ -56,14 +66,19 @@ torch::Tensor training(std::shared_ptr<Net> net, std::shared_ptr<TensorData> tra
 		
 		}
 		
-	
+	*/
 		if (epoch % 10 == 0)
 		{
+		//	net->realize = false;
 			net->eval();
 			torch::Tensor loss_test = torch::zeros(1);
 			torch::Tensor pen_test = torch::zeros(1);
 			if (valid->nind != 0)
 			{
+				torch::Tensor pred_test = net->forward(valid);
+				loss_test += (*f_loss)(pred_test, valid->getY());
+				pen_test += net->penalty(valid->nind);
+				/*
 				
 				if (valid->isBalanced)
 				{
@@ -73,7 +88,7 @@ torch::Tensor training(std::shared_ptr<Net> net, std::shared_ptr<TensorData> tra
 				}
 				else
 				{
-					for (size_t i = 0; i < valid->nind; i++)
+				//	for (size_t i = 0; i < valid->nind; i++)
 					{
 	//					std::cout << "ind" << i << std::endl;
 						auto sample = valid->getSample(i);
@@ -85,6 +100,7 @@ torch::Tensor training(std::shared_ptr<Net> net, std::shared_ptr<TensorData> tra
 					pen_test /= (double)valid->nind;
 				
 				}
+				*/
 			}
 			torch::Tensor risk_loss = loss_test / valid->std_y.pow(2) + pen_test;
 			
@@ -114,10 +130,8 @@ torch::Tensor training(std::shared_ptr<Net> net, std::shared_ptr<TensorData> tra
 	//		std::cout << "===================================\nepoch: " << epoch << "\nTraning loss: " << loss_test.item<double>() << std::endl;
 			net->train();
 		}
-	//	if (epoch==1)
-	//	{
-	//		net->realize = true;
-	//	}
+		
+		
 		epoch++;
 	}
 
