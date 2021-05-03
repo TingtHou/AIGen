@@ -455,6 +455,7 @@ Evaluate::Evaluate()
 
 Evaluate::Evaluate(Eigen::VectorXf Response, Eigen::VectorXf Predictor, int dataType)
 {
+	this->dataType = dataType;
 	Eigen::MatrixXf y = Eigen::Map<Eigen::MatrixXf>(Response.data(), Response.rows(), 1);
 	Eigen::MatrixXf y_hat = Eigen::Map<Eigen::MatrixXf>(Response.data(), Response.rows(), 1);
 	if (dataType == 0)
@@ -488,6 +489,7 @@ Evaluate::Evaluate(Eigen::VectorXf Response, Eigen::VectorXf Predictor, int data
 
 Evaluate::Evaluate(torch::Tensor Response, torch::Tensor Predictor, int dataType)
 {
+	this->dataType = dataType;
 	Eigen::MatrixXf y = dtt::libtorch2eigen<double>(Response).cast<float>();
 	Eigen::MatrixXf y_hat = dtt::libtorch2eigen<double>(Predictor).cast<float>();
 	if (dataType==0)
@@ -504,8 +506,8 @@ Evaluate::Evaluate(torch::Tensor Response, torch::Tensor Predictor, int dataType
 		{
 			Eigen::MatrixXf pred_matrix(y_hat.size(), 2);
 			pred_matrix.setOnes();
-			pred_matrix.col(0) = y_hat.col(0);
-			pred_matrix.col(1) = pred_matrix.col(1) - y_hat.col(0);
+			pred_matrix.col(0) = pred_matrix.col(1) - y_hat.col(0);
+			pred_matrix.col(1) = y_hat.col(0);
 			auc = multiclass_auc(pred_matrix, ref.cast<int>());
 			y_hat = y_hat.array() + 0.5;
 			y_hat = y_hat.cast<int>().cast<float>();
@@ -715,7 +717,67 @@ float Evaluate::multiclass_auc(Eigen::MatrixXf pred_matrix, Eigen::VectorXi ref)
 	auc = auc * 2 / (double)(levels * (levels - 1));
 	return (float) auc;
 }
+std::shared_ptr<Dataset> Dataset::wide2long()
+{
+	std::shared_ptr<Dataset> datasetL = std::make_shared<Dataset>();
+	std::vector<float> y_tmp;
+	boost::bimap<int, std::string> fid_iid_long;
+//	std::vector<float> loc_tmp;
+	int id = 0;
+	for (int64_t i = 0; i < this->phe.vPhenotype.size(); i++)
+	{
+	
+		for (int64_t j = 0; j < this->phe.vPhenotype[i].size(); j++)
+		{
+			Eigen::VectorXf newphe(1);
+			Eigen::VectorXf newloc(1);
+			newphe[0] = this->phe.vPhenotype[i][j];
+			newloc(0) = this->phe.vloc[i][j];
+			y_tmp.push_back(this->phe.vPhenotype[i][j]);
+		//	loc_tmp.push_back(this->phe.vloc[i][j]);
+			datasetL->phe.vloc.push_back(newloc);
+			datasetL->phe.vPhenotype.push_back(newphe);
+			std::stringstream ss;
+			ss << id << "_" << id;
+			fid_iid_long.insert({ id, ss.str() });
+			id++;
+		}
+	
+	}
+	datasetL->phe.Phenotype = Eigen::Map<Eigen::MatrixXf>(y_tmp.data(), y_tmp.size(), 1);
+//	datasetL->phe.loc = Eigen::Map<Eigen::VectorXf>(loc_tmp.data(), loc_tmp.size(), 1);
+	datasetL->phe.fid_iid = fid_iid_long;
+	datasetL->phe.isBalance = true;
+	datasetL->phe.mean = this->phe.mean;
+	datasetL->phe.std = this->phe.std;
+	datasetL->phe.nind = y_tmp.size();
+	datasetL->phe.dataType = this->phe.dataType;
+	datasetL->cov.Covariates.resize(y_tmp.size(), this->cov.npar);
+	datasetL->geno.Geno.resize(y_tmp.size(), this->geno.Geno.cols());
+	id = 0;
+	for (int64_t i = 0; i < this->phe.vPhenotype.size(); i++)
+	{
 
+		for (int64_t j = 0; j < this->phe.vPhenotype[i].size(); j++)
+		{
+			if (this->cov.npar)
+			{
+				datasetL->cov.Covariates.row(id) << this->cov.Covariates.row(i);
+			}
+			datasetL->geno.Geno.row(id) << this->geno.Geno.row(i);
+			id++;
+		}
+
+	}
+	datasetL->geno.fid_iid = fid_iid_long;
+	datasetL->geno.pos = this->geno.pos;
+	datasetL->cov.fid_iid = fid_iid_long;
+	datasetL->cov.names = this->cov.names;
+	datasetL->cov.nind = y_tmp.size();
+	datasetL->cov.npar = this->cov.npar;
+	return datasetL;
+
+}
 std::tuple<std::shared_ptr<Dataset>, std::shared_ptr<Dataset>> Dataset::split(float seed, float ratio)
 {
 	
@@ -746,13 +808,13 @@ std::tuple<std::shared_ptr<Dataset>, std::shared_ptr<Dataset>> Dataset::split(fl
 			test->phe.loc.resize(num - train_num);
 		}
 	}
-	else
-	{
+//	else
+//	{
 		train->phe.vPhenotype.clear();
 		train->phe.vloc.clear();
 		test->phe.vPhenotype.clear();
 		test->phe.vloc.clear();
-	}
+	//}
 	train->phe.fid_iid.clear();
 	train->cov.fid_iid.clear();
 	train->geno.fid_iid.clear();
@@ -794,11 +856,15 @@ std::tuple<std::shared_ptr<Dataset>, std::shared_ptr<Dataset>> Dataset::split(fl
 				}
 			
 			}
-			else
-			{
+	//		else
+	//		{
 				train->phe.vPhenotype.push_back(phe.vPhenotype[row_index]);
-				train->phe.vloc.push_back(phe.vloc[row_index]);
-			}
+				if (phe.vloc.size())
+				{
+					train->phe.vloc.push_back(phe.vloc[row_index]);
+				}
+			
+	//		}
 			fid_iid_train.insert({ train_id++,fid_iid->second });
 		}
 		else
@@ -820,11 +886,15 @@ std::tuple<std::shared_ptr<Dataset>, std::shared_ptr<Dataset>> Dataset::split(fl
 				}
 
 			}
-			else
-			{
+	//		else
+	//		{
 				test->phe.vPhenotype.push_back(phe.vPhenotype[row_index]);
-				test->phe.vloc.push_back(phe.vloc[row_index]);
-			}
+				if (phe.vloc.size())
+				{
+					test->phe.vloc.push_back(phe.vloc[row_index]);
+				}
+			//	test->phe.vloc.push_back(phe.vloc[row_index]);
+	//		}
 			fid_iid_test.insert({ test_id++ ,fid_iid->second });
 		}
 	}

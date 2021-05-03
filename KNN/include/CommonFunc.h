@@ -123,6 +123,7 @@ struct PhenoData
 	std::vector<Eigen::VectorXf> vloc;
 	Eigen::VectorXf loc;
 	bool isBalance;
+	bool isUnivariate;
 	double mean;
 	double std;
 	int nind;
@@ -151,6 +152,7 @@ struct Dataset
 	PhenoData phe;
 	GenoData geno;
 	CovData cov;
+	std::shared_ptr<Dataset> wide2long();
 	std::tuple<std::shared_ptr<Dataset>, std::shared_ptr<Dataset>> split(float seed, float ratio);
 };
 
@@ -224,6 +226,7 @@ public:
 	float getAUC() { return auc; };
 	void test();
 	void setMSE(double mse) { this->mse = mse; };
+	int dataType;
 private:
 	float mse = 0;
 	Eigen::VectorXf cor;
