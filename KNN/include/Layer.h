@@ -11,25 +11,31 @@ struct LayerA : torch::nn::Module
 		fc = register_module("fc", torch::nn::Linear(in_dim + z_dim, out_dim));
 	}
 
+	/*
 	torch::Tensor forward(torch::Tensor x)
 	{
 		return fc(x);
 	}
+	*/
 
 
-	torch::Tensor forward(torch::Tensor x, torch::Tensor z)
+	torch::Tensor forward(torch::Tensor x, torch::Tensor z= torch::empty(0))
 	{
-		if (x.sizes()[0] != 0)
+		bool isCov = z.sizes()[0] != 0 && z.sizes()[1] != 0;
+		bool isGene = x.sizes()[0] != 0 && x.sizes()[1] != 0;
+		if (isCov)
 		{
-			x = z;
-		}
-		else
-		{
-			if (z.sizes()[0] != 0)
+			if (!isGene)
+			{
+				x = z;
+			}
+			else
 			{
 				x = torch::cat({ x,z }, 1);
 			}
+			
 		}
+	
 		return fc(x);
 	}
 
@@ -146,7 +152,7 @@ struct LayerC : Layer
 	{
 		torch::manual_seed(629);
 		this->bs0 = bs0;
-		fc0 = register_module("fc0", torch::nn::Linear(bs0->n_basis , 1));
+		fc0 = register_module("fc0", torch::nn::Linear(bs0->n_basis + bs0->linear, 1));
 		if (n_covs != 0)
 		{
 			fc1 = register_module("covs", torch::nn::Linear(torch::nn::LinearOptions(n_covs, 1).bias(false)));
@@ -163,6 +169,7 @@ struct LayerC : Layer
 			cov = fc1->forward(cov);
 			x = x + cov;
 		}
+	//	std::cout << x.index({ torch::indexing::Slice(torch::indexing::None, 10),torch::indexing::Slice(torch::indexing::None, torch::indexing::None) }) << std::endl;
 		return x;
 	}
 
