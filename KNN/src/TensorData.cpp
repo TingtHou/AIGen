@@ -6,7 +6,15 @@ TensorData::TensorData(PhenoData& phe, GenoData& gene, CovData& cov)
 	this->gene = std::make_shared<GenoData>(gene);;
 	this->cov = std::make_shared<CovData>(cov);;
 	x = dtt::eigen2libtorch(gene.Geno);
-	z = dtt::eigen2libtorch(cov.Covariates);
+	if (cov.Covariates.size())
+	{
+		z = dtt::eigen2libtorch(cov.Covariates);
+	}
+	else
+	{
+		z = torch::zeros({ (int64_t)phe.nind,0 });
+	}
+	
 	pos = gene.pos.cast<double>();
 	if (pos.size()>0)
 	{
@@ -91,8 +99,14 @@ TensorData::TensorData(std::shared_ptr<PhenoData> phe, std::shared_ptr<GenoData>
 	this->gene = gene;
 	this->cov = cov;
 	x = dtt::eigen2libtorch(gene->Geno);
-	z = dtt::eigen2libtorch(cov->Covariates);
-	z = z.to(torch::kF64);
+	if (cov->Covariates.size())
+	{
+		z = dtt::eigen2libtorch(cov->Covariates);
+	}
+	else
+	{
+		z = torch::zeros({ (int64_t)phe->nind,0 });
+	}
 	pos = gene->pos.cast<double>();
 	if (pos.size()>0)
 	{
@@ -224,7 +238,42 @@ void TensorData::setBatchNum(int64_t Batch_Num)
 	Batch_index.push_back(std::accumulate(nknots.begin(), nknots.end(), 0));
 	nind_in_each_batch.push_back(nind);
 }
+/*
+void TensorData::wide2long()
+{
+	std::vector<double> y_tmp;
+	std::vector<double> loc_tmp;
+	torch::Tensor new_x = torch::zeros({ 0,x.sizes()[1] });
+	//	std::cout << new_x << std::endl;
+	torch::Tensor new_z = torch::zeros({ 0,z.sizes()[1] });
+	for (int64_t i = 0; i < phe->vPhenotype.size(); i++)
+	{
+		nknots.push_back(phe->vPhenotype[i].size());
+		torch::Tensor xi = x.index({ i, });
+		torch::Tensor zi = z.index({ i, });
+		for (int64_t j = 0; j < phe->vPhenotype[i].size(); j++)
+		{
+			y_tmp.push_back(phe->vPhenotype[i][j]);
+			loc_tmp.push_back(phe->vloc[i][j]);
 
+		}
+		xi = xi.repeat({ phe->vPhenotype[i].size(), 1 });
+		//	std::cout << xi << std::endl;
+		zi = zi.repeat({ phe->vPhenotype[i].size(), 1 });
+		new_x = torch::cat({ new_x,xi }, 0);
+		new_z = torch::cat({ new_z,zi }, 0);
+	}
+	//	std::cout << x << std::endl;
+	//	std::cout << z << std::endl;
+	x = new_x;
+	z = new_z;
+	//	std::cout << x << std::endl;
+//		std::cout << z << std::endl;
+	Eigen::MatrixXd y_Een = Eigen::Map<Eigen::MatrixXd>(y_tmp.data(), y_tmp.size(), 1);
+	loc = Eigen::Map<Eigen::VectorXd>(loc_tmp.data(), loc_tmp.size(), 1);
+	y = dtt::eigen2libtorch(y_Een);
+}
+*/
 
 std::shared_ptr<TensorData> TensorData::getSample(int64_t index)
 {
@@ -261,13 +310,13 @@ torch::Tensor TensorData::getZ()
 std::shared_ptr<TensorData> TensorData::getBatch(int64_t index_batch)
 {
 	torch::Tensor yi = y.index({ torch::indexing::Slice(Batch_index[index_batch], Batch_index[index_batch+1] ), });
-	//std::cout << y.sizes()[0]<<"\t"<< y.sizes()[1]<< std::endl;
+//	std::cout << y.sizes()[0]<<"\t"<< y.sizes()[1]<< std::endl;
 	//std::cout << yi << std::endl;
 	torch::Tensor xi = x.index({ torch::indexing::Slice(Batch_index[index_batch], Batch_index[index_batch+1] ), });
 	//std::cout << x.sizes()[0] << "\t" << x.sizes()[1] << std::endl;
 	//std::cout << xi << std::endl;
 	torch::Tensor zi = z.index({ torch::indexing::Slice(Batch_index[index_batch], Batch_index[index_batch+1] ), });
-	//std::cout << z.sizes()[0] << "\t" << z.sizes()[1] << std::endl;
+//	std::cout << z.sizes()[0] << "\t" << z.sizes()[1] << std::endl;
 	//std::cout << zi << std::endl;
 	Eigen::VectorXd loci;
 	if (yi.sizes()[1]==1 && loc.size()!=0)
@@ -284,6 +333,8 @@ std::shared_ptr<TensorData> TensorData::getBatch(int64_t index_batch)
 	Sample_i->setMean_STD(yi.mean(), yi.std());
 	Sample_i->dataType = this->dataType;
 	Sample_i->nknots.insert(Sample_i->nknots.begin(), nknots.begin() + nind_in_each_batch[index_batch], nknots.begin() + nind_in_each_batch[index_batch + 1]);
+//	int nind=  std::accumulate(Sample_i->nknots.begin(), Sample_i->nknots.end(),
+//		decltype( Sample_i->nknots)::value_type(0));
 	Sample_i->nind = Sample_i->nknots.size();
 	return Sample_i;
 }

@@ -12,6 +12,7 @@ public:
 	void setPos(Eigen::VectorXd pos);
 	void setLoc(Eigen::VectorXd loc);
 	void setBatchNum(int64_t Batch_Num);
+//	void wide2long();
 	//int64_t getNind(int64_t index) { return nknots[index]; };
 //	TensorData(PhenoData& phe, GenoData& gene, CovData& cov, bool isBalance);
 	std::shared_ptr<TensorData> getSample(int64_t index);
