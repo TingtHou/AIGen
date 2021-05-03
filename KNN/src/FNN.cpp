@@ -26,6 +26,8 @@ torch::Tensor FNN::forward(std::shared_ptr<TensorData> data)
 		}
 	}
 	*/
+//	std::cout << "y "<<data->getY().sizes()[0]<<"*"<< data->getY().sizes()[1]  << "\n"<< data->getY().index({ torch::indexing::Slice(torch::indexing::None, 10) }) << std::endl;
+//	std::cout << "x " << data->getX().sizes()[0] << "*" << data->getX().sizes()[1] << "\n" << data->getX().index({ torch::indexing::Slice(torch::indexing::None, 10), torch::indexing::Slice(torch::indexing::None, 10) }) << std::endl;
 	realization(data);
 	std::shared_ptr<Layer> model(nullptr);
 	switch (layers[0])
@@ -40,7 +42,7 @@ torch::Tensor FNN::forward(std::shared_ptr<TensorData> data)
 		model = std::dynamic_pointer_cast<LayerD>(models[0]);
 		break;
 	}
-//	std::cout << data->getX().sizes() << std::endl;
+	//std::cout << data->getX().sizes() << std::endl;
 	torch::Tensor res = model->forward(data->getX(), data->getZ());
 //	std::cout << res.sizes() << std::endl;
 	int i = 1;
@@ -83,11 +85,12 @@ torch::Tensor FNN::forward(std::shared_ptr<TensorData> data)
 				Eigen::VectorXd loc(expand_size - start_p);
 
 				loc << total_loc.block(start_p, 0, expand_size - start_p, 1);
+				loc = (loc.array() - data->loc0).array() / (data->loc1 - data->loc0);
 				models[i]->bs1->evaluate(loc);
 				
-		
+			//	std::cout << xi << std::endl;
 				torch::Tensor tmp= model->forward(xi);
-
+		//		std::cout << tmp << std::endl;
 				Final=torch::cat({ Final,tmp }, 0);
 
 				start_p = expand_size;
@@ -96,6 +99,7 @@ torch::Tensor FNN::forward(std::shared_ptr<TensorData> data)
 		else
 		{
 			Final = model->forward(res);
+//			std::cout << Final.sizes() << std::endl;
 		}
 		break;
 	case 3:
@@ -181,65 +185,6 @@ torch::Tensor FNN::penalty(int64_t nind)
 	return penalty / (double)nind;
 
 }
-/*
-torch::Tensor FNN::training(std::shared_ptr<TensorData> dataset, int64_t epoches)
-{
-	fit_init(dataset);
-	this->train();
-	torch::optim::Adam optimizer(this->parameters());
-	//auto Loss = torch::nn::MSELoss();
-	int64_t epoch=0;
-	torch::Tensor risk;
-	torch::Tensor loss;
-	auto options = torch::TensorOptions().dtype(torch::kFloat64);
-	double risk_min = (double)INFINITY;
-	int64_t k = 0;
-	std::stringstream stream;
-	while (epoch < epoches)
-	{
-		optimizer.zero_grad();
-		torch::Tensor prediction =forward(dataset);
-	//	std::cout << prediction.index({ torch::indexing::Slice(1,10) }) << std::endl;
-		loss = torch::mse_loss(prediction, dataset->getY());
-		torch::Tensor pen = penalty(dataset->nind);
-		risk = loss / dataset->std_y.pow(2) + pen;
-		if (risk.item<double>() < risk_min)
-		{
-			risk_min = risk.item<double>();
-			k = 0;
-			torch::save(this, stream);
-			for (const auto& p : this->parameters()) {
-				std::cout << p << std::endl;
-			}
-		}
-		else
-		{
-			k++;
-			if (k==100)
-			{
-				break;
-			}
-		}
-	//	std::cout << "epoch: " << epoch << "\tMSE: " << loss << "\trisk: " << risk << std::endl;
-		//if (epoch%100 ==0)
-		//{
-		//	std::cout << "epoch: " << epoch << "\tMSE: " << loss<<"\trisk: "<<risk << std::endl;
-		//}
-		risk.backward();
-		optimizer.step();
-		epoch++;
-	}
-	fit_end();
-	for (const auto& p : this->parameters()) {
-		std::cout << p << std::endl;
-	}
-	//torch::load(*this, stream);
-	for (const auto& p : this->parameters()) {
-		std::cout << p << std::endl;
-	}
-	return loss;
-}
-*/
 void FNN::realization(std::shared_ptr<TensorData> data)
 {
 	int i = 0;
@@ -275,6 +220,7 @@ void FNN::realization(std::shared_ptr<TensorData> data)
 				models[i]->bs0->length = pos.size();
 			}
 			models[i]->bs0->evaluate(pos);
+		//	std::cout << "model " << i << " bs0 mat:\n" << models[i]->bs0->mat.sizes()[0]<<"x"<< models[i]->bs0->mat.sizes()[1] << std::endl;
 		}
 		if (i+1< layers.size())
 		{
@@ -290,7 +236,7 @@ void FNN::realization(std::shared_ptr<TensorData> data)
 			models[i]->bs1->length = loc_v.size();
 			loc = Eigen::Map<Eigen::VectorXd>(loc_v.data(), loc_v.size());
 			models[i]->bs1->evaluate(loc);
-	//		std::cout << "model " << i << " bs1 mat:\n" << models[i]->bs1->mat << std::endl;
+	//		std::cout << "model " << i << " bs1 mat:\n" << models[i]->bs1->mat.sizes()[0] << "x" << models[i]->bs1->mat.sizes()[1] << std::endl;
 		}
 	}
 	i--;
@@ -325,15 +271,3 @@ void FNN::realization(std::shared_ptr<TensorData> data)
 
 	
 }
-/*
-void FNN::fit_init(std::shared_ptr<TensorData> data)
-{
-	realization(data);
-	realize = true;
-}
-
-void FNN::fit_end()
-{
-	realize = false;
-}
-*/

@@ -156,7 +156,7 @@ void TryMain(int argc, const char *const argv[])
 		{
 			LOG(INFO) << "---full dataset----";
 			ss << "---full dataset----" << std::endl;
-			if (dm.getPhenotype().dataType != 0)
+			if (error[0]->dataType != 0)
 			{
 				ss << "misclassification error:\t" << error[0]->getMSE() << std::endl << "AUC:\t" << error[0]->getAUC() << std::endl;
 			}
@@ -174,7 +174,7 @@ void TryMain(int argc, const char *const argv[])
 			{
 				LOG(INFO) << "---Testing dataset----";
 				ss << "---Testing dataset----" << std::endl;
-				if (dm.getPhenotype().dataType != 0)
+				if (error[0]->dataType != 0)
 				{
 					ss << "misclassification error:\t" << error[0]->getMSE() << std::endl << "AUC:\t" << error[0]->getAUC() << std::endl;
 				}
@@ -191,7 +191,7 @@ void TryMain(int argc, const char *const argv[])
 			
 			LOG(INFO) << "---full dataset----";
 			ss << "---full dataset----" << std::endl;
-			if (dm.getPhenotype().dataType != 0)
+			if (error[1]->dataType != 0)
 			{
 				ss << "misclassification error:\t" << error[1]->getMSE() << std::endl << "AUC:\t" << error[1]->getAUC() << std::endl;
 			}
@@ -786,9 +786,9 @@ std::vector<std::shared_ptr<Evaluate>>  FNNAnalysis(boost::program_options::vari
 	///////////////////////////////////////////////
 	int basis= programOptions["basis"].as < int >();
 	float seed = programOptions["seed"].as < float >();
-	int epoch= programOptions["epoch"].as < int >();
+	int epoch= programOptions["epoch"].as < double >();
 	float ratio= programOptions["ratio"].as < float >();
-	double lambda = programOptions["lambda"].as <double>();
+	
 	bool isFNN = programOptions.count("FNN");
 	int64_t ncovs = dm.getCov_prt()->npar;
 	int64_t nSNPs = dm.getGeno_prt()->pos.size();
@@ -801,23 +801,10 @@ std::vector<std::shared_ptr<Evaluate>>  FNNAnalysis(boost::program_options::vari
 		isFNN = false;
 		LOG(WARNING) << "Warning: The genotype data is missing, only the covariates data are used. NN is applied instead.";
 	}
-	std::shared_ptr< Dataset> data_full = dm.GetDataset();
-	std::shared_ptr<Dataset> train=nullptr;
-	std::shared_ptr<Dataset> test =nullptr;
-	
-	std::shared_ptr<TensorData> data = std::make_shared<TensorData>(data_full->phe, data_full->geno, data_full->cov);
-	bool sinlgeknot = (data->isBalanced && data->getLoc().size() == data->nind) || !data->isBalanced;   // univariate analysis, with response is interpolated on different knot.
-																										// if the data is unbalanced, we train the model per object, which will be considered as  univariate analysis, with response is interpolated on different knot.
 
-	int  loss = programOptions["loss"].as < int >();
-
-	if (loss!=0 && dm.getPhe_prt()->Phenotype.cols()!=1)
-	{
-		throw std::string("The multivarite multiclass analysis does not support!");
-	}
 
 	std::vector<int64_t> dims;
-	
+	bool ignore_pos = false;
 	if (programOptions.count("layer"))
 	{
 		std::string layers = programOptions["layer"].as < std::string >();
@@ -827,13 +814,52 @@ std::vector<std::shared_ptr<Evaluate>>  FNNAnalysis(boost::program_options::vari
 		{
 			dims.push_back(atoi(strVec.at(i).c_str()));
 		}
-		if (dims[dims.size()-1]>1 && dm.getPhe_prt()->vloc.size()==0)
+		if (dims[dims.size() - 1] > 1 && dm.getPhe_prt()->vloc.size() == 0)
 		{
 			throw std::string("Trying to interplote the response, but the knots are missing.");
 		}
+		
+	}
+
+	std::shared_ptr< Dataset> data_full = dm.GetDataset();
+	if (dims[dims.size() - 1] == 1 && !data_full->phe.isUnivariate)
+	{
+		data_full = data_full->wide2long();
+	}
+	std::shared_ptr<Dataset> train=nullptr;
+	std::shared_ptr<Dataset> test =nullptr;
+	
+	std::shared_ptr<TensorData> data = std::make_shared<TensorData>(data_full->phe, data_full->geno, data_full->cov);
+	
+	bool sinlgeknot = (data->isBalanced && data->getLoc().size() == data->nind) || !data->isBalanced;   // univariate analysis, with response is interpolated on different knot.
+																										// if the data is unbalanced, we train the model per object, which will be considered as  univariate analysis, with response is interpolated on different knot.
+
+	int  loss = programOptions["loss"].as < int >();
+	data->dataType = loss;
+
+	if (loss!=0 && dm.getPhe_prt()->Phenotype.cols()!=1)
+	{
+		throw std::string("The multivarite multiclass analysis does not support!");
+	}
+
+	std::vector<double> lambdas;
+	if (programOptions.count("lambda"))
+	{
+		std::string lamb = programOptions["lambda"].as < std::string >();
+		std::vector<std::string> strVec;
+		boost::algorithm::split(strVec, lamb, boost::algorithm::is_any_of(","), boost::token_compress_on);
+		for (int i = 0; i < strVec.size(); i++)
+		{
+			lambdas.push_back(std::stod(strVec.at(i).c_str()));
+		}
+
 	}
 	if (programOptions.count("load"))
 	{
+		if (lambdas.size() > 1)
+		{
+			throw std::string("[Error]: try to predict the results from well trained network, please input the best lambda from last training.");
+		}
 		std::string loadNet = programOptions["load"].as < std::string >();
 		//	string model_path = "model.pt";
 		std::cout << "Loading model from ["<<loadNet<<"]." << std::endl;
@@ -842,7 +868,8 @@ std::vector<std::shared_ptr<Evaluate>>  FNNAnalysis(boost::program_options::vari
 			
 			std::cout << "Funtional neural network analysis is runing" << std::endl;
 			LOG(INFO) << "Funtional neural network analysis is runing";
-			std::shared_ptr<FNN> f = std::make_shared<FNN>(dims, lambda);
+			
+			std::shared_ptr<FNN> f = std::make_shared<FNN>(dims, lambdas[0]);
 			if (!basis)
 			{
 
@@ -887,7 +914,7 @@ std::vector<std::shared_ptr<Evaluate>>  FNNAnalysis(boost::program_options::vari
 			std::cout << "Neural network analysis is runing" << std::endl;
 			LOG(INFO) << "Neural network analysis is runing";
 			//	std::cout << "========================" << std::endl;
-			std::shared_ptr<NN> f = std::make_shared<NN>(dims, lambda);
+			std::shared_ptr<NN> f = std::make_shared<NN>(dims, lambdas[0]);
 			f->build(ncovs);
 			torch::serialize::InputArchive archive;
 			//	std::string file("test_model.pt");
@@ -956,71 +983,171 @@ std::vector<std::shared_ptr<Evaluate>>  FNNAnalysis(boost::program_options::vari
 		{
 			std::cout << "Funtional neural network analysis is runing" << std::endl;
 			LOG(INFO) << "Funtional neural network analysis is runing";
+			std::shared_ptr<FNN> f;
 			//		std::cout << "========================" << std::endl;
-			std::shared_ptr<FNN> f = std::make_shared<FNN>(dims, lambda);
-			torch::Tensor test_loss;
-			if (!basis)
+			double best_lambda=lambdas[0];
+			torch::Tensor train_loss = torch::tensor(INFINITY);
+			for (size_t i = 0; i < lambdas.size(); i++)
 			{
+				double lambda = lambdas[i];
+				f= std::make_shared<FNN>(dims, lambda);
+				torch::Tensor valid_loss;
+				if (!basis)
+				{
 
-				f->build<Haar>(sinlgeknot, ncovs);
+					f->build<Haar>(sinlgeknot, ncovs);
+				}
+				else
+				{
+					f->build<SplineBasis>(sinlgeknot, ncovs);
+				}
+				switch (loss)
+				{
+				case 0:
+					if (optimType == 0)
+					{
+						valid_loss = training<torch::optim::Adam, FNN, torch::nn::MSELoss>(f, subtrain_tensor, valid_tensor, lr, epoch);
+					}
+					else if (optimType == 1)
+					{
+						valid_loss = training<torch::optim::SGD, FNN, torch::nn::MSELoss>(f, subtrain_tensor, valid_tensor, lr, epoch);
+					}
+					else
+					{
+						throw std::string("[Error]: The program only supports adam and SDG, please check the optimizer option.");
+					}
+					//test_loss = training<torch::optim::Adam, FNN, torch::nn::MSELoss>(f, subtrain_tensor, valid_tensor, epoch);
+					break;
+				case 1:
+					if (optimType == 0)
+					{
+						valid_loss = training<torch::optim::Adam, FNN, torch::nn::BCELoss>(f, subtrain_tensor, valid_tensor, lr, epoch);
+					}
+					else if (optimType == 1)
+					{
+						valid_loss = training<torch::optim::SGD, FNN, torch::nn::BCELoss>(f, subtrain_tensor, valid_tensor, lr, epoch);
+					}
+					else
+					{
+						throw std::string("[Error]: The program only supports adam and SDG, please check the optimizer option.");
+					}
+
+					//test_loss=Testing<FNN, torch::nn::BCELoss>(f, test_tensor);
+					break;
+				case 2:
+					if (optimType == 0)
+					{
+						valid_loss = training<torch::optim::Adam, FNN, torch::nn::CrossEntropyLoss>(f, subtrain_tensor, valid_tensor, lr, epoch);
+					}
+					else if (optimType == 1)
+					{
+						valid_loss = training<torch::optim::SGD, FNN, torch::nn::CrossEntropyLoss>(f, subtrain_tensor, valid_tensor, lr, epoch);
+					}
+					else
+					{
+						throw std::string("[Error]: The program only supports adam and SDG, please check the optimizer option.");
+					}
+					//test_loss=Testing<FNN, torch::nn::CrossEntropyLoss>(f, test_tensor);
+					break;
+				}
+				//	for (const auto& p : f->parameters()) 
+				//	{
+			//			std::cout << p << std::endl;
+			//		}
+		
+				std::cout << "Training completed." << std::endl;
+				std::cout << "========================" << std::endl;
+				std::stringstream ss;
+				ss <<"Lambda: "<<lambda <<"\tepoch: " << f->epoch << "\tTraining: loss: " << f->loss.item<double>() << "\t Validation loss: " << valid_loss.item<double>();
+				std::cout << ss.str() << std::endl;
+				LOG(INFO) << ss.str() << std::endl;
+				if (valid_loss.item<double>() < train_loss.item<double>())
+				{
+					best_lambda = lambda;
+					train_loss = valid_loss;
+				}
 			}
-			else
+
+			if (lambdas.size()>1)
 			{
-				f->build<SplineBasis>(sinlgeknot, ncovs);
+				std::stringstream ss;
+				ss << "Select lambda: " << best_lambda << "as best one to train the model.";
+				std::cout << ss.str() << std::endl;
+				LOG(INFO) << ss.str() << std::endl;
+				double lambda = best_lambda;
+				f = std::make_shared<FNN>(dims, lambda);
+				torch::Tensor valid_loss;
+				if (!basis)
+				{
+
+					f->build<Haar>(sinlgeknot, ncovs);
+				}
+				else
+				{
+					f->build<SplineBasis>(sinlgeknot, ncovs);
+				}
+				switch (loss)
+				{
+				case 0:
+					if (optimType == 0)
+					{
+						valid_loss = training<torch::optim::Adam, FNN, torch::nn::MSELoss>(f, subtrain_tensor, valid_tensor, lr, epoch);
+					}
+					else if (optimType == 1)
+					{
+						valid_loss = training<torch::optim::SGD, FNN, torch::nn::MSELoss>(f, subtrain_tensor, valid_tensor, lr, epoch);
+					}
+					else
+					{
+						throw std::string("[Error]: The program only supports adam and SDG, please check the optimizer option.");
+					}
+					//test_loss = training<torch::optim::Adam, FNN, torch::nn::MSELoss>(f, subtrain_tensor, valid_tensor, epoch);
+					break;
+				case 1:
+					if (optimType == 0)
+					{
+						valid_loss = training<torch::optim::Adam, FNN, torch::nn::BCELoss>(f, subtrain_tensor, valid_tensor, lr, epoch);
+					}
+					else if (optimType == 1)
+					{
+						valid_loss = training<torch::optim::SGD, FNN, torch::nn::BCELoss>(f, subtrain_tensor, valid_tensor, lr, epoch);
+					}
+					else
+					{
+						throw std::string("[Error]: The program only supports adam and SDG, please check the optimizer option.");
+					}
+
+					//test_loss=Testing<FNN, torch::nn::BCELoss>(f, test_tensor);
+					break;
+				case 2:
+					if (optimType == 0)
+					{
+						valid_loss = training<torch::optim::Adam, FNN, torch::nn::CrossEntropyLoss>(f, subtrain_tensor, valid_tensor, lr, epoch);
+					}
+					else if (optimType == 1)
+					{
+						valid_loss = training<torch::optim::SGD, FNN, torch::nn::CrossEntropyLoss>(f, subtrain_tensor, valid_tensor, lr, epoch);
+					}
+					else
+					{
+						throw std::string("[Error]: The program only supports adam and SDG, please check the optimizer option.");
+					}
+					//test_loss=Testing<FNN, torch::nn::CrossEntropyLoss>(f, test_tensor);
+					break;
+				}
+				//	for (const auto& p : f->parameters()) 
+				//	{
+			//			std::cout << p << std::endl;
+			//		}
+				train_loss = valid_loss;
+				std::cout << "Training completed." << std::endl;
+				std::cout << "========================" << std::endl;
+				std::stringstream ss1;
+				ss1 << "Lambda: " << lambda << "\tepoch: " << f->epoch << "\tTraining: loss: " << f->loss.item<double>() << "\t Validation loss: " << train_loss.item<double>();
+				std::cout << ss1.str() << std::endl;
+				LOG(INFO) << ss1.str() << std::endl;
 			}
-			switch (loss)
-			{
-			case 0:
-				if (optimType == 0)
-				{
-					test_loss = training<torch::optim::Adam, FNN, torch::nn::MSELoss>(f, subtrain_tensor, valid_tensor, lr, epoch);
-				}
-				else if (optimType == 1)
-				{
-					test_loss = training<torch::optim::SGD, FNN, torch::nn::MSELoss>(f, subtrain_tensor, valid_tensor, lr, epoch);
-				}
-				else
-				{
-					throw std::string("[Error]: The program only supports adam and SDG, please check the optimizer option.");
-				}
-				//test_loss = training<torch::optim::Adam, FNN, torch::nn::MSELoss>(f, subtrain_tensor, valid_tensor, epoch);
-				break;
-			case 1:
-				if (optimType == 0)
-				{
-					test_loss = training<torch::optim::Adam, FNN, torch::nn::BCELoss>(f, subtrain_tensor, valid_tensor, lr, epoch);
-				}
-				else if (optimType == 1)
-				{
-					test_loss = training<torch::optim::SGD, FNN, torch::nn::BCELoss>(f, subtrain_tensor, valid_tensor, lr, epoch);
-				}
-				else
-				{
-					throw std::string("[Error]: The program only supports adam and SDG, please check the optimizer option.");
-				}
-				
-				//test_loss=Testing<FNN, torch::nn::BCELoss>(f, test_tensor);
-				break;
-			case 2:
-				if (optimType == 0)
-				{
-					test_loss = training<torch::optim::Adam, FNN, torch::nn::CrossEntropyLoss>(f, subtrain_tensor, valid_tensor, lr, epoch);
-				}
-				else if (optimType == 1)
-				{
-					test_loss = training<torch::optim::SGD, FNN, torch::nn::CrossEntropyLoss>(f, subtrain_tensor, valid_tensor, lr, epoch);
-				}
-				else
-				{
-					throw std::string("[Error]: The program only supports adam and SDG, please check the optimizer option.");
-				}
-				//test_loss=Testing<FNN, torch::nn::CrossEntropyLoss>(f, test_tensor);
-				break;
-			}
-		//	for (const auto& p : f->parameters()) 
-		//	{
-	//			std::cout << p << std::endl;
-	//		}
+
 			if (programOptions.count("save"))
 			{
 				std::string saveNet = programOptions["save"].as < std::string >();
@@ -1029,12 +1156,7 @@ std::vector<std::shared_ptr<Evaluate>>  FNNAnalysis(boost::program_options::vari
 				f->save(output_archive);
 				output_archive.save_to(saveNet);
 			}
-			std::cout << "Training completed." << std::endl;
-			std::cout << "========================" << std::endl;
-			std::stringstream ss;
-			ss << "epoch: " << f->epoch << "\tTraining: loss: " << test_loss.item<double>();
-			std::cout << ss.str() << std::endl;
-			LOG(INFO) << ss.str() << std::endl;
+		
 			f->eval();
 
 		///////////////////////////////////////////////////////////////////////
@@ -1045,40 +1167,10 @@ std::vector<std::shared_ptr<Evaluate>>  FNNAnalysis(boost::program_options::vari
 				std::shared_ptr<Evaluate> test = nullptr;
 				torch::Tensor pred_test = f->forward(test_tensor);
 				test = std::make_shared< Evaluate>(test_tensor->getY(), pred_test, test_tensor->dataType);
-				/*
-				if (test_tensor->isBalanced)
-				{
-					torch::Tensor pred_test = f->forward(test_tensor);
-					test = std::make_shared< Evaluate>(test_tensor->getY(), pred_test, test_tensor->dataType);
-					//	Evaluate Total(data->getY(), pred_test, data->dataType);
-				}
-				else
-				{
-					if (test_tensor->dataType == 0)
-					{
-					
-						
-						torch::Tensor loss=torch::zeros(1);
-						for (size_t i = 0; i < test_tensor->nind; i++)
-						{
-						
-							auto sample = test_tensor->getSample(i);
-							torch::Tensor pred_test = f->forward(sample);
-							loss += torch::mse_loss(pred_test, sample->getY());
-						}
-						loss=loss/ test_tensor->nind;
-						test = std::make_shared< Evaluate>();
-						test->setMSE(loss.item<double>());
-						
-					}
-				}
-				*/
-				prediction_error.push_back(test);
-			//	prediction_error.push_back(test->getAUC());
+				prediction_error.push_back(test);	
 			}
 			else
 			{
-	//			prediction_error.push_back(-9);
 				prediction_error.push_back(nullptr);
 			}
 			////////////////////////////////////////////////////////////
@@ -1087,114 +1179,174 @@ std::vector<std::shared_ptr<Evaluate>>  FNNAnalysis(boost::program_options::vari
 			torch::Tensor pred_total = f->forward(data);
 			Total = std::make_shared< Evaluate>(data->getY(), pred_total, data->dataType);
 			prediction_error.push_back(Total);
-			/*
-			if (data->isBalanced)
-			{
-				torch::Tensor pred_total = f->forward(data);
-				Total = std::make_shared< Evaluate>(data->getY(), pred_total, data->dataType);
-				prediction_error.push_back(Total);
-				//	Evaluate Total(data->getY(), pred_test, data->dataType);
-			}
-			else
-			{
-				if (data->dataType == 0)
-				{
-					
-					torch::Tensor loss = torch::zeros(1);
-					for (size_t i = 0; i < data->nind; i++)
-					{
-						auto sample = data->getSample(i);
-						torch::Tensor pred_test = f->forward(sample);
-						loss += torch::mse_loss(pred_test, sample->getY());
-						
-					}
-					loss = loss / test_tensor->nind;
-					Total = std::make_shared< Evaluate>();
-					Total->setMSE(loss.item<double>());
-					prediction_error.push_back(Total);
 
-				}
-				else
-				{
-					prediction_error.push_back(nullptr);
-				}
-			}
-		*/
-
-			
-		//	prediction_error.push_back(Total->getAUC());
 		}
 		else
 		{
 			std::cout << "Neural network analysis is runing" << std::endl;
 			LOG(INFO) << "Neural network analysis is runing";
 			//	std::cout << "========================" << std::endl;
-			std::shared_ptr<NN> f = std::make_shared<NN>(dims, lambda);
-			f->build(ncovs);
-			torch::Tensor train_loss;
-			switch (loss)
+			std::shared_ptr<NN> f;
+			//		std::cout << "========================" << std::endl;
+			double best_lambda = lambdas[0];
+			torch::Tensor train_loss = torch::tensor(INFINITY);
+			for (size_t i = 0; i < lambdas.size(); i++)
 			{
-			case 0:
-		//		train_loss = training<torch::optim::Adam, NN, torch::nn::MSELoss>(f, subtrain_tensor, valid_tensor, lr, epoch);
-				if (optimType == 0)
+				double lambda = lambdas[i];
+				f = std::make_shared<NN>(dims, lambda);
+				f->build(ncovs);
+				torch::Tensor valid_loss;
+				switch (loss)
 				{
-					train_loss = training<torch::optim::Adam, NN, torch::nn::MSELoss>(f, subtrain_tensor, valid_tensor, lr, epoch);
+				case 0:
+					//		train_loss = training<torch::optim::Adam, NN, torch::nn::MSELoss>(f, subtrain_tensor, valid_tensor, lr, epoch);
+					if (optimType == 0)
+					{
+						valid_loss = training<torch::optim::Adam, NN, torch::nn::MSELoss>(f, subtrain_tensor, valid_tensor, lr, epoch);
+					}
+					else if (optimType == 1)
+					{
+						valid_loss = training<torch::optim::SGD, NN, torch::nn::MSELoss>(f, subtrain_tensor, valid_tensor, lr, epoch);
+					}
+					else
+					{
+						throw std::string("[Error]: The program only supports adam and SDG, please check the optimizer option.");
+					}
+					//	test_loss=Testing<NN, torch::nn::MSELoss>(f, test_tensor);
+					break;
+				case 1:
+					//	train_loss = training<torch::optim::Adam, NN, torch::nn::BCELoss>(f, subtrain_tensor, valid_tensor, lr, epoch);
+					if (optimType == 0)
+					{
+						valid_loss = training<torch::optim::Adam, NN, torch::nn::BCELoss>(f, subtrain_tensor, valid_tensor, lr, epoch);
+					}
+					else if (optimType == 1)
+					{
+						valid_loss = training<torch::optim::SGD, NN, torch::nn::BCELoss>(f, subtrain_tensor, valid_tensor, lr, epoch);
+					}
+					else
+					{
+						throw std::string("[Error]: The program only supports adam and SDG, please check the optimizer option.");
+					}
+					//test_loss=Testing<NN, torch::nn::BCELoss>(f, test_tensor);
+					break;
+				case 2:
+					//	train_loss = training<torch::optim::Adam, NN, torch::nn::CrossEntropyLoss>(f, subtrain_tensor, valid_tensor, lr, epoch);
+					if (optimType == 0)
+					{
+						valid_loss = training<torch::optim::Adam, NN, torch::nn::CrossEntropyLoss>(f, subtrain_tensor, valid_tensor, lr, epoch);
+					}
+					else if (optimType == 1)
+					{
+						valid_loss = training<torch::optim::SGD, NN, torch::nn::CrossEntropyLoss>(f, subtrain_tensor, valid_tensor, lr, epoch);
+					}
+					else
+					{
+						throw std::string("[Error]: The program only supports adam and SDG, please check the optimizer option.");
+					}
+					//test_loss=Testing<NN, torch::nn::CrossEntropyLoss>(f, test_tensor);
+					break;
 				}
-				else if (optimType == 1)
+				//	for (const auto& p : f->parameters())
+				//	{
+				//		std::cout << p << std::endl;
+				//	}
+
+				std::cout << "Training completed." << std::endl;
+				std::cout << "========================" << std::endl;
+				std::stringstream ss;
+				ss << "Lambda: " << lambda << "\tepoch: " << f->epoch << "\tTraining: loss: " << f->loss.item<double>() << "\t Validation loss: " << valid_loss.item<double>();
+				std::cout << ss.str() << std::endl;
+				LOG(INFO) << ss.str() << std::endl;
+				if (valid_loss.item<double>() < train_loss.item<double>())
 				{
-					train_loss = training<torch::optim::SGD, NN, torch::nn::MSELoss>(f, subtrain_tensor, valid_tensor, lr, epoch);
+					best_lambda = lambda;
+					train_loss = valid_loss;
 				}
-				else
-				{
-					throw std::string("[Error]: The program only supports adam and SDG, please check the optimizer option.");
-				}
-				//	test_loss=Testing<NN, torch::nn::MSELoss>(f, test_tensor);
-				break;
-			case 1:
-			//	train_loss = training<torch::optim::Adam, NN, torch::nn::BCELoss>(f, subtrain_tensor, valid_tensor, lr, epoch);
-				if (optimType == 0)
-				{
-					train_loss = training<torch::optim::Adam, NN, torch::nn::BCELoss>(f, subtrain_tensor, valid_tensor, lr, epoch);
-				}
-				else if (optimType == 1)
-				{
-					train_loss = training<torch::optim::SGD, NN, torch::nn::BCELoss>(f, subtrain_tensor, valid_tensor, lr, epoch);
-				}
-				else
-				{
-					throw std::string("[Error]: The program only supports adam and SDG, please check the optimizer option.");
-				}
-				//test_loss=Testing<NN, torch::nn::BCELoss>(f, test_tensor);
-				break;
-			case 2:
-			//	train_loss = training<torch::optim::Adam, NN, torch::nn::CrossEntropyLoss>(f, subtrain_tensor, valid_tensor, lr, epoch);
-				if (optimType == 0)
-				{
-					train_loss = training<torch::optim::Adam, NN, torch::nn::CrossEntropyLoss>(f, subtrain_tensor, valid_tensor, lr, epoch);
-				}
-				else if (optimType == 1)
-				{
-					train_loss = training<torch::optim::SGD, NN, torch::nn::CrossEntropyLoss>(f, subtrain_tensor, valid_tensor, lr, epoch);
-				}
-				else
-				{
-					throw std::string("[Error]: The program only supports adam and SDG, please check the optimizer option.");
-				}
-				//test_loss=Testing<NN, torch::nn::CrossEntropyLoss>(f, test_tensor);
-				break;
+
 			}
-		//	for (const auto& p : f->parameters())
-		//	{
-		//		std::cout << p << std::endl;
-		//	}
-			std::cout << "Training completed." << std::endl;
-			std::cout << "========================" << std::endl;
-			std::stringstream ss;
-			ss <<  "epoch: " << f->epoch << "\tTraining: loss: " << train_loss.item<double>();
-			std::cout << ss.str() << std::endl;
-			LOG(INFO) << ss.str() << std::endl;
 
+			if (lambdas.size() > 1)
+			{
+				std::stringstream ss;
+				ss << "Select lambda: " << best_lambda << " as best one to train the model.";
+				std::cout << ss.str() << std::endl;
+				LOG(INFO) << ss.str() << std::endl;
+				double lambda = best_lambda;
+				f = std::make_shared<NN>(dims, lambda);
+				f->build(ncovs);
+				torch::Tensor valid_loss;
+				switch (loss)
+				{
+				case 0:
+					//		train_loss = training<torch::optim::Adam, NN, torch::nn::MSELoss>(f, subtrain_tensor, valid_tensor, lr, epoch);
+					if (optimType == 0)
+					{
+						valid_loss = training<torch::optim::Adam, NN, torch::nn::MSELoss>(f, subtrain_tensor, valid_tensor, lr, epoch);
+					}
+					else if (optimType == 1)
+					{
+						valid_loss = training<torch::optim::SGD, NN, torch::nn::MSELoss>(f, subtrain_tensor, valid_tensor, lr, epoch);
+					}
+					else
+					{
+						throw std::string("[Error]: The program only supports adam and SDG, please check the optimizer option.");
+					}
+					//	test_loss=Testing<NN, torch::nn::MSELoss>(f, test_tensor);
+					break;
+				case 1:
+					//	train_loss = training<torch::optim::Adam, NN, torch::nn::BCELoss>(f, subtrain_tensor, valid_tensor, lr, epoch);
+					if (optimType == 0)
+					{
+						valid_loss = training<torch::optim::Adam, NN, torch::nn::BCELoss>(f, subtrain_tensor, valid_tensor, lr, epoch);
+					}
+					else if (optimType == 1)
+					{
+						valid_loss = training<torch::optim::SGD, NN, torch::nn::BCELoss>(f, subtrain_tensor, valid_tensor, lr, epoch);
+					}
+					else
+					{
+						throw std::string("[Error]: The program only supports adam and SDG, please check the optimizer option.");
+					}
+					//test_loss=Testing<NN, torch::nn::BCELoss>(f, test_tensor);
+					break;
+				case 2:
+					//	train_loss = training<torch::optim::Adam, NN, torch::nn::CrossEntropyLoss>(f, subtrain_tensor, valid_tensor, lr, epoch);
+					if (optimType == 0)
+					{
+						valid_loss = training<torch::optim::Adam, NN, torch::nn::CrossEntropyLoss>(f, subtrain_tensor, valid_tensor, lr, epoch);
+					}
+					else if (optimType == 1)
+					{
+						valid_loss = training<torch::optim::SGD, NN, torch::nn::CrossEntropyLoss>(f, subtrain_tensor, valid_tensor, lr, epoch);
+					}
+					else
+					{
+						throw std::string("[Error]: The program only supports adam and SDG, please check the optimizer option.");
+					}
+					//test_loss=Testing<NN, torch::nn::CrossEntropyLoss>(f, test_tensor);
+					break;
+				}
+				train_loss = valid_loss;
+				std::cout << "Training completed." << std::endl;
+				std::cout << "========================" << std::endl;
+				std::stringstream ss1;
+				ss1 << "Lambda: " << lambda << "\tepoch: " << f->epoch << "\tTraining: loss: " << f->loss.item<double>() << "\t Validation loss: " << train_loss.item<double>();
+				std::cout << ss1.str() << std::endl;
+				LOG(INFO) << ss1.str() << std::endl;
+				
 
+			}
+			if (programOptions.count("save"))
+			{
+				std::string saveNet = programOptions["save"].as < std::string >();
+				//	string model_path = "model.pt";
+				torch::serialize::OutputArchive output_archive;
+				f->save(output_archive);
+				output_archive.save_to(saveNet);
+			}
+
+			f->eval();
 
 			if (test_tensor->getY().sizes()[0] != 0)
 			{

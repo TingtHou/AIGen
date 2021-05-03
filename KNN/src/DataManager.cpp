@@ -703,6 +703,7 @@ void DataManager::readResponse(std::string resopnsefile, PhenoData & phe)
 	int missing = 0;
 	std::vector<double> all_y;
 	bool singleResponse=true;
+	bool isbinary = true;
 	while (!infile.eof())
 	{
 		std::string str;
@@ -756,12 +757,13 @@ void DataManager::readResponse(std::string resopnsefile, PhenoData & phe)
 			}
 			singleResponse = false;
 		}
-		if (abs(stod(strVec[2])-0)>1e-7 && abs(stod(strVec[2]) - 1) > 1e-7)
+		if (abs(stod(strVec[2])-0)>1e-7 && abs(stod(strVec[2]) - 1) > 1e-7 && isbinary)
 		{
-			phe.dataType = 0;
+			isbinary = false;
 		}
 	
 	}
+	phe.dataType = isbinary;
 	infile.close();
 	int nind = yvector.size();
 	phe.nind = nind;
@@ -789,6 +791,7 @@ void DataManager::readResponse(std::string resopnsefile, PhenoData & phe)
 		}
 	}
 	phe.isBalance = isbalanced || singleResponse;
+	phe.isUnivariate = singleResponse;
 	if (isbalanced)
 	{
 		phe.Phenotype.resize(yvector.size(), yvector[0].size());
@@ -798,11 +801,18 @@ void DataManager::readResponse(std::string resopnsefile, PhenoData & phe)
 		}
 		
 	}
+	else
+	{
+		if (singleResponse)
+		{
+			phe.loc = Eigen::Map<Eigen::VectorXf, Eigen::Unaligned>(loc_all.data(), loc_all.size());
+		}
+	}
 	if (singleResponse)
 	{
 		phe.Phenotype.resize(yvector.size(), yvector[0].size());
 	}
-	phe.loc = Eigen::Map<Eigen::VectorXf, Eigen::Unaligned>(loc_all.data(), loc_all.size());
+
 	for (int64_t i = 0; i < yvector.size(); i++)
 	{
 		phe.vPhenotype.push_back(Eigen::Map<Eigen::VectorXf, Eigen::Unaligned>(yvector[i].data(), yvector[i].size()));

@@ -24,95 +24,35 @@ torch::Tensor training(std::shared_ptr<Net> net, std::shared_ptr<TensorData> tra
 			optimizer.zero_grad();
 			auto miniBatch = train->getBatch(i);
 			torch::Tensor prediction = net->forward(miniBatch);
-		//	std::cout << miniBatch->getY() << std::endl;
-	//		std::cout << prediction  << std::endl;
+		//	std::cout << miniBatch->getY().index({ torch::indexing::Slice(torch::indexing::None, 10)}) << std::endl;
+		//	std::cout << prediction.index({ torch::indexing::Slice(torch::indexing::None, 10)}) << std::endl;
+			//std::cout << prediction.sizes()[0]<<  "\t"<< prediction.sizes()[1] << std::endl;
 			torch::Tensor pen = net->penalty(miniBatch->nind);
 			torch::Tensor loss = (*f_loss)(prediction, miniBatch->getY());
-		
 			torch::Tensor risk = loss / miniBatch->std_y.pow(2) + pen;
 			risk.backward();
 			optimizer.step();
+	//		std::cout << "===================================\nepoch: " << epoch << "\t loss: " << loss.item<double>() << "\tpen: "<< pen <<"\trisk: "<< risk<< std::endl;
 		}
 
-		/*
-		if (train->isBalanced)
-		{
-			for (size_t i = 0; i < train->Batch_Num; i++)
-			{
-				optimizer.zero_grad();
-				auto miniBatch = train->getBatch(i);
-				torch::Tensor prediction = net->forward(miniBatch);
-				torch::Tensor pen = net->penalty(miniBatch->nind);
-				torch::Tensor loss = (*f_loss)(prediction, miniBatch->getY());
-				torch::Tensor risk = loss / miniBatch->std_y.pow(2) + pen;
-				risk.backward();
-				optimizer.step();
-			}
-		
-		}
-		else
-		{
-			optimizer.zero_grad();
-			torch::Tensor loss = torch::zeros(1);
-			torch::Tensor pen = torch::zeros(1);
-			torch::Tensor prediction = net->forward(sample);
-			pen += net->penalty(sample->nind);
-			loss += (*f_loss)(prediction, sample->getY());
-			loss /= (double)train->nind;
-			pen /= (double)train->nind;
-			torch::Tensor risk = loss / train->std_y.pow(2) + pen;
-			risk.backward();
-			optimizer.step();
-		
-		}
-		
-	*/
+
 		if (epoch % 10 == 0)
 		{
-		//	net->realize = false;
 			net->eval();
-			torch::Tensor loss_test = torch::zeros(1);
-			torch::Tensor pen_test = torch::zeros(1);
-			if (valid->nind != 0)
-			{
-				torch::Tensor pred_test = net->forward(valid);
-				loss_test += (*f_loss)(pred_test, valid->getY());
-				pen_test += net->penalty(valid->nind);
-				/*
-				
-				if (valid->isBalanced)
-				{
-					torch::Tensor pred_test = net->forward(valid);
-					loss_test += (*f_loss)(pred_test, valid->getY());
-					pen_test += net->penalty(valid->nind);
-				}
-				else
-				{
-				//	for (size_t i = 0; i < valid->nind; i++)
-					{
-	//					std::cout << "ind" << i << std::endl;
-						auto sample = valid->getSample(i);
-						torch::Tensor pred_test = net->forward(sample);
-						pen_test += net->penalty(sample->nind);
-						loss_test += (*f_loss)(pred_test, sample->getY());
-					}
-					loss_test /= (double)valid->nind;
-					pen_test /= (double)valid->nind;
-				
-				}
-				*/
-			}
-			torch::Tensor risk_loss = loss_test / valid->std_y.pow(2) + pen_test;
-			
+			torch::Tensor pred_test = net->forward(train);
+			torch::Tensor loss_test = (*f_loss)(pred_test, train->getY());
+			torch::Tensor pen_test = net->penalty(train->nind);
+			torch::Tensor risk_loss = loss_test / train->std_y.pow(2) + pen_test;
+			net->train();
 			if (risk_loss.item<double>() < risk_min)
 			{
 				ss.str(std::string());
 				risk_min = risk_loss.item<double>();
+				net->epoch = epoch;
+				net->loss = loss_test;
 				torch::serialize::OutputArchive output_archive;
 				net->save(output_archive);
 				output_archive.save_to(ss);
-				net->epoch = epoch;
-				net->loss = loss_test;
 				k = 0;
 			}
 			else
@@ -123,12 +63,11 @@ torch::Tensor training(std::shared_ptr<Net> net, std::shared_ptr<TensorData> tra
 					break;
 				}
 			}
-			if (epoch % 100 == 0)
+			if (epoch % 1000 == 0)
 			{
 				std::cout << "===================================\nepoch: " << epoch << "\nTraining loss: " << loss_test.item<double>() << std::endl;
 			}
-	//		std::cout << "===================================\nepoch: " << epoch << "\nTraning loss: " << loss_test.item<double>() << std::endl;
-			net->train();
+			
 		}
 		
 		
@@ -138,32 +77,19 @@ torch::Tensor training(std::shared_ptr<Net> net, std::shared_ptr<TensorData> tra
 	torch::serialize::InputArchive input_archive;
 	input_archive.load_from(ss);
 	net->load(input_archive);
-	/*
-	torch::Tensor loss_test = torch::zeros(1);
-	if (test->nind!=0)
+	torch::Tensor loss_vaild = torch::full(1, -9);
+	if (valid->nind)
 	{
 		net->eval();
-		if (test->isBalanced)
-		{
-			torch::Tensor pred_test = net->forward(test);
-			loss_test = (*f_loss)(pred_test, test->getY());
-		}
-		else
-		{
-			for (size_t i = 0; i < test->nind; i++)
-			{
-				auto sample = test->getSample(i);
-				torch::Tensor pred_test = net->forward(sample);
-				loss_test += (*f_loss)(pred_test, sample->getY());
-			}
-			loss_test /= (double)test->nind;
-		}
+		torch::Tensor pred_vaild = net->forward(valid);
+		loss_vaild = (*f_loss)(pred_vaild, valid->getY());
+		net->train();
 	}
-	*/
-	//for (const auto& p : net->parameters()) {
-	//	std::cout << p << std::endl;
-	//}
-	return 	net->loss;
+	
+//	for (const auto& p : net->parameters()) {
+//	std::cout << p << std::endl;
+//	}
+	return loss_vaild;
 }
 
 template<class Net, class Loss>

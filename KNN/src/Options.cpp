@@ -132,10 +132,10 @@ void Options::boostProgramOptionsRoutine(int argc, const char * const argv[])
 			"In FNN, the number of layers indicates the number of the basis function used to fit the data in this layer.\n"
 			"In NN, the number of layers indicates the data points in this layer\n"
 			"If the phenotype is categorical data, the output equals to the number of class.\n")
-		("epoch", po::value<int>()->value_name("num")->default_value(3000), "set Epoch number for the training.\n")
+		("epoch", po::value<double>()->value_name("num")->default_value(3000), "set Epoch number for the training.\n")
 		("lr", po::value<double>()->value_name("num")->default_value(0.001), "set learning rate for the training.\n")
 		("optim", po::value<int>()->value_name("num")->default_value(1), "set optimizer  for the training, 0 Adam; 1 SGD.\n")
-		("lambda", po::value<double>()->value_name("num")->default_value(1.0), "define the lambda value for training, default 1.\n")
+		("lambda", po::value<std::string>()->value_name("num")->default_value("1"), "define the lambda value for training, default 1.\n")
 		("loss", po::value<int>()->value_name("[0|1|2]")->default_value(0), "define the loss function for training, 0: MSE; 1: BCE; 2: CrossEntropy.\n")
 		("ratio", po::value<float>()->value_name("num")->default_value(0.8), "define the ratio of training dataset to testing dataset\n")
 		("basis", po::value<int>()->value_name("[0|1]")->default_value(0), "define the basis function in the hidden layers, 0: Wavelet basis; 1: B spline basis.\n")
