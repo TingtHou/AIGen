@@ -35,10 +35,11 @@ KernelGenerator::KernelGenerator(GenoData & gd, int KernelName, Eigen::VectorXf 
 		throw std::string("Invalided kernel name!");
 		break;
 	}
-	for (auto it=gd.fid_iid.begin();it!=gd.fid_iid.end();it++)
-	{
-		kernels.fid_iid.insert({ it->first, it->second });
-	}
+	kernels.fid_iid = gd.fid_iid;
+//	for (auto it=gd.fid_iid.begin();it!=gd.fid_iid.end();it++)
+//	{
+//		kernels.fid_iid.insert({ it->first, it->second });
+//	}
 	//kernels.fid_iid = gd.fid_iid;
 	int totalsize = gd.Geno.rows()*gd.Geno.cols();
 	kernels.VariantCountMatrix.resize(nrow, nrow);
@@ -110,11 +111,11 @@ void KernelGenerator::test()
 	
 	of.close();
 	kernels.kernelMatrix = kernel;
-//	kernels.fid_iid = gd.fid_iid;
-	for (auto it = gd.fid_iid.begin(); it != gd.fid_iid.end(); it++)
-	{
-		kernels.fid_iid.insert({ it->first, it->second });
-	}
+	kernels.fid_iid = gd.fid_iid;
+//	for (auto it = gd.fid_iid.begin(); it != gd.fid_iid.end(); it++)
+//	{
+//		kernels.fid_iid.insert({ it->first, it->second });
+//	}
 	int totalsize = gd.Geno.rows()*gd.Geno.cols();
 	kernels.VariantCountMatrix.resize(nrow, nrow);
 	kernels.VariantCountMatrix.setOnes();

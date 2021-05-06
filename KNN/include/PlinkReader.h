@@ -47,7 +47,7 @@ private:
 	std::string pedfile;
 	std::string mapfile;
 	///////////////////family info////////////////////////////////
-	std::map<int, std::string> fid_iid_index;
+	boost::bimap<int, std::string>  fid_iid_index;
 	std::vector<std::string> fid;
 	std::vector<std::string> iid;
 	std::vector<std::string> PaternalID;

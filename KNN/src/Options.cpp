@@ -35,6 +35,8 @@ std::string Options::print()
 			buffer << *v;
 		else if (auto v = boost::any_cast<float>(&value))
 			buffer << *v;
+		else if (auto v = boost::any_cast<double>(&value))
+			buffer << *v;
 		buffer << std::endl;
 	}
 	return buffer.str();
@@ -76,7 +78,8 @@ void Options::boostProgramOptionsRoutine(int argc, const char * const argv[])
 		("qcovar", po::value<std::string>()->value_name("[filename]"),
 				"Input quantitative covariates from a plain text file.\n")
 		("keep", po::value<std::string>()->value_name("[filename]"),
-				"Only use individuals in this file for analysis.\n");
+				"Only use individuals in this file for analysis.\n")
+		("intercept", po::value<bool>()->value_name("True/False")->default_value(false), "Specify whether insert a intercept into covariates matrix, default to false.\n");
 		po::options_description optsFilesOperation("File Operations");
 		optsFilesOperation.add_options()
 		("impute", po::value<bool>()->value_name("True/False"),
@@ -97,9 +100,9 @@ void Options::boostProgramOptionsRoutine(int argc, const char * const argv[])
 		("constant", po::value<float>()->value_name("value"), "The constant value used for polynomial kernel calculating.\n")
 		("deg", po::value<float>()->value_name("value"), "The degree value used for polynomial kernel calculating.\n")
 		("sigma", po::value<float>()->value_name("value"), "The standard deviation used for Gaussian kernel.\n");
-	po::options_description optsAlgorithm("Algorithm Parameters");
-	optsAlgorithm.add_options()
-		("skip", "Skip estimation process.\n")
+	po::options_description optsKNNAlgorithm("KNN Algorithm Parameters");
+	optsKNNAlgorithm.add_options()
+		("KNN", "Implement KNN analysis.\n")
 	//	("minque1","Use MINQUE(1) for estimate.\n")
 		("minque0", "Use MINQUE(0) for estimate.\n")
 		("iterate", po::value<int>()->value_name("times"), "The iterate times used in iterate minque method.\nDefault to 100.\n")
@@ -116,17 +119,35 @@ void Options::boostProgramOptionsRoutine(int argc, const char * const argv[])
 														"0: BLUP; 1: Leave one out\n")
 		("alphaKNN", po::value<int>()->value_name("degree"), "Adopt 2-layer KNN with 1 latent feature h and order alpha polynomial kernels.\n")
 		("batch", po::value<int>()->value_name("num"), "Split a super-large kernels into 'num' smaller batch to analysis.\n")
-		("seed", po::value<float>()->value_name("num"), "Set seed for random process.\n")
+		("seed", po::value<float>()->value_name("num")->default_value(1), "Set seed for random process.\n")
 		("echo", po::value<bool>()->value_name("True/False"), "Print the results at each iterate or not")
 		("fix",  "Skip fixed effects estimation.\n")
-		("thread", po::value<int>()->value_name("num"), "Set a 'num' size thread pool for multi-thread analysis.\n")
-	//	("page", po::value<int>()->value_name("num"),"the mix memory could be used.\n")
-		("bootstrap", po::value<int>()->value_name("times"), "The bootstrap times.\nDefault to 100.\n");
+		("thread", po::value<int>()->value_name("num"), "Set a 'num' size thread pool for multi-thread analysis.\n");
+
+	po::options_description optsFNNAlgorithm("FNN Algorithm Parameters");
+	optsFNNAlgorithm.add_options()
+		("FNN", "Implement functional nerual network analysis.\n")
+		("NN",  "Implement traditional nerual network analysis.\n")
+		("layer", po::value<std::string>()->value_name("inputs,layer1,layer2, ..., output"), "define the numbers of nodes in the hidden layers.\n"
+			"In FNN, the number of layers indicates the number of the basis function used to fit the data in this layer.\n"
+			"In NN, the number of layers indicates the data points in this layer\n"
+			"If the phenotype is categorical data, the output equals to the number of class.\n")
+		("epoch", po::value<double>()->value_name("num")->default_value(3000), "set Epoch number for the training.\n")
+		("lr", po::value<double>()->value_name("num")->default_value(0.001), "set learning rate for the training.\n")
+		("optim", po::value<int>()->value_name("num")->default_value(1), "set optimizer  for the training, 0 Adam; 1 SGD.\n")
+		("lambda", po::value<std::string>()->value_name("num")->default_value("1"), "define the lambda value for training, default 1.\n")
+		("loss", po::value<int>()->value_name("[0|1|2]")->default_value(0), "define the loss function for training, 0: MSE; 1: BCE; 2: CrossEntropy.\n")
+		("ratio", po::value<float>()->value_name("num")->default_value(0.8), "define the ratio of training dataset to testing dataset\n")
+		("basis", po::value<int>()->value_name("[0|1]")->default_value(0), "define the basis function in the hidden layers, 0: Wavelet basis; 1: B spline basis.\n")
+		("save", po::value<std::string>()->value_name("[filename]"), "save the model.\n")
+		("load", po::value<std::string>()->value_name("[filename]"), "load the model from a file.\n");
+	/*
 	po::options_description optsComputerDevice("Computing Device Options");
 	optsComputerDevice.add_options()
 		("GPU", " Use CPU for computation.\n")
 		("e", po::value<int>()->value_name("[dev]"), "Select GPUs to use.\n");
 
+*/
 
 	po::options_description optsDescOutFiles("Output Files");
 	optsDescOutFiles.add_options()
@@ -142,8 +163,9 @@ void Options::boostProgramOptionsRoutine(int argc, const char * const argv[])
 		add(optsDescInFiles).
 		add(optsFilesOperation).
 		add(optsKernelGenr).
-		add(optsAlgorithm).
-		add(optsComputerDevice).
+		add(optsKNNAlgorithm).
+		add(optsFNNAlgorithm).
+	//	add(optsComputerDevice).
 		add(optsDescOutFiles);
 //		add(optsCheckingParametr);
 	try

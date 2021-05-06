@@ -16,27 +16,19 @@ Prediction::Prediction(Eigen::VectorXf& Real_Y, std::vector<Eigen::MatrixXf *>& 
 	Eigen::MatrixXf Identity(nind, nind);
 	Identity.setIdentity();
 	this->Kernels.push_back(&Identity);
-	calc();
-}
-
-float Prediction::getMSE()
-{
-	return mse;
-}
-
-float Prediction::getCor()
-{
-	return cor;
-}
-
-float Prediction::getAUC()
-{
-	return auc;
+	if (mode)
+	{
+		PredictYLOO();
+	}
+	else
+	{
+		predictY();
+	}
 }
 
 
 
-void Prediction::GetpredictY()
+void Prediction::predictY()
 {
 	Eigen::VectorXf Fix(nind);
 	Eigen::VectorXf Random(nind);
@@ -63,45 +55,10 @@ void Prediction::GetpredictY()
 //	test.close();
 }
 
-void Prediction::calc_mse()
-{
-	Eigen::VectorXf residual = Real_Y - Predict_Y;
-	double mse_tmp = 0;
-	for (int i = 0; i < nind; i++)
-	{
-		mse_tmp += ((double)residual[i])* ((double)residual[i]);
-	}
-	mse_tmp /= nind;
-	mse = (float)mse_tmp;
-}
 
 
 
-void Prediction::calc()
-{
-	if (mode)
-	{
-		GetPredictYLOO();
-	}
-	else
-	{
-		GetpredictY();
-	}
-	calc_mse();
-	if (isbinary)
-	{
-		ROC Roc(Real_Y, Predict_Y);
-		Specificity = Roc.getSpecificity();
-		Sensitivity = Roc.getSensitivity();
-		auc = Roc.GetAUC();
-	}
-	else
-	{
-		cor = Cor(Real_Y, Predict_Y);
-	}
-}
-
-void Prediction::GetPredictYLOO()
+void Prediction::PredictYLOO()
 {
 	Eigen::VectorXf Fix(nind);
 	Eigen::VectorXf Random(nind);

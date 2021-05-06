@@ -4,31 +4,10 @@
     <Natvis Include="eigen.natvis" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\Batch.cpp">
-      <Filter>Source</Filter>
-    </ClCompile>
     <ClCompile Include="src\CommonFunc.cpp">
       <Filter>Source</Filter>
     </ClCompile>
     <ClCompile Include="src\DataManager.cpp">
-      <Filter>Source</Filter>
-    </ClCompile>
-    <ClCompile Include="src\imnq.cpp">
-      <Filter>Source</Filter>
-    </ClCompile>
-    <ClCompile Include="src\KernelExpansion.cpp">
-      <Filter>Source</Filter>
-    </ClCompile>
-    <ClCompile Include="src\KernelGenerator.cpp">
-      <Filter>Source</Filter>
-    </ClCompile>
-    <ClCompile Include="src\KernelManage.cpp">
-      <Filter>Source</Filter>
-    </ClCompile>
-    <ClCompile Include="src\LinearRegression.cpp">
-      <Filter>Source</Filter>
-    </ClCompile>
-    <ClCompile Include="src\MinqueBase.cpp">
       <Filter>Source</Filter>
     </ClCompile>
     <ClCompile Include="src\Options.cpp">
@@ -49,39 +28,60 @@
     <ClCompile Include="src\Main.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="src\Prediction.cpp">
-      <Filter>Source</Filter>
+    <ClCompile Include="src\Batch.cpp">
+      <Filter>Source\KNN</Filter>
     </ClCompile>
-    <ClCompile Include="src\MINQUE1.cpp">
-      <Filter>Source</Filter>
+    <ClCompile Include="src\imnq.cpp">
+      <Filter>Source\KNN</Filter>
+    </ClCompile>
+    <ClCompile Include="src\KernelExpansion.cpp">
+      <Filter>Source\KNN</Filter>
+    </ClCompile>
+    <ClCompile Include="src\KernelGenerator.cpp">
+      <Filter>Source\KNN</Filter>
+    </ClCompile>
+    <ClCompile Include="src\KernelManage.cpp">
+      <Filter>Source\KNN</Filter>
+    </ClCompile>
+    <ClCompile Include="src\LinearRegression.cpp">
+      <Filter>Source\KNN</Filter>
     </ClCompile>
     <ClCompile Include="src\MINQUE0.cpp">
-      <Filter>Source</Filter>
+      <Filter>Source\KNN</Filter>
     </ClCompile>
-    <ClCompile Include="src\cuimnq.cpp">
-      <Filter>Source</Filter>
+    <ClCompile Include="src\MINQUE1.cpp">
+      <Filter>Source\KNN</Filter>
     </ClCompile>
-    <ClCompile Include="src\cuMINQUE1.cpp">
-      <Filter>Source</Filter>
+    <ClCompile Include="src\MinqueBase.cpp">
+      <Filter>Source\KNN</Filter>
     </ClCompile>
-    <ClCompile Include="src\cuMinqueBase.cpp">
-      <Filter>Source</Filter>
+    <ClCompile Include="src\Prediction.cpp">
+      <Filter>Source\KNN</Filter>
     </ClCompile>
-    <ClCompile Include="src\cuToolkit.cpp">
-      <Filter>Source</Filter>
+    <ClCompile Include="src\TensorData.cpp">
+      <Filter>Source\FNN</Filter>
     </ClCompile>
-    <ClCompile Include="src\cuMINQUE0.cpp">
-      <Filter>Source</Filter>
+    <ClCompile Include="src\FNN.cpp">
+      <Filter>Source\FNN</Filter>
     </ClCompile>
-    <ClCompile Include="src\Bootstrap.cpp">
-      <Filter>Source</Filter>
+    <ClCompile Include="src\Bspline.cpp">
+      <Filter>Source\FNN</Filter>
+    </ClCompile>
+    <ClCompile Include="src\SplineBasis.cpp">
+      <Filter>Source\FNN</Filter>
+    </ClCompile>
+    <ClCompile Include="src\NN.cpp">
+      <Filter>Source\FNN</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Haar.cpp">
+      <Filter>Source\FNN</Filter>
+    </ClCompile>
+    <ClCompile Include="src\KNN_Imp.cpp">
+      <Filter>Source\KNN</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="eigen_autoexp_part.dat" />
-    <None Include="include\cuMatrix.cuh">
-      <Filter>Header</Filter>
-    </None>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Header">
@@ -90,33 +90,21 @@
     <Filter Include="Source">
       <UniqueIdentifier>{1104405b-286c-4451-b548-8db1915b5583}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header\KNN">
+      <UniqueIdentifier>{1eaf646f-7639-4243-88e9-db2d1444abf1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\KNN">
+      <UniqueIdentifier>{12440c70-f6d2-4d6f-9efc-2a9c355090be}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\FNN">
+      <UniqueIdentifier>{e4e5b5ce-7b57-41bd-8833-5e867ac20256}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header\FNN">
+      <UniqueIdentifier>{5141306c-9cb1-4711-b9a3-d54e1a205c0b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="include\Batch.h">
-      <Filter>Header</Filter>
-    </ClInclude>
-    <ClInclude Include="include\CommonFunc.h">
-      <Filter>Header</Filter>
-    </ClInclude>
     <ClInclude Include="include\DataManager.h">
-      <Filter>Header</Filter>
-    </ClInclude>
-    <ClInclude Include="include\imnq.h">
-      <Filter>Header</Filter>
-    </ClInclude>
-    <ClInclude Include="include\KernelExpansion.h">
-      <Filter>Header</Filter>
-    </ClInclude>
-    <ClInclude Include="include\KernelGenerator.h">
-      <Filter>Header</Filter>
-    </ClInclude>
-    <ClInclude Include="include\KernelManage.h">
-      <Filter>Header</Filter>
-    </ClInclude>
-    <ClInclude Include="include\LinearRegression.h">
-      <Filter>Header</Filter>
-    </ClInclude>
-    <ClInclude Include="include\MinqueBase.h">
       <Filter>Header</Filter>
     </ClInclude>
     <ClInclude Include="include\Options.h">
@@ -134,43 +122,68 @@
     <ClInclude Include="include\easylogging++.h">
       <Filter>Header</Filter>
     </ClInclude>
-    <ClInclude Include="include\Prediction.h">
-      <Filter>Header</Filter>
+    <ClInclude Include="include\KernelExpansion.h">
+      <Filter>Header\KNN</Filter>
     </ClInclude>
-    <ClInclude Include="include\MINQUE1.h">
-      <Filter>Header</Filter>
+    <ClInclude Include="include\KernelGenerator.h">
+      <Filter>Header\KNN</Filter>
+    </ClInclude>
+    <ClInclude Include="include\KernelManage.h">
+      <Filter>Header\KNN</Filter>
+    </ClInclude>
+    <ClInclude Include="include\LinearRegression.h">
+      <Filter>Header\KNN</Filter>
     </ClInclude>
     <ClInclude Include="include\MINQUE0.h">
+      <Filter>Header\KNN</Filter>
+    </ClInclude>
+    <ClInclude Include="include\MINQUE1.h">
+      <Filter>Header\KNN</Filter>
+    </ClInclude>
+    <ClInclude Include="include\MinqueBase.h">
+      <Filter>Header\KNN</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Batch.h">
+      <Filter>Header\KNN</Filter>
+    </ClInclude>
+    <ClInclude Include="include\imnq.h">
+      <Filter>Header\KNN</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Prediction.h">
+      <Filter>Header\KNN</Filter>
+    </ClInclude>
+    <ClInclude Include="include\TensorData.h">
+      <Filter>Header\FNN</Filter>
+    </ClInclude>
+    <ClInclude Include="include\TensorCommon.h">
+      <Filter>Header\FNN</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Layer.h">
+      <Filter>Header\FNN</Filter>
+    </ClInclude>
+    <ClInclude Include="include\FNN.h">
+      <Filter>Header\FNN</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Bspline.h">
+      <Filter>Header\FNN</Filter>
+    </ClInclude>
+    <ClInclude Include="include\SplineBasis.h">
+      <Filter>Header\FNN</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Basis.h">
+      <Filter>Header\FNN</Filter>
+    </ClInclude>
+    <ClInclude Include="include\NN.h">
+      <Filter>Header\FNN</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Haar.h">
+      <Filter>Header\FNN</Filter>
+    </ClInclude>
+    <ClInclude Include="include\KNN_Imp.h">
+      <Filter>Header\KNN</Filter>
+    </ClInclude>
+    <ClInclude Include="include\CommonFunc.h">
       <Filter>Header</Filter>
     </ClInclude>
-    <ClInclude Include="include\cuimnq.h">
-      <Filter>Header</Filter>
-    </ClInclude>
-    <ClInclude Include="include\cuMINQUE1.h">
-      <Filter>Header</Filter>
-    </ClInclude>
-    <ClInclude Include="include\cuMinqueBase.h">
-      <Filter>Header</Filter>
-    </ClInclude>
-    <ClInclude Include="include\cuToolkit.h">
-      <Filter>Header</Filter>
-    </ClInclude>
-    <ClInclude Include="include\cuMINQUE0.h">
-      <Filter>Header</Filter>
-    </ClInclude>
-    <ClInclude Include="include\helper_cuda.h">
-      <Filter>Header</Filter>
-    </ClInclude>
-    <ClInclude Include="include\helper_string.h">
-      <Filter>Header</Filter>
-    </ClInclude>
-    <ClInclude Include="include\Bootstrap.h">
-      <Filter>Header</Filter>
-    </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <CudaCompile Include="src\cuMatrix.cu">
-      <Filter>Source</Filter>
-    </CudaCompile>
   </ItemGroup>
 </Project>
