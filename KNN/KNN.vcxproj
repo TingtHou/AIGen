@@ -197,7 +197,7 @@
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <GenerateDebugInformation>DebugFull</GenerateDebugInformation>
       <AdditionalDependencies>libiomp5md.lib;c10.lib;c10d.lib;fbgemm.lib;torch.lib;torch_cpu.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <RandomizedBaseAddress>true</RandomizedBaseAddress>
       <AdditionalLibraryDirectories>C:\C++ Library\libtorch\cpu\release\lib;C:\C++ Library\boost_1_71_0\lib;</AdditionalLibraryDirectories>
