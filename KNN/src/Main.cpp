@@ -106,7 +106,7 @@ void TryMain(int argc, const char *const argv[])
 		return;
 
 	}
-	string result= "result.txt";
+	std::string result= "result.txt";
 	std::string logfile="result.log";
 	if (programOptions.count("out"))
 	{
@@ -146,8 +146,8 @@ void TryMain(int argc, const char *const argv[])
 	if (programOptions.count("FNN") || programOptions.count("NN"))
 	{
 		std::vector<std::shared_ptr<Evaluate>>  error = FNNAnalysis(programOptions, dm);
-		ofstream out;
-		out.open(result, ios::out);
+		std::ofstream out;
+		out.open(result, std::ios::out);
 		LOG(INFO) << "---Result----";
 		std::cout << "---Result----" << std::endl;
 		std::stringstream ss;
@@ -254,7 +254,7 @@ void TryMain(int argc, const char *const argv[])
 		if (programOptions.count("weight"))
 		{
 			std::string weightVFile = programOptions["weight"].as < std::string >();
-			ifstream infile;
+			std::ifstream infile;
 			infile.open(weightVFile);
 			if (!infile.is_open())
 			{
@@ -342,8 +342,8 @@ void TryMain(int argc, const char *const argv[])
 			Eigen::VectorXf predict;
 			int iterateTimes=MINQUEAnalysis(programOptions, dm, VarComp,predict);
 
-			ofstream out;
-			out.open(result, ios::out);
+			std::ofstream out;
+			out.open(result, std::ios::out);
 			LOG(INFO) << "---Result----";
 			std::cout << "---Result----" << std::endl;
 			out << "Source\tVariance" << std::endl;
@@ -447,7 +447,7 @@ int main(int argc, const char *const argv[])
 		mkl_set_dynamic(false);
 		TryMain(argc, argv);
 	}
-	catch (string &e)
+	catch (std::string &e)
 	{
 		std::cout << e << std::endl;
 		LOG(ERROR) << e;
@@ -468,7 +468,7 @@ int main(int argc, const char *const argv[])
 	std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
 	std::chrono::duration<double, std::ratio<1, 1>> duration_s(end - start);
 	//std::cout << "Total elapse Time : " << (clock() - t1) * 1.0 / CLOCKS_PER_SEC * 1000 << " ms" << std::endl;
-	cout << "Computational time: " << duration_s.count() <<" second(s)."<< endl;
+	std::cout << "Computational time: " << duration_s.count() <<" second(s)."<< std::endl;
 	return 0;
 }
 
@@ -684,7 +684,7 @@ int MINQUEAnalysis(boost::program_options::variables_map programOptions, DataMan
 			}
 			if (programOptions.count("seed"))
 			{
-				seed = programOptions["seed"].as<int>();
+				seed = programOptions["seed"].as<float>();
 			}
 			if (programOptions.count("minque0"))
 			{

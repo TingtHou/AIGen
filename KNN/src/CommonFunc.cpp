@@ -162,7 +162,7 @@ float mean(Eigen::VectorXf & Y)
 
 bool isNum(std::string line)
 {
-	stringstream sin(line);
+	std::stringstream sin(line);
 	float d;
 	char c;
 	if (!(sin >> d))
@@ -175,14 +175,14 @@ bool isNum(std::string line)
 
 std::string GetBaseName(std::string pathname)
 {
-	std::vector<string> splitstr;
+	std::vector< std::string> splitstr;
 	boost::split(splitstr, pathname, boost::is_any_of("/\\"), boost::token_compress_on);
 	return splitstr.at(splitstr.size() - 1);
 }
 
 std::string GetParentPath(std::string pathname)
 {
-	std::vector<string> splitstr;
+	std::vector< std::string> splitstr;
 	boost::split(splitstr, pathname, boost::is_any_of("/\\"), boost::token_compress_on);
 	splitstr.pop_back();
 	std::string ParentPath = boost::join(splitstr, "/");

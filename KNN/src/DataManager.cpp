@@ -330,7 +330,7 @@ void DataManager::readCovariates_quantitative(std::string covfilename, CovData &
 		std::vector<float> floatVector;
 		floatVector.reserve(strVec.size()-2);
 		transform(strVec.begin()+2, strVec.end(), back_inserter(floatVector),
-			[](string const& val) {return stof(val); });
+			[](std::string const& val) {return  std::stof(val); });
 		covs.push_back(floatVector);
 	}
 	infile.close();

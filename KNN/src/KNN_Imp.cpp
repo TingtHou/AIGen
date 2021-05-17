@@ -66,7 +66,7 @@ void BatchMINQUE1(MinqueOptions& minque, std::vector<Eigen::MatrixXf*>& Kernels,
 		}
 		catch (const std::exception & err)
 		{
-			stringstream ss;
+			std::stringstream ss;
 			ss << "[Warning]: The thread " << i << " is interrupt, because " << err.what();
 			printf("%s\n", ss.str().c_str());
 			LOG(WARNING) << ss.str();
@@ -78,7 +78,7 @@ void BatchMINQUE1(MinqueOptions& minque, std::vector<Eigen::MatrixXf*>& Kernels,
 				fixsBatch[i][0] = -999;
 			}
 		}
-		catch (string & e)
+		catch (std::string & e)
 		{
 			std::cout << e;
 			LOG(ERROR) << e;
@@ -94,7 +94,7 @@ void BatchMINQUE1(MinqueOptions& minque, std::vector<Eigen::MatrixXf*>& Kernels,
 
 	for (int i = 0; i < varsBatch.size(); i++)
 	{
-		stringstream ss;
+		std::stringstream ss;
 		ss << "Thread ID: " << i << "\t";
 		for (int j = 0; j < varsBatch[i].size(); j++)
 		{
@@ -256,7 +256,7 @@ void BatchMINQUE0(MinqueOptions& minque, std::vector<Eigen::MatrixXf*>& Kernels,
 		}
 		catch (const std::exception & err)
 		{
-			stringstream ss;
+			std::stringstream ss;
 			ss << "[Warning]: The thread " << i << " is interrupt, because " << err.what();
 			std::cout << ss.str();
 			//	printf("%s\n", ss.str().);
@@ -269,7 +269,7 @@ void BatchMINQUE0(MinqueOptions& minque, std::vector<Eigen::MatrixXf*>& Kernels,
 				fixsBatch[i][0] = -999;
 			}
 		}
-		catch (string & e)
+		catch (std::string & e)
 		{
 			std::cout << e;
 			LOG(ERROR) << e;
@@ -284,7 +284,7 @@ void BatchMINQUE0(MinqueOptions& minque, std::vector<Eigen::MatrixXf*>& Kernels,
 	}
 	for (int i = 0; i < varsBatch.size(); i++)
 	{
-		stringstream ss;
+		std::stringstream ss;
 		ss << "Thread ID: " << i << "\t";
 		for (int j = 0; j < varsBatch[i].size(); j++)
 		{

@@ -69,7 +69,7 @@ void KernelGenerator::test()
 	pk.read("../m20.ped", "../m20.map");
 	GenoData gd = pk.GetGeno();
 	Eigen::MatrixXf geno = gd.Geno;
-	ofstream genot("../genoC.txt", ios::out);
+	std::ofstream genot("../genoC.txt", std::ios::out);
 	for (int i=0;i<geno.rows();i++)
 	{
 		for (int j=0;j<geno.cols();j++)
@@ -99,7 +99,7 @@ void KernelGenerator::test()
 	Eigen::VectorXf weight(ncol);
 	weight.setOnes();
 	getProduct(geno, weight, kernel);
-	ofstream of("../proC.txt", ios::out);
+	std::ofstream of("../proC.txt", std::ios::out);
 	for (int i=0;i<nrow;i++)
 	{
 		for (int j=0;j<nrow;j++)
