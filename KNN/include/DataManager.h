@@ -38,12 +38,12 @@ public:
 	std::shared_ptr< PhenoData> getPhe_prt() { return std::make_shared<PhenoData>(phe); };
 	std::shared_ptr< GenoData> getGeno_prt() { return std::make_shared<GenoData>(geno); };
 	std::shared_ptr< CovData> getCov_prt() { return std::make_shared<CovData>(Covs); };
-	std::vector<KernelData>* GetKernel() { return &KernelList; };						//Get kernel data
+	std::vector<std::shared_ptr<KernelData>> GetKernel() { return KernelList; };						//Get kernel data
 	CovData GetCovariates();								//Get covariate data
 	std::shared_ptr<Dataset> GetDataset();
 	Eigen::VectorXf& GetWeights() { return Weights; };								//Get Weights data
-	void SetKernel(std::vector<KernelData> KernelList)								//Replace internal kernel data with specificed external kernel data
-		{ this->KernelList=KernelList; };
+	void SetKernel(std::vector<std::shared_ptr<KernelData>> KernelList);							//Replace internal kernel data with specificed external kernel data
+		
 	void match();																	//match phenotype data and kernel data
 	//std::tuple<std::shared_ptr<Dataset>, std::shared_ptr<Dataset>> split(float seed, float ratio=0.8);
 	GenoData getGenotype() { return geno; };										//Get genotype data
@@ -51,7 +51,7 @@ public:
 private:
 	PhenoData phe;																	//phenotype data
 	GenoData geno;																	//genotype data
-	std::vector<KernelData> KernelList;												//a vector of kernel data
+	std::vector<std::shared_ptr<KernelData>> KernelList;												//a vector of kernel data
 	CovData Covs;																	//intercept + all covariates
 	Eigen::VectorXf Weights;														//Weights for Interative MINQUE
 	boost::bimap<int, std::string> fid_iid_keeping;										// keep individuals ID for analysis
@@ -63,7 +63,7 @@ private:
 	void readCovariates_quantitative(std::string covfilename, CovData & Quantitative);									//Read quantitative Covariates
 	void readCovariates_Discrete(std::string covfilename, CovData & Discrete);									//Read discrete Covariates
 //	void match(PhenoData &phenotype, KernelData &kernel);							//match phenotype data and one kernel matrix
-	void match_Kernels(KernelData& kernel, boost::bimap<int, std::string>& overlapped);
+	std::shared_ptr<KernelData> match_Kernels(std::shared_ptr<KernelData> kernel, boost::bimap<int, std::string>& overlapped);
 
 };
 

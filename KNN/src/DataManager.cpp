@@ -14,9 +14,13 @@ void DataManager::match()
 	}
 	for (int i = 0; i < KernelList.size(); i++)
 	{
-		IDLists.push_back(KernelList[i].fid_iid);
+		IDLists.push_back(KernelList[i]->fid_iid);
 	}
-	IDLists.push_back(phe.fid_iid);
+	if (phe.fid_iid.size())
+	{
+		IDLists.push_back(phe.fid_iid);
+	}
+	
 	if (Covs.fid_iid.size()>0)
 	{
 		IDLists.push_back(Covs.fid_iid);
@@ -101,11 +105,31 @@ void DataManager::match()
 	Covs.fid_iid = overlapped;
 	geno.fid_iid = overlapped;
 	phe.nind = overlapped.size();
+	/*
+	for (size_t i = 0; i < KernelList.size(); i++)
+	{
+		std::stringstream ss;
+		ss << "kernel: " << i << "before matching" << std::endl;
+		ss << "First 10x10: \n" << KernelList[i]->kernelMatrix.block(0, 0, 10, 10) << std::endl;
+		ss << "Last 10x10: \n" << KernelList[i]->kernelMatrix.block(KernelList[i]->kernelMatrix.rows() - 10, KernelList[i]->kernelMatrix.cols() - 10, 10, 10);
+		LOG(INFO) << ss.str() << std::endl;
+	}
+	*/
 	i = 0;
 	for (; i < KernelList.size(); i++)
 	{
-		match_Kernels(KernelList[i], overlapped);
+		KernelList[i]=match_Kernels(KernelList[i], overlapped);
 	}
+	/*
+	for (size_t i = 0; i < KernelList.size(); i++)
+	{
+		std::stringstream ss;
+		ss << "kernel: " << i << "after matching" << std::endl;
+		ss << "First 10x10: \n" << KernelList[i]->kernelMatrix.block(0, 0, 10, 10) << std::endl;
+		ss << "Last 10x10: \n" << KernelList[i]->kernelMatrix.block(KernelList[i]->kernelMatrix.rows() - 10, KernelList[i]->kernelMatrix.cols() - 10, 10, 10);
+		LOG(INFO) << ss.str() << std::endl;
+	}
+	*/
 	std::cout << "After matching, there are " << overlapped.size() << " individuals included for the analysis." << std::endl;
 	LOG(INFO) << "After matching, there are " << overlapped.size() << " individuals included for the analysis.";
 }
@@ -235,34 +259,65 @@ std::tuple<std::shared_ptr<Dataset>, std::shared_ptr<Dataset>>  DataManager::spl
 	return std::make_tuple(train, test);
 }
 */
-void DataManager::match_Kernels(KernelData & kernel, boost::bimap<int, std::string> &overlapped)
+std::shared_ptr<KernelData> DataManager::match_Kernels(std::shared_ptr<KernelData> kernel, boost::bimap<int, std::string> &overlapped)
 {
-	KernelData tmpKernel = kernel;
-	int nind = overlapped.size(); //overlap FID_IID
-	kernel.kernelMatrix.resize(nind, nind);
+	if (overlapped == kernel->fid_iid)
+	{
+		return kernel;
+	}
+	std::shared_ptr<KernelData> match_kernel = std::make_shared<KernelData>();
+	//KernelData tmpKernel = kernel;
+	long long nind = overlapped.size(); //overlap FID_IID
+	match_kernel->kernelMatrix.resize(nind, nind);
 //	kernel.VariantCountMatrix.resize(nind, nind);
-	kernel.fid_iid.clear();
-	int i = 0;
-	for (auto it_row = overlapped.left.begin(); it_row != overlapped.left.end(); it_row++)
+	match_kernel->fid_iid.clear();
+//	int i = 0;
+	long long criteria = (nind + 1) * nind / 2;
+#pragma omp parallel for shared(kernel,match_kernel, overlapped)
+	for (long long k = 0; k < criteria; k++)
+	{
+		unsigned long long tmp_K = k;
+		unsigned long long i = tmp_K / nind, j = tmp_K % nind;
+		if (j < i) i = nind - i, j = nind - j - 1;
+		auto row_it = overlapped.left.find(i);
+		auto col_it = overlapped.left.find(j);
+		std::string rowID = row_it->second;
+		std::string colID = col_it->second;
+		auto itrow = kernel->fid_iid.right.find(rowID);
+		auto itcol = kernel->fid_iid.right.find(colID);
+		int OriKernelRowID = itrow->second;
+		int OriKernelColID = itcol->second;
+		match_kernel->kernelMatrix(j, i)= match_kernel->kernelMatrix(i, j) = kernel->kernelMatrix(OriKernelRowID, OriKernelColID);
+	}
+	std::stringstream ss;
+	ss << "kernel: " << "in matching" << std::endl;
+	ss << "First 10x10: \n" << match_kernel->kernelMatrix.block(0, 0, 10, 10) << std::endl;
+	ss << "Last 10x10: \n" << match_kernel->kernelMatrix.block(match_kernel->kernelMatrix.rows() - 10, match_kernel->kernelMatrix.cols() - 10, 10, 10);
+	LOG(INFO) << ss.str() << std::endl;
+	/*
+#pragma omp parallel for
+	for (boost::bimap< int, std::string >::left_map::const_iterator it_row = overlapped.left.begin(); it_row != overlapped.left.end(); it_row++)
 	{
 		std::string rowID = it_row->second;
-		auto itrow = tmpKernel.fid_iid.right.find(rowID);
+		auto itrow = tmpKernel->fid_iid.right.find(rowID);
 		int OriKernelRowID = itrow->second;
-		int j = 0;
-		for (auto it_col = overlapped.left.begin(); it_col != overlapped.left.end(); it_col++)
+		long long i = it_row->first; //new row id
+	//	int j = 0; 
+		for (boost::bimap< int, std::string >::left_map::const_iterator it_col = overlapped.left.begin(); it_col != overlapped.left.end(); it_col++)
 		{
 
 			std::string colID = it_col->second;
-			auto itcol = tmpKernel.fid_iid.right.find(colID);
+			auto itcol = tmpKernel->fid_iid.right.find(colID);
 			int OriKernelColID = itcol->second;
-			kernel.kernelMatrix(i, j)=tmpKernel.kernelMatrix(OriKernelRowID, OriKernelColID);
+			long long j = it_col->first;  //new col id
+			kernel->kernelMatrix(i, j)=tmpKernel->kernelMatrix(OriKernelRowID, OriKernelColID);
 //			kernel.VariantCountMatrix(i, j) = tmpKernel.VariantCountMatrix(OriKernelRowID, OriKernelColID);
-			j++;
+		//	j++;
 		}
-		i++;
-
-	}
-	kernel.fid_iid = overlapped;
+		//i++;
+	}*/
+	match_kernel->fid_iid = overlapped;
+	return match_kernel;
 }
 
 DataManager::~DataManager()
@@ -276,11 +331,9 @@ void DataManager::readPhe(std::string phefilename)
 
 void DataManager::readKernel(std::string prefix)
 {
-	clock_t t1 = clock();
 	KernelReader kreader(prefix);
 	kreader.read();
-	KernelData tmp = kreader.getKernel();
-	KernelList.push_back(tmp);
+	KernelList.push_back(kreader.getKernel());
 
 }
 
@@ -686,6 +739,16 @@ std::shared_ptr<Dataset> DataManager::GetDataset()
 	return dataset;
 }
 
+void DataManager::SetKernel(std::vector<std::shared_ptr<KernelData>> KernelList)
+{
+	//this->KernelList.clear();
+	this->KernelList.resize(KernelList.size());
+	for (int i = 0; i < KernelList.size(); i++)
+	{
+		this->KernelList[i] =KernelList[i];
+	}
+}
+
 
 
 void DataManager::readResponse(std::string resopnsefile, PhenoData & phe)
@@ -881,14 +944,27 @@ void DataManager::readmkernel(std::string mkernel)
 		omp_set_num_threads(tmp_thread);
 		threadInNest = nthread / filenames.size();
 	}
-	#pragma omp parallel for
+	std::string error="";
+	#pragma omp parallel for 
 	for (int i = 0; i < filenames.size(); i++)
 	{
 		omp_set_num_threads(threadInNest);
-		KernelReader kreader(filenames[i]);
-		kreader.read();
-		KernelData tmpData = kreader.getKernel();
-		KernelList[i]=tmpData;
+		try {
+			KernelReader kreader(filenames[i]);
+			kreader.read();
+			KernelList[i] = kreader.getKernel();
+			LOG(INFO) << "Reading kernel: [" << filenames[i] << "] is completed.";
+		}
+		catch (std::string & e)
+		{
+			#pragma omp critical
+			error = e;
+			//throw e;
+		}
+	}
+	if (error!="")
+	{
+		throw error;
 	}
 	omp_set_num_threads(nthread);
 }
