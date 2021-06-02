@@ -76,6 +76,7 @@ namespace dtt {
 }
 
 
+
 enum MatrixDecompostionOptions :int
 {
 	Cholesky = 0,

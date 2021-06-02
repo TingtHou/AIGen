@@ -334,6 +334,7 @@ void GetSubMatrix(Eigen::MatrixXf*  oMatrix, Eigen::MatrixXf* subMatrix, std::ve
 //@ret:		void	
 void GetSubMatrix(Eigen::MatrixXf* oMatrix, Eigen::MatrixXf* subMatrix, std::vector<int> rowIds)
 {
+#pragma omp parallel for  collapse(2)
 	for (int i = 0; i < rowIds.size(); i++)
 	{
 		for (int j = 0; j < oMatrix->cols(); j++)
