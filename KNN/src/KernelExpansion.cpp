@@ -24,6 +24,19 @@ KernelExpansion::KernelExpansion(std::vector<KernelData> *kernels, int dimension
 	Expanse(dimension, ExtendedMatrix);
 }
 
+KernelExpansion::KernelExpansion(std::vector<std::shared_ptr<KernelData>> kernels, int dimension)
+{
+	for (int i = 0; i < kernels.size(); i++)
+	{
+		OriKernelList.push_back(kernels.at(i)->kernelMatrix);
+	}
+	KernelCount = OriKernelList.size();
+	this->dimension = dimension;
+	ncol = OriKernelList[0].cols();
+	nrow = OriKernelList[0].rows();
+	Expanse(dimension, ExtendedMatrix);
+}
+
 KernelExpansion::~KernelExpansion()
 {
 }

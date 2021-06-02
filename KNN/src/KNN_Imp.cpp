@@ -13,9 +13,25 @@ void BatchMINQUE1(MinqueOptions& minque, std::vector<Eigen::MatrixXf*>& Kernels,
 	{
 		throw std::string("KNN can not be applied to the phenotype over 2 dimensions.");
 	}
+	/*
+	for (size_t i = 0; i < nkernel; i++)
+	{
+		std::stringstream ss;
+		ss << "kernel: " << i << "in BatchMINQUE1" << std::endl;
+		ss << "First 10x10: \n" << Kernels[i]->block(0, 0, 10, 10) << std::endl;
+		ss << "Last 10x10: \n" << Kernels[i]->block(Kernels[i]->rows() - 10, Kernels[i]->cols() - 10, 10, 10);
+		LOG(INFO) << ss.str() << std::endl;
+	}*/
+	
+	std::stringstream ss_batch;
+	ss_batch << "Generating " << nsplit << " batches for analysis";
+	std::cout << ss_batch.str() << std::endl;
+	LOG(INFO) << ss_batch.str();
 	Batch b = Batch(Kernels, pheV, Covs, nsplit, seed, true);
 	b.start(phe.dataType);
-	std::vector<std::vector<Eigen::MatrixXf>> KernelsBatch;
+	std::cout << "Generated." << std::endl;
+	LOG(INFO) << "Generated batch, sizes of each batch are: " << b.getSizesofBatch().transpose() << ".";
+	std::vector<std::vector<Eigen::MatrixXf*>> KernelsBatch;
 	std::vector<Eigen::VectorXf> PheBatch;
 	std::vector<Eigen::MatrixXf> CovBatch;
 	b.GetBatchKernels(KernelsBatch);
@@ -43,7 +59,7 @@ void BatchMINQUE1(MinqueOptions& minque, std::vector<Eigen::MatrixXf*>& Kernels,
 		e.setIdentity();
 		for (int j = 0; j < KernelsBatch[i].size(); j++)
 		{
-			varest.pushback_Vi(&KernelsBatch[i][j]);
+			varest.pushback_Vi(KernelsBatch[i][j]);
 		}
 		varest.pushback_Vi(&e);
 		if (variances.size() != 0)
@@ -210,9 +226,24 @@ void BatchMINQUE0(MinqueOptions& minque, std::vector<Eigen::MatrixXf*>& Kernels,
 	{
 		throw std::string("KNN can not be applied to the phenotype over 2 dimensions.");
 	}
+	std::stringstream ss_batch;
+	ss_batch << "Generating " << nsplit << " batches for analysis";
+	std::cout << ss_batch.str() << std::endl;
+	LOG(INFO) << ss_batch.str();
+	/*
+	for (size_t i = 0; i < nkernel; i++)
+	{
+		std::stringstream ss;
+		ss << "kernel: " << i << "in BatchMINQUE1" << std::endl;
+		ss << "First 10x10: \n" << Kernels[i]->block(0, 0, 10, 10) << std::endl;
+		ss << "Last 10x10: \n" << Kernels[i]->block(Kernels[i]->rows() - 10, Kernels[i]->cols() - 10, 10, 10);
+		LOG(INFO) << ss.str() << std::endl;
+	}*/
 	Batch b = Batch(Kernels, pheV, Covs, nsplit, seed, true);
 	b.start(phe.dataType);
-	std::vector<std::vector<Eigen::MatrixXf>> KernelsBatch;
+	std::cout << "Generated." << std::endl;
+	LOG(INFO) << "Generated batch, sizes of each batch are: " << b.getSizesofBatch().transpose() << ".";
+	std::vector<std::vector<Eigen::MatrixXf*>> KernelsBatch;
 	std::vector<Eigen::VectorXf> PheBatch;
 	std::vector<Eigen::MatrixXf> CovBatch;
 	b.GetBatchKernels(KernelsBatch);
@@ -237,7 +268,7 @@ void BatchMINQUE0(MinqueOptions& minque, std::vector<Eigen::MatrixXf*>& Kernels,
 		e.setIdentity();
 		for (int j = 0; j < KernelsBatch[i].size(); j++)
 		{
-			varest.pushback_Vi(&KernelsBatch[i][j]);
+			varest.pushback_Vi(KernelsBatch[i][j]);
 		}
 		varest.pushback_Vi(&e);
 		try

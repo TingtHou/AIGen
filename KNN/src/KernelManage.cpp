@@ -8,6 +8,7 @@ KernelReader::KernelReader(std::string prefix)
 	BinFileName = prefix + ".grm.bin";
 	NfileName = prefix + ".grm.N.bin";
 	IDfileName = prefix + ".grm.id";
+	this->Kernels = std::make_shared<KernelData>();
 }
 
 KernelReader::~KernelReader()
@@ -21,9 +22,9 @@ std::string KernelReader::print()
 	return ss.str();
 }
 
-void KernelReader::IDfileReader(std::ifstream &fin, KernelData &kdata)
+void KernelReader::IDfileReader(std::ifstream &fin, std::shared_ptr< KernelData> kdata)
 {
-	kdata.fid_iid.clear();
+	kdata->fid_iid.clear();
 	int i = 0;
 	while (!fin.eof())
 	{
@@ -38,12 +39,12 @@ void KernelReader::IDfileReader(std::ifstream &fin, KernelData &kdata)
 		std::vector<std::string> splitline;
 		boost::split(splitline, line, boost::is_any_of(" \t"), boost::token_compress_on);
 		std::string fid_iid = splitline[0] + "_" + splitline[1];
-		kdata.fid_iid.insert({i++, fid_iid });
+		kdata->fid_iid.insert({i++, fid_iid });
 		nind++;
 	}
 }
 
-void KernelReader::BinFileReader(std::ifstream &fin, KernelData & kdata)
+void KernelReader::BinFileReader(std::ifstream &fin, std::shared_ptr< KernelData> kdata)
 {
 	size_t num_elements = nind * (nind + 1) / 2;
 	fin.seekg(0, std::ios::end);
@@ -81,7 +82,7 @@ void KernelReader::BinFileReader(std::ifstream &fin, KernelData & kdata)
 		unsigned long long pointer = id * bytesize;
 		char* str2 = new char[bytesize];
 		memcpy(str2, &f_buf[pointer], bytesize);
-		kdata.kernelMatrix(j, i) = kdata.kernelMatrix(i, j) = *(float*)str2;
+		kdata->kernelMatrix(j, i) = kdata->kernelMatrix(i, j) = *(float*)str2;
 		delete str2;
 	}
 
@@ -97,7 +98,7 @@ void KernelReader::BinFileReader(std::ifstream &fin, KernelData & kdata)
 	*/
 	delete f_buf;
 }
-
+/*
 void KernelReader::NfileReader(std::ifstream &fin, KernelData & kdata)
 {
 	
@@ -126,7 +127,7 @@ void KernelReader::NfileReader(std::ifstream &fin, KernelData & kdata)
 
 	
 }
-
+*/
 void KernelReader::read()
 {
 	std::ifstream IDifstream(IDfileName, std::ios::in);
@@ -148,17 +149,19 @@ void KernelReader::read()
 	//printf("Reading the IDs from [ %s ]\n", IDfileName.c_str());
 	IDfileReader(IDifstream, Kernels);
 	//printf("Reading the IDs from [ %s ] : Done. \n", IDfileName.c_str());
-	Kernels.kernelMatrix.resize(nind, nind);
+	LOG(INFO) << "Total " << nind << " indiviudals are included.";
+	Kernels->kernelMatrix.resize(nind, nind);
 //	std::cout << "Resizing the matrix." << std::endl;
 //	LOG(INFO) << "Resizing the matrix.";
 	//Kernels.VariantCountMatrix.resize(nind, nind);
-	Kernels.kernelMatrix.setZero();
+	Kernels->kernelMatrix.setZero();
 	std::ostringstream ss_bin;
 	ss_bin << "Reading the kernel matrix from [ " + BinFileName + " ].";
 	std::cout << ss_bin.str()+"\n";
 	LOG(INFO) << ss_bin.str();
 	//printf("a.Reading the kernel matrix from [ %s ]\n", BinFileName.c_str());
 	BinFileReader(Binifstream, Kernels);
+	LOG(INFO) << "Binary kernel reading is completed.";
 	//std::ifstream Nifstream(NfileName, std::ios::binary);
 	//if (Nifstream.is_open())
 	//{
@@ -167,6 +170,12 @@ void KernelReader::read()
 	//}
 	IDifstream.close();
 	Binifstream.close();
+	
+//	std::stringstream ss;
+//	ss << "kernel: " << IDfileName << "in Reading" << std::endl;
+//	ss << "First 10x10: \n" << Kernels->kernelMatrix.block(0, 0, 10, 10) << std::endl;
+//	ss << "Last 10x10: \n" << Kernels->kernelMatrix.block(Kernels->kernelMatrix.rows() - 10, Kernels->kernelMatrix.cols() - 10, 10, 10);
+//	LOG(INFO) << ss.str() << std::endl;
 	//Nifstream.close();
 
 }
@@ -176,6 +185,12 @@ KernelWriter::KernelWriter(KernelData &kdata)
 	this->Kernels = kdata;
 	nind = kdata.fid_iid.size();
 
+}
+
+KernelWriter::KernelWriter(std::shared_ptr<KernelData> kdata)
+{
+	this->Kernels = *kdata;
+	nind = kdata->fid_iid.size();
 }
 
 KernelWriter::~KernelWriter()
@@ -325,7 +340,27 @@ void KernelWriter::IDfileWriter(std::ofstream & fin, KernelData & kdata)
 
 void KernelWriter::BinFileWriter(std::ofstream & fin, KernelData & kdata)
 {
-	int bytesize = !precision ? 8 : 4;
+	unsigned long long bytesize = !precision ? 8 : 4;
+	long long num_elements = (nind + 1) * nind / 2;
+	unsigned long long fileSize = bytesize * num_elements;
+	char* f_buf = new char[fileSize];
+//	#pragma omp parallel for shared(f_buf,kdata)
+	for (long long k = 0; k < num_elements; k++)
+	{
+		unsigned long long tmp_K = k;
+		unsigned long long i = tmp_K / nind, j = tmp_K % nind;
+		if (j < i) i = nind - i, j = nind - j - 1;
+		unsigned long long id = i + ((j * (j + 1)) / 2);
+		unsigned long long pointer = id * bytesize;
+		char* str2 = new char[bytesize];
+		float value = kdata.kernelMatrix(i, j);
+		//int ret = snprintf(str2, sizeof(str2), "%f", kdata.kernelMatrix(i, j));
+		memcpy(&f_buf[pointer], (char*)&value, bytesize);
+		
+		delete str2;
+	}
+	fin.write(f_buf, fileSize);
+	/*
 	for (int i=0;i<nind;i++)
 	{
 		for (int j=0;j<=i;j++)
@@ -343,6 +378,7 @@ void KernelWriter::BinFileWriter(std::ofstream & fin, KernelData & kdata)
 	//		fin.write((char *) &(!precision ? kdata.kernelMatrix(i, j) : (float)kdata.kernelMatrix(i, j), bytesize);
 		}
 	}
+	*/
 	
 
 }

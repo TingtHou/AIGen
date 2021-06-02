@@ -10,6 +10,7 @@ class KernelExpansion
 public:
 	KernelExpansion(std::vector<Eigen::MatrixXf> &MatrixHList, int dimension);
 	KernelExpansion(std::vector<KernelData> *kernels, int dimension);
+	KernelExpansion(std::vector<std::shared_ptr<KernelData>> kernels, int dimension);
 	~KernelExpansion();
 	std::vector<Eigen::MatrixXf>* GetExtendMatrix() { return &ExtendedMatrix; };
 	void test();

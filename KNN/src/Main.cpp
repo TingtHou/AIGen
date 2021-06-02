@@ -210,7 +210,7 @@ void TryMain(int argc, const char *const argv[])
 	/////////////////////////////////////////////////////////
 	///KNN implement
 	////////////////////////////////////////////////////////////////
-	std::vector<KernelData> kernelList; 
+	std::vector<std::shared_ptr<KernelData>> kernelList; 
 		//generate a built-in kernel or not
 	if (programOptions.count("make-kernel"))
 	{
@@ -322,13 +322,13 @@ void TryMain(int argc, const char *const argv[])
 		{
 			isfloat = programOptions["precision"].as < int >();
 		}
-		for (int i = 0; i < dm.GetKernel()->size(); i++)
+		for (int i = 0; i < dm.GetKernel().size(); i++)
 		{
 			if (i > 1)
 			{
 				outname += i;
 			}
-			KernelWriter kw(dm.GetKernel()->at(i));
+			KernelWriter kw(dm.GetKernel().at(i));
 
 			kw.setprecision(isfloat);
 			kw.write(outname);
@@ -397,8 +397,8 @@ void TryMain(int argc, const char *const argv[])
 				double K = dm.getPhenotype().Phenotype.col(0).mean();
 				double q = quantile(dist, K);
 				double z = pdf(dist, q);
-				double h_l = h_O * K * (1 - K) * z * z;
-				ss << "liability h\t" << h_l;
+				double h_l = h_O * K * (1 - K) /( z * z);
+				ss << "liability h\t" << h_l<<std::endl;
 			}
 			ss << "Iterate Times:\t" << iterateTimes;
 			out << ss.str() << std::endl;
@@ -590,7 +590,7 @@ int MINQUEAnalysis(boost::program_options::variables_map programOptions, DataMan
 		GPU = true;
 	}
 	PhenoData phe=dm.getPhenotype();
-	std::vector<KernelData>* kd;
+	std::vector<std::shared_ptr<KernelData>> kd;
 	kd= dm.GetKernel();
 	CovData Covs=dm.GetCovariates();
 	VarComp=dm.GetWeights();
@@ -620,13 +620,13 @@ int MINQUEAnalysis(boost::program_options::variables_map programOptions, DataMan
 		   //	Kernels.push_back(&(Kmatrices->at(i)));
 			*Kernels[i] = Kmatrices->at(i);
 		}
-		kd->clear();
+		kd.clear();
 	}
 	else
 	{
-		for (int i = 0; i < kd->size(); i++)
+		for (int i = 0; i < kd.size(); i++)
 		{
-			Kernels.push_back(&(kd->at(i).kernelMatrix));
+			Kernels.push_back(&(kd.at(i)->kernelMatrix));
 		}
 	}
 	if (VarComp.size() != 0)
@@ -670,7 +670,16 @@ int MINQUEAnalysis(boost::program_options::variables_map programOptions, DataMan
 		if (programOptions.count("batch"))
 		{
 	//		throw std::string("Error: batch function is under maintenance, and will back soon.");
-			
+			/*
+			for (size_t i = 0; i < Kernels.size(); i++)
+			{
+				std::stringstream ss;
+				ss << "kernel: " << i << "in Main" << std::endl;
+				ss << "First 10x10: \n" << Kernels[i]->block(0, 0, 10, 10) << std::endl;
+				ss << "Last 10x10: \n" << Kernels[i]->block(Kernels[i]->rows() - 10, Kernels[i]->cols() - 10, 10, 10);
+				LOG(INFO) << ss.str() << std::endl;
+			}
+			*/
 			int nthread = 10;
 			int nsplit= programOptions["batch"].as<int>();
 			int seed = 0;

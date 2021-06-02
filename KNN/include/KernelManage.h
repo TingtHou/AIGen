@@ -14,7 +14,7 @@ class KernelReader
 public:
 	KernelReader(std::string prefix);
 	~KernelReader();
-	KernelData getKernel() { return Kernels; };
+	std::shared_ptr< KernelData> getKernel() { return Kernels; };
 	std::string print();
 	void read();
 
@@ -23,11 +23,11 @@ private:
 	std::string NfileName;   //*.grm.N.bin
 	std::string IDfileName;  //*.grm.id
 	std::string prefix;
-	KernelData Kernels; //store kernel data
+	std::shared_ptr< KernelData> Kernels; //store kernel data
 	unsigned long long nind=0;
-	void IDfileReader(std::ifstream &fin, KernelData &kdata);   // read *.grm.id
-	void BinFileReader(std::ifstream &fin, KernelData &kdata);  // read *.grm.bin
-	void NfileReader(std::ifstream &fin, KernelData &kdata);    //read *.grm.N.bin
+	void IDfileReader(std::ifstream &fin, std::shared_ptr< KernelData> kdata);   // read *.grm.id
+	void BinFileReader(std::ifstream &fin, std::shared_ptr< KernelData> kdata);  // read *.grm.bin
+//	void NfileReader(std::ifstream &fin, KernelData &kdata);    //read *.grm.N.bin
 	
 	
 };
@@ -36,6 +36,7 @@ class KernelWriter
 {
 public:
 	KernelWriter(KernelData &kdata);
+	KernelWriter(std::shared_ptr< KernelData> kdata);
 	~KernelWriter();
 	std::string print();
 	void setprecision(int datatype);

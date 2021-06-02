@@ -27,11 +27,21 @@ void minque1::estimateVCs()
 	//std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
 	for (int i = 0; i < nVi; i++)
 	{
+//		std::stringstream debug_ss1;
+//		debug_ss1 << "V"<<i<<" in thread " << omp_get_thread_num() << std::endl;;
+//		debug_ss1 << " First 10x10: \n" << Vi[i]->block(0, 0, 10, 10) << std::endl;
+//		debug_ss1 << "Last 10x10: \n" << Vi[i]->block(Vi[i]->rows() - 10, Vi[i]->cols() - 10, 10, 10);
+//		LOG(INFO) << debug_ss1.str();
 		float* pr_Vi = (*Vi[i]).data();
 		pr_vi_list[i] = Vi[i]->data();
 		cblas_sgemm(CblasColMajor, CblasNoTrans, CblasNoTrans, nind, nind, nind, W[i], pr_Vi, nind, pr_Identity, nind, 1, pr_VW, nind);
 	}
 	Identity.resize(0, 0);
+	std::stringstream debug_ss;
+//	debug_ss << "VM in thread " << omp_get_thread_num() << std::endl;;
+//	debug_ss << "VM First 10x10: \n" << VW.block(0, 0, 10, 10) << std::endl;
+//	debug_ss << "Last 10x10: \n" << VW.block(VW.rows() - 10, VW.cols() - 10, 10, 10);
+//	LOG(INFO) << debug_ss.str();
 	LOG(INFO) << "Inverse VW";
 	int status=Inverse(VW, Decomposition, altDecomposition, allowPseudoInverse);
 	CheckInverseStatus("V matrix",status, allowPseudoInverse);
