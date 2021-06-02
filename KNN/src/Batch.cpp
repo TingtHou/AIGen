@@ -17,6 +17,16 @@ Batch::Batch(std::vector<Eigen::MatrixXf *>& kernels, Eigen::VectorXf &phe, Eige
 	this->seed = seed;
 	this->isclear = isclear;
 	this->Covs = Covs;
+	/*
+	for (size_t i = 0; i < nkernels; i++)
+	{
+		std::stringstream ss;
+		ss << "kernel: " << i <<"in batch class"<< std::endl;
+		ss << "First 10x10: \n" << this->kernels[i]->block(0, 0, 10, 10) << std::endl;
+		ss << "Last 10x10: \n" << this->kernels[i]->block(this->kernels[i]->rows() - 10, this->kernels[i]->cols() - 10, 10, 10);
+		LOG(INFO) << ss.str() << std::endl;
+	}
+	*/
 }
 
 //@brief:	Starting to generate subset data for each batch;
@@ -44,9 +54,32 @@ void Batch::start(int dataType)
 //@brief:	Get Kernels for each batch;
 //@param:	BatchedKernel	A 2D vector to store kernels for each batch;
 //@ret:		void;
-void Batch::GetBatchKernels(std::vector<std::vector<Eigen::MatrixXf>>& BatchedKernel)
+void Batch::GetBatchKernels(std::vector<std::vector<Eigen::MatrixXf*>>& BatchedKernel)
 {
-	BatchedKernel = KernelBatched;
+	BatchedKernel.resize(KernelBatched.size());
+	#pragma omp parallel for 
+	for (int i = 0; i < KernelBatched.size(); i++)
+	{
+		BatchedKernel[i].resize(KernelBatched[i].size());
+		for (int j = 0; j < KernelBatched[i].size(); j++)
+		{
+			BatchedKernel[i][j] = &KernelBatched[i][j];
+		}
+	}
+	/*
+	for (size_t i = 0; i < BatchedKernel.size(); i++)
+	{
+		for (size_t j = 0; j < BatchedKernel[i].size(); j++)
+		{
+			std::stringstream ss;
+			ss << "Batch: " << i << ", kernel: " << j << std::endl;
+			ss << "First 10x10: \n" << BatchedKernel[i][j]->block(0, 0, 10, 10) << std::endl;
+			ss << "Last 10x10: \n" << BatchedKernel[i][j]->block(BatchedKernel[i][j]->rows() - 10, BatchedKernel[i][j]->cols() - 10, 10, 10);
+			LOG(INFO) << ss.str() << std::endl;
+		}
+	}
+	*/
+	//BatchedKernel = KernelBatched;
 }
 
 //@brief:	Get phe for each batch;
@@ -74,12 +107,14 @@ Batch::~Batch()
 //@ret:		void;
 void Batch::shuffle()
 {
-	std::vector<int> shuffledID;
+	std::vector<int> shuffledID(nInd);
+#pragma omp parallel for
 	for (int i=0;i<nInd;i++)
 	{
-		shuffledID.push_back(i);
+		shuffledID[i]=i;
 	}
 	auto rng = std::default_random_engine{};
+	rng.seed(seed);
 	std::shuffle(std::begin(shuffledID), std::end(shuffledID), rng);
 	std::vector<std::vector<int>> IDinEach(splitnum);
 	unsigned long nINDinEach = nInd / splitnum;
@@ -107,9 +142,10 @@ void Batch::shuffle()
 	gid = 0;
 	for (int i = 0; i < IDs.size(); i++)
 	{
-		IDinEach[gid].insert(IDinEach[gid].end(), IDs[i]);
-		if (gid >= splitnum)
+		
+		if (gid < splitnum)
 		{
+			IDinEach[gid].insert(IDinEach[gid].end(), IDs[i]);
 			gid++;
 		}
 		else
@@ -125,10 +161,17 @@ void Batch::shuffle()
 		IDs.clear();
 		count = 0;
 	}888*/
+
+	nindInEachBatch.resize(IDinEach.size());
+#pragma omp parallel for
+	for (int i = 0; i < IDinEach.size(); i++)
+	{
+		nindInEachBatch[i] = IDinEach[i].size();
+	}
 	KernelBatched.resize(IDinEach.size());
 	pheBatched.resize(IDinEach.size());
 	CovsBatched.resize(IDinEach.size());
-//	#pragma omp parallel for
+	#pragma omp parallel for
 	for (int i=0;i< IDinEach.size();i++)
 	{
 		std::vector<Eigen::MatrixXf> KerneleachBatch;
@@ -156,7 +199,7 @@ void Batch::shuffle_binary()
 	std::vector<int> fid_iid_control;
 	for (int i = 0; i < phe.size(); i++)
 	{
-		if (abs(phe[i]-1)>10^-4)
+		if (abs(phe[i]-1)<1e-6)
 		{
 			fid_iid_case.push_back(i);
 		}
@@ -166,12 +209,13 @@ void Batch::shuffle_binary()
 		}
 	}
 	auto rng = std::default_random_engine{};
+	rng.seed(seed);
 	std::shuffle(std::begin(fid_iid_case), std::end(fid_iid_case), rng);
 	std::shuffle(std::begin(fid_iid_control), std::end(fid_iid_control), rng);
 
 	unsigned long nINDinEach_case = fid_iid_case.size() / splitnum;
 	unsigned long nINDinEach_contorl = fid_iid_control.size() / splitnum;
-	std::vector<std::vector<int>> IDinEach;
+	std::vector<std::vector<int>> IDinEach(splitnum);;
 	std::vector<int> IDs;
 	int count = 0;
 	int gid = 0;
@@ -185,7 +229,7 @@ void Batch::shuffle_binary()
 		else
 		{
 			IDinEach[gid].insert(IDinEach[gid].end(), IDs.begin(), IDs.end());
-			IDinEach.push_back(IDs);
+	//		IDinEach.push_back(IDs);
 			IDs.clear();
 			count = 0;
 			IDs.push_back(fid_iid_case[i]);
@@ -197,9 +241,10 @@ void Batch::shuffle_binary()
 	gid = 0;
 	for (int i = 0; i < IDs.size(); i++)
 	{
-		IDinEach[gid].insert(IDinEach[gid].end(), IDs[i]);
-		if (gid >= splitnum)
+	
+		if (gid < splitnum)
 		{
+			IDinEach[gid].insert(IDinEach[gid].end(), IDs[i]);
 			gid++;
 		}
 		else
@@ -239,9 +284,10 @@ void Batch::shuffle_binary()
 	gid = 0;
 	for (int i = 0; i < IDs.size(); i++)
 	{
-		IDinEach[gid].insert(IDinEach[gid].end(), IDs[i]);
-		if (gid >= splitnum)
+	
+		if (gid < splitnum)
 		{
+			IDinEach[gid].insert(IDinEach[gid].end(), IDs[i]);
 			gid++;
 		}
 		else
@@ -258,11 +304,16 @@ void Batch::shuffle_binary()
 		count = 0;
 	}
 	*/
-	
+	nindInEachBatch.resize(IDinEach.size());
+#pragma omp parallel for
+	for (int i = 0; i < IDinEach.size(); i++)
+	{
+		nindInEachBatch[i] = IDinEach[i].size();
+	}
 	KernelBatched.resize(IDinEach.size());
 	pheBatched.resize(IDinEach.size());
 	CovsBatched.resize(IDinEach.size());
-	//	#pragma omp parallel for
+	#pragma omp parallel for
 	for (int i = 0; i < IDinEach.size(); i++)
 	{
 		std::vector<Eigen::MatrixXf> KerneleachBatch;

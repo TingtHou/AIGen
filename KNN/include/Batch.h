@@ -13,9 +13,10 @@ class Batch
 public:
 	Batch(std::vector<Eigen::MatrixXf *> &kernels, Eigen::VectorXf &phe, Eigen::MatrixXf &Covs, int splitnum, int seed, bool isclear);
 	void start(int dataType);
-	void GetBatchKernels(std::vector< std::vector<Eigen::MatrixXf>> &BatchedKernel);
+	void GetBatchKernels(std::vector< std::vector<Eigen::MatrixXf*>> &BatchedKernel);
 	void GetBatchPhe(std::vector< Eigen::VectorXf>  &phe);
 	void GetBatchCov(std::vector< Eigen::MatrixXf> & cov);
+	Eigen::VectorXi getSizesofBatch() {	return nindInEachBatch;	};
 	~Batch();
 private:
 	std::vector<Eigen::MatrixXf *> kernels;
@@ -31,6 +32,6 @@ private:
 	bool isclear = true;
 	void shuffle();
 	void shuffle_binary();
-	
+	Eigen::VectorXi nindInEachBatch;
 };
 
