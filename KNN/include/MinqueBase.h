@@ -13,7 +13,7 @@ public:
 	void pushback_W(Eigen::VectorXf &W);
 	void setThreadId(int Thread_id);
 	virtual void estimateVCs()=0;
-	void estimateFix();
+	void estimateFix(Eigen::VectorXf VCs_hat);
 	Eigen::VectorXf getfix() { return fix; };
 	Eigen::VectorXf getvcs() { return vcs; };
 protected:

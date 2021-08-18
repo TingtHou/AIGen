@@ -3,7 +3,7 @@
 void BatchMINQUE1(MinqueOptions& minque, std::vector<Eigen::MatrixXf*>& Kernels, PhenoData& phe, Eigen::MatrixXf& Covs, Eigen::VectorXf& variances, Eigen::VectorXf& coefs, float& iterateTimes, int nsplit, int seed, int nthread, bool isecho)
 {
 	int nkernel = Kernels.size();
-	bool nofix = coefs[0] == -999 ? true : false;
+	//bool nofix = coefs[0] == -999 ? true : false;
 	Eigen::VectorXf pheV;
 	if (phe.Phenotype.cols() == 1)
 	{
@@ -71,12 +71,13 @@ void BatchMINQUE1(MinqueOptions& minque, std::vector<Eigen::MatrixXf*>& Kernels,
 			varest.estimateVCs();
 			varsBatch[i].resize(varest.getvcs().size());
 			Eigen::VectorXf::Map(&varsBatch[i][0], varest.getvcs().size()) = varest.getvcs();
-			if (!nofix)
+		/*	if (!nofix)
 			{
 				varest.estimateFix();
 				fixsBatch[i].resize(varest.getfix().size());
 				Eigen::VectorXf::Map(&fixsBatch[i][0], varest.getfix().size()) = varest.getfix();
 			}
+			*/
 			printf("The thread %d is finished\n", i);
 			LOG(INFO) << "The thread " << i << " is finished";
 		}
@@ -88,11 +89,13 @@ void BatchMINQUE1(MinqueOptions& minque, std::vector<Eigen::MatrixXf*>& Kernels,
 			LOG(WARNING) << ss.str();
 			varsBatch[i].resize(nkernel + 1);
 			varsBatch[i][0] = -999;
+			/*
 			if (!nofix)
 			{
 				fixsBatch[i].resize(1);
 				fixsBatch[i][0] = -999;
 			}
+			*/
 		}
 		catch (std::string & e)
 		{
@@ -100,11 +103,12 @@ void BatchMINQUE1(MinqueOptions& minque, std::vector<Eigen::MatrixXf*>& Kernels,
 			LOG(ERROR) << e;
 			varsBatch[i].resize(nkernel + 1);
 			varsBatch[i][0] = -999;
-			if (!nofix)
+			/*if (!nofix)
 			{
 				fixsBatch[i].resize(1);
 				fixsBatch[i][0] = -999;
 			}
+			*/
 		}
 	}
 
@@ -141,7 +145,7 @@ void BatchMINQUE1(MinqueOptions& minque, std::vector<Eigen::MatrixXf*>& Kernels,
 		}
 		variances[i] = sum / float(varsBatch.size());
 	}
-
+	/*
 	if (!nofix)
 	{
 		auto it = fixsBatch.begin();
@@ -168,11 +172,56 @@ void BatchMINQUE1(MinqueOptions& minque, std::vector<Eigen::MatrixXf*>& Kernels,
 			coefs[i] = sum / float(fixsBatch.size());
 		}
 	}
+	*/
 
 	iterateTimes = accumulate(time.begin(), time.end(), 0.0) / time.size(); ;
 }
 
 void cMINQUE1(MinqueOptions& minque, std::vector<Eigen::MatrixXf*>& Kernels, PhenoData& phe, Eigen::MatrixXf& Covs, Eigen::VectorXf& variances, Eigen::VectorXf& coefs, float& iterateTimes, bool isecho)
+{
+	imnq varest;
+	varest.setOptions(minque);
+	varest.isEcho(isecho);
+	Eigen::VectorXf pheV;
+	if (phe.Phenotype.cols() == 1)
+	{
+		pheV = Eigen::Map<Eigen::VectorXf>(phe.Phenotype.data(), phe.Phenotype.rows());
+	}
+	else
+	{
+		throw std::string("KNN can not be applied to the phenotype over 2 dimensions.");
+	}
+	varest.importY(pheV);
+	if (Covs.size() > 0)
+	{
+		varest.pushback_X(Covs, false);
+	}
+	
+	for (int i = 0; i < Kernels.size(); i++)
+	{
+		varest.pushback_Vi(Kernels[i]);
+	}
+	Eigen::MatrixXf e(phe.fid_iid.size(), phe.fid_iid.size());
+	e.setIdentity();
+	varest.pushback_Vi(&e);
+	if (variances.size() != 0)
+	{
+		varest.pushback_W(variances);
+	}
+	std::cout << "starting CPU MINQUE(1) " << std::endl;
+	varest.estimateVCs();
+	variances = varest.getvcs();
+	iterateTimes = varest.getIterateTimes();
+	/*if (coefs[0] != -999)
+	{
+		varest.estimateFix();
+		coefs = varest.getfix();
+	}
+	*/
+
+}
+
+void Fixed_estimator(MinqueOptions& minque, std::vector<Eigen::MatrixXf*>& Kernels, PhenoData& phe, Eigen::MatrixXf& Covs, Eigen::VectorXf& variances, Eigen::VectorXf& coefs, float& iterateTimes, bool isecho)
 {
 	imnq varest;
 	varest.setOptions(minque);
@@ -199,24 +248,14 @@ void cMINQUE1(MinqueOptions& minque, std::vector<Eigen::MatrixXf*>& Kernels, Phe
 	{
 		varest.pushback_W(variances);
 	}
-	std::cout << "starting CPU MINQUE(1) " << std::endl;
-	varest.estimateVCs();
-	variances = varest.getvcs();
-	iterateTimes = varest.getIterateTimes();
-	if (coefs[0] != -999)
-	{
-		varest.estimateFix();
-		coefs = varest.getfix();
-	}
-
+	varest.estimateFix(variances);
+	coefs = varest.getfix();
 }
-
-
 
 void BatchMINQUE0(MinqueOptions& minque, std::vector<Eigen::MatrixXf*>& Kernels, PhenoData& phe, Eigen::MatrixXf& Covs, Eigen::VectorXf& variances, Eigen::VectorXf& coefs, int nsplit, int seed, int nthread)
 {
 	int nkernel = Kernels.size();
-	bool nofix = coefs[0] == -999 ? true : false;
+//	bool nofix = coefs[0] == -999 ? true : false;
 	Eigen::VectorXf pheV;
 	if (phe.Phenotype.cols() == 1)
 	{
@@ -276,12 +315,13 @@ void BatchMINQUE0(MinqueOptions& minque, std::vector<Eigen::MatrixXf*>& Kernels,
 			varest.estimateVCs();
 			varsBatch[i].resize(varest.getvcs().size());
 			Eigen::VectorXf::Map(&varsBatch[i][0], varest.getvcs().size()) = varest.getvcs();
-			if (!nofix)
+		/*	if (!nofix)
 			{
 				varest.estimateFix();
 				fixsBatch[i].resize(varest.getfix().size());
 				Eigen::VectorXf::Map(&fixsBatch[i][0], varest.getfix().size()) = varest.getfix();
 			}
+			*/
 			printf("The thread %d is finished\n", i);
 			LOG(INFO) << "The thread " << i << " is finished";
 		}
@@ -294,11 +334,11 @@ void BatchMINQUE0(MinqueOptions& minque, std::vector<Eigen::MatrixXf*>& Kernels,
 			LOG(WARNING) << ss.str();
 			varsBatch[i].resize(nkernel + 1);
 			varsBatch[i][0] = -999;
-			if (!nofix)
-			{
-				fixsBatch[i].resize(1);
-				fixsBatch[i][0] = -999;
-			}
+		//	if (!nofix)
+		//	{
+		//		fixsBatch[i].resize(1);
+		//		fixsBatch[i][0] = -999;
+		//	}
 		}
 		catch (std::string & e)
 		{
@@ -306,11 +346,11 @@ void BatchMINQUE0(MinqueOptions& minque, std::vector<Eigen::MatrixXf*>& Kernels,
 			LOG(ERROR) << e;
 			varsBatch[i].resize(nkernel + 1);
 			varsBatch[i][0] = -999;
-			if (!nofix)
-			{
-				fixsBatch[i].resize(1);
-				fixsBatch[i][0] = -999;
-			}
+		//	if (!nofix)
+		//	{
+		//		fixsBatch[i].resize(1);
+		//		fixsBatch[i][0] = -999;
+		//	}
 		}
 	}
 	for (int i = 0; i < varsBatch.size(); i++)
@@ -347,6 +387,7 @@ void BatchMINQUE0(MinqueOptions& minque, std::vector<Eigen::MatrixXf*>& Kernels,
 		}
 		variances[i] = sum / float(varsBatch.size());
 	}
+	/*
 	if (!nofix)
 	{
 		auto it = fixsBatch.begin();
@@ -373,6 +414,7 @@ void BatchMINQUE0(MinqueOptions& minque, std::vector<Eigen::MatrixXf*>& Kernels,
 			coefs[i] = sum / float(fixsBatch.size());
 		}
 	}
+	*/
 
 }
 
@@ -389,7 +431,10 @@ void cMINQUE0(MinqueOptions& minque, std::vector<Eigen::MatrixXf*>& Kernels, Phe
 		throw std::string("KNN can not be applied to the phenotype over 2 dimensions.");
 	}
 	varest.importY(pheV);
-	varest.pushback_X(Covs, false);
+	if (Covs.size() > 0)
+	{
+		varest.pushback_X(Covs, false);
+	}
 	for (int i = 0; i < Kernels.size(); i++)
 	{
 		varest.pushback_Vi(Kernels[i]);
@@ -401,11 +446,11 @@ void cMINQUE0(MinqueOptions& minque, std::vector<Eigen::MatrixXf*>& Kernels, Phe
 	LOG(INFO) << "starting CPU MINQUE(0) ";
 	varest.estimateVCs();
 	variances = varest.getvcs();
-	if (coefs[0] != -999)
+/*	if (coefs[0] != -999)
 	{
 		varest.estimateFix();
 		coefs = varest.getfix();
-	}
+	}*/
 	std::stringstream ss;
 	ss << std::fixed << "Thread ID: 0" << std::setprecision(3) << "\tIt: " << 0 << "\t" << varest.getvcs().transpose();
 	printf("%s\n", ss.str().c_str());

@@ -365,7 +365,7 @@ std::vector<std::string> UniqueCount(std::vector<std::string> vec)
 	vec.erase(unique(vec.begin(), vec.end()), vec.end());
 	return vec;
 }
-
+/*
 //@brief:	Initialize class ROC;
 //@param:	Response		A vector of responses;
 //@param:	Predictor		A vector of predicts;
@@ -388,9 +388,11 @@ void ROC::init()
 	thresholds.resize(502);
 	Specificity.resize(502);
 	Sensitivity.resize(502);
+	FPR.resize(502);
 	thresholds.setZero();
 	Specificity.setZero();
 	Sensitivity.setZero();
+	FPR.setZero();
 	float mins = Predictor.minCoeff();
 	float maxs = Predictor.maxCoeff();
 	step = (maxs- mins) / 500;
@@ -409,10 +411,10 @@ void ROC::Calc()
 	for (int i = 0; i < thresholds.size(); i++)
 	{
 		
-		int TruePos = 0;
-		int FaslePos = 0;
-		int TrueNeg = 0;
-		int FasleNeg = 0;
+		long long TruePos = 0;
+		long long  FaslePos = 0;
+		long long  TrueNeg = 0;
+		long long  FasleNeg = 0;
 		for (int j = 0; j < nind; j++)
 		{
 			if (Predictor[j] < thresholds[i])
@@ -424,7 +426,7 @@ void ROC::Calc()
 			}
 			else
 			{
-				if (Response[j] > 1e-7)
+				if (abs(Response[j] -1)< 1e-7)
 					TruePos++;
 				else
 					FaslePos++;
@@ -432,6 +434,7 @@ void ROC::Calc()
 		}
 		Sensitivity[i] = (float)TruePos / (float)(TruePos+FasleNeg);
 		Specificity[i] = (float)TrueNeg / (float)(TrueNeg+FaslePos);
+		FPR[i]= (float)FaslePos / (float)(TrueNeg + FaslePos);
 	}
 }
 
@@ -439,14 +442,28 @@ void ROC::Calc()
 //@ret:		void;
 void ROC::AUC()
 {
-	double auc = 0;
-	for (size_t i = 1; i < Sensitivity.size(); i++)
+	float q1, q2, p1, p2;
+	q1 = Sensitivity[0];
+	q2 = FPR[0];
+	float area = 0.0;
+	for (int i = 1; i < Sensitivity.size(); ++i) {
+		p1 = FPR[i];
+		p2 = Sensitivity[i];
+		area += sqrt(pow(((1 - q1) + (1 - p1)) / 2 * (q2 - p2), 2));
+		q1 = p1;
+		q2 = p2;
+	}
+	/*for (size_t i = 1; i < Sensitivity.size(); i++)
 	{
 		double height = (Sensitivity[i] + Sensitivity[i-1])/2;
 		auc += height * abs(Specificity[i]- Specificity[i - 1]);
 	}
-	this->auc = auc;
+
+	
+	
+	this->auc = area;
 }
+*/
 
 Evaluate::Evaluate()
 {
@@ -458,7 +475,7 @@ Evaluate::Evaluate(Eigen::VectorXf Response, Eigen::VectorXf Predictor, int data
 {
 	this->dataType = dataType;
 	Eigen::MatrixXf y = Eigen::Map<Eigen::MatrixXf>(Response.data(), Response.rows(), 1);
-	Eigen::MatrixXf y_hat = Eigen::Map<Eigen::MatrixXf>(Response.data(), Response.rows(), 1);
+	Eigen::MatrixXf y_hat = Eigen::Map<Eigen::MatrixXf>(Predictor.data(), Predictor.rows(), 1);
 	if (dataType == 0)
 	{
 		mse = calc_mse(y, y_hat);
@@ -469,11 +486,21 @@ Evaluate::Evaluate(Eigen::VectorXf Response, Eigen::VectorXf Predictor, int data
 		Eigen::VectorXf ref = Eigen::Map<Eigen::VectorXf>(y.data(), y.rows(), 1);
 		if (dataType == 1)
 		{
+			
 			Eigen::MatrixXf pred_matrix(y_hat.size(), 2);
 			pred_matrix.setOnes();
-			pred_matrix.col(0) = y_hat.col(0);
-			pred_matrix.col(1) = pred_matrix.col(1) - y_hat.col(0);
+			pred_matrix.col(0) = pred_matrix.col(1) - y_hat.col(0);
+			pred_matrix.col(1) = y_hat.col(0);
 			auc = multiclass_auc(pred_matrix, ref.cast<int>());
+			if (auc < 0.5)
+			{
+				auc = 1 - auc;
+				y_hat = Eigen::VectorXf::Ones(y_hat.rows()); - y_hat;
+			}
+		/*
+			ROC roc(Response, Predictor);
+			auc = roc.GetAUC();
+			*/
 			y_hat = y_hat.array() + 0.5;
 			y_hat = y_hat.cast<int>().cast<float>();
 			mse = calc_mse(y, y_hat);
@@ -505,11 +532,23 @@ Evaluate::Evaluate(torch::Tensor Response, torch::Tensor Predictor, int dataType
 		Eigen::VectorXf ref = Eigen::Map<Eigen::VectorXf>(y.data(), y.rows(), 1);
 		if (dataType ==1 )
 		{
+				
 			Eigen::MatrixXf pred_matrix(y_hat.size(), 2);
 			pred_matrix.setOnes();
 			pred_matrix.col(0) = pred_matrix.col(1) - y_hat.col(0);
 			pred_matrix.col(1) = y_hat.col(0);
+		//	std::cout << pred_matrix << std::endl;
 			auc = multiclass_auc(pred_matrix, ref.cast<int>());
+			if (auc < 0.5)
+			{
+				auc = 1 - auc;
+				//y_hat = Eigen::VectorXf::Ones(y_hat.rows()) -y_hat;
+			}
+		
+		//	Eigen::VectorXf y_predict = Eigen::Map<Eigen::VectorXf>(y_hat.data(), y_hat.rows(), 1);
+		//	ROC roc(ref, y_predict);
+		//	auc = roc.GetAUC();
+		//	auc = AUROC<float, float>(ref.data(), y_hat.data(), y.size());
 			y_hat = y_hat.array() + 0.5;
 			y_hat = y_hat.cast<int>().cast<float>();
 			mse = calc_mse(y, y_hat);
@@ -557,14 +596,14 @@ void Evaluate::test()
 		0;
 	pred << 0.2059746, 0.93470523, 0.4820801,
 		0.1765568, 0.21214252, 0.5995658,
-		0.6870228, 0.65167377, 0.4935413,
-		0.3841037, 0.12555510, 0.1862176,
-		0.7698414, 0.26722067, 0.8273733,
-		0.4976992, 0.38611409, 0.6684667,
-		0.7176185, 0.01339033, 0.7942399,
-		0.9919061, 0.38238796, 0.1079436,
+		0.3870228, 0.65167377, 0.4935413,
+		0.8841037, 0.12555510, 0.1862176,
+		0.3698414, 0.26722067, 0.8273733,
+		0.7976992, 0.38611409, 0.6684667,
+		0.9176185, 0.01339033, 0.7942399,
+		0.4919061, 0.38238796, 0.1079436,
 		0.3800352, 0.86969085, 0.7237109,
-		0.7774452, 0.34034900, 0.4112744;
+		0.1774452, 0.34034900, 0.4112744;
 	pred_b << pred.col(0);
 	torch::Tensor y_b = dtt::eigen2libtorch(Y_binary);
 	torch::Tensor y_m = dtt::eigen2libtorch(Y_multi);

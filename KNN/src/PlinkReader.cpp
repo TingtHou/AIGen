@@ -45,6 +45,12 @@ void PlinkReader::read(std::string pedfile, std::string mapfile)
 		else
 		{
 			removeMissing();
+			if (nmarker <= 0)
+			{
+				std::stringstream ss;
+				ss << "[Error]: After removing missing SNPs, only " << nmarker << " SNPs remains. Please check the input bed file!";
+				throw(ss.str());
+			}
 		}
 	}
 	
@@ -72,6 +78,12 @@ void PlinkReader::read(std::string bedfile, std::string bimfile, std::string fam
 		else
 		{
 			removeMissing();
+			if (nmarker <= 0)
+			{
+				std::stringstream ss;
+				ss << "[Error]: After removing missing SNPs, only " << nmarker << " SNPs remains. Please check the input bed file!";
+				throw(ss.str());
+			}
 		}
 	}
 }
@@ -516,6 +528,7 @@ void PlinkReader::removeMissing()
 			bp.push_back(tmppos[i]);
 		}
 	}
+	nmarker = nmarker - MissnSNP;
 }
 
 GenoData PlinkReader::GetGeno()

@@ -193,6 +193,7 @@ void GetSubMatrix(Eigen::MatrixXf* oMatrix, Eigen::MatrixXf* subMatrix, std::vec
 void GetSubVector(Eigen::VectorXf &oVector, Eigen::VectorXf &subVector, std::vector<int> IDs);
 std::vector<std::string> UniqueCount(std::vector<std::string> vec);
 
+/*
 //ROC curve analysis
 class ROC
 {
@@ -207,6 +208,7 @@ private:
 	Eigen::VectorXf thresholds; //	the thresholds at which the sensitivitiesand specificities were computed.
 	Eigen::VectorXf Sensitivity;
 	Eigen::VectorXf Specificity;
+	Eigen::VectorXf FPR; //false positive rate (FPR)
 	int nind = 0;
 	float step = 0;
 	float auc = 0;
@@ -214,7 +216,7 @@ private:
 	void Calc();
 	void AUC();
 };
-
+*/
 
 class Evaluate
 {
@@ -232,7 +234,7 @@ private:
 	float mse = 0;
 	Eigen::VectorXf cor;
 	float auc = 0;
-	std::shared_ptr<ROC> ROC_ptr=nullptr;
+	//std::shared_ptr<ROC> ROC_ptr=nullptr;
 	float calc_mse(Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic>& Real_Y, Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic>& Predict_Y);
 	Eigen::VectorXf calc_cor(Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic>& Real_Y, Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic>& Predict_Y);
 	float calc_cor(Eigen::VectorXf& Real_Y, Eigen::VectorXf& Predict_Y);

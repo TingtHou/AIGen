@@ -562,6 +562,8 @@ void DataManager::readCovariates(std::string qfilename, std::string dfilename, b
 		{
 			Covs.Covariates.resize(phe.fid_iid.size(), 1);
 			Covs.Covariates.setOnes();
+			Covs.names.resize(intercept);
+			Covs.names[0] = "intercept";
 			Covs.fid_iid = phe.fid_iid;
 			Covs.nind = Covs.fid_iid.size();
 			Covs.npar = Covs.Covariates.cols();
