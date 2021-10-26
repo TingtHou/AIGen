@@ -43,7 +43,7 @@ public:
 	std::shared_ptr<Dataset> GetDataset();
 	Eigen::VectorXf& GetWeights() { return Weights; };								//Get Weights data
 	void SetKernel(std::vector<std::shared_ptr<KernelData>> KernelList);							//Replace internal kernel data with specificed external kernel data
-		
+//	void shuffle(float seed, float ratio);
 	void match();																	//match phenotype data and kernel data
 	//std::tuple<std::shared_ptr<Dataset>, std::shared_ptr<Dataset>> split(float seed, float ratio=0.8);
 	GenoData getGenotype() { return geno; };										//Get genotype data
@@ -64,6 +64,8 @@ private:
 	void readCovariates_Discrete(std::string covfilename, CovData & Discrete);									//Read discrete Covariates
 //	void match(PhenoData &phenotype, KernelData &kernel);							//match phenotype data and one kernel matrix
 	std::shared_ptr<KernelData> match_Kernels(std::shared_ptr<KernelData> kernel, boost::bimap<int, std::string>& overlapped);
+	//void shuffle_continuous(float seed, float ratio);
+	//void shuffle_binary(float seed, float ratio);
 
 };
 

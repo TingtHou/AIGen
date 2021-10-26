@@ -1,11 +1,14 @@
 #pragma once
+//#define MKL_INT size_t
 #define EIGEN_USE_MKL_ALL
 #include <Eigen/Dense>
 #include <vector>
+#include <mkl.h>
 #include "Random.h"
 #include <fstream>
 #include "CommonFunc.h"
 #include "Toolkit.h"
+#include "easylogging++.h"
 class Prediction
 {
 public:

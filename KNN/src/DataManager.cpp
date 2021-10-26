@@ -750,9 +750,36 @@ void DataManager::SetKernel(std::vector<std::shared_ptr<KernelData>> KernelList)
 		this->KernelList[i] =KernelList[i];
 	}
 }
+/*
+void DataManager::shuffle(float seed, float ratio)
+{
+}
 
+void DataManager::shuffle_continuous(float seed, float ratio)
+{
+	long long nInd = phe.fid_iid.size();
+	std::vector<int> shuffledID(nInd);
+#pragma omp parallel for
+	for (int i = 0; i < nInd; i++)
+	{
+		shuffledID[i] = i;
+	}
+	auto rng = std::default_random_engine{};
+	rng.seed(seed);
+	std::shuffle(std::begin(shuffledID), std::end(shuffledID), rng);
+	unsigned long nIND_Train= nInd *ratio;
+	PhenoData phe_new;
+	phe_new.dataType = phe.dataType;
+	phe_new.isBalance = phe.isBalance;
+	phe_new.nind = phe.nind;
+	phe_new.Phenotype.resize(phe.Phenotype.rows(), phe.Phenotype.cols());
+	GetSubMatrix(&phe.Phenotype, &phe_new.Phenotype, shuffledID);
 
+	
 
+}
+
+*/
 void DataManager::readResponse(std::string resopnsefile, PhenoData & phe)
 {
 	std::ifstream infile;

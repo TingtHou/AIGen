@@ -85,19 +85,42 @@ int  imnq::Iterate()
 	}
 	LOG(INFO) << "Starting Iterate MINQUE Algorithm at thread "<<ThreadId;
 	bool isConverge = false;
+	std::vector<Eigen::MatrixXf> Vi_copy;
+	if (itr>1)
+	{
+		for (int i = 0; i < nVi; i++)
+		{
+			Vi_copy.push_back(*Vi[i]);
+		}
+	}
 	while (initIterate <itr)
 	{
 		LOG(WARNING) << "new mnq class for "<< initIterate;
 		auto mnq = minque1(Decomposition,altDecomposition, allowPseudoInverse);
 		mnq.importY(Y);
+		if (initIterate>0)
+		{
+			size_t vector_size = nind;
+			vector_size = vector_size * vector_size;
+			for (size_t i = 0; i < nVi; i++)
+			{
+				memcpy(Vi[i]->data(), Vi_copy[i].data(), vector_size * sizeof(float));
+			}
+		
+		}
 		for (int i=0;i<nVi;i++)
 		{
 			mnq.pushback_Vi(Vi[i]);
+		//	if (vc0[i]<0)
+		//	{
+		//	vc0[i] = 1e-6;
+		//	}
 		}
 		if (ncov!=0)
 		{
 			mnq.pushback_X(X,false);
 		}
+		
 		mnq.pushback_W(vc0);
 		mnq.setThreadId(ThreadId);
 		mnq.estimateVCs();

@@ -32,6 +32,7 @@ void minque1::estimateVCs()
 //		debug_ss1 << " First 10x10: \n" << Vi[i]->block(0, 0, 10, 10) << std::endl;
 //		debug_ss1 << "Last 10x10: \n" << Vi[i]->block(Vi[i]->rows() - 10, Vi[i]->cols() - 10, 10, 10);
 //		LOG(INFO) << debug_ss1.str();
+//	if (W[i] < -1e2) W[i] = 1e-6;
 		float* pr_Vi = (*Vi[i]).data();
 		pr_vi_list[i] = Vi[i]->data();
 		cblas_sgemm(CblasColMajor, CblasNoTrans, CblasNoTrans, nind, nind, nind, W[i], pr_Vi, nind, pr_Identity, nind, 1, pr_VW, nind);
@@ -147,6 +148,7 @@ void minque1::estimateVCs()
 	status = Inverse(F, Cholesky,  SVD, true);
 	CheckInverseStatus("S matrix",status,true);
 	vcs = F * u;
+	
 }
 
 minque1::~minque1()

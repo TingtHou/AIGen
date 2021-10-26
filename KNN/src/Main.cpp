@@ -67,7 +67,7 @@ void readKNNParameter(boost::program_options::variables_map programOptions, Minq
 
 void ReadData(boost::program_options::variables_map programOptions, DataManager &dm);
 
-int MINQUEAnalysis(boost::program_options::variables_map programOptions, DataManager& dm, Eigen::VectorXf& VarComp, Eigen::VectorXf& predict);
+int MINQUEAnalysis(boost::program_options::variables_map programOptions, DataManager& dm, Eigen::VectorXf& VarComp, Eigen::VectorXf& fix, Eigen::VectorXf& predict);
 std::vector<std::shared_ptr<Evaluate>>   FNNAnalysis(boost::program_options::variables_map programOptions, DataManager& dm);
 
 
@@ -342,7 +342,8 @@ void TryMain(int argc, const char *const argv[])
 	{
 			Eigen::VectorXf VarComp;
 			Eigen::VectorXf predict;
-			int iterateTimes=MINQUEAnalysis(programOptions, dm, VarComp,predict);
+			Eigen::VectorXf fix;
+			int iterateTimes=MINQUEAnalysis(programOptions, dm, VarComp, fix, predict);
 
 			std::ofstream out;
 			out.open(result, std::ios::out);
@@ -406,6 +407,20 @@ void TryMain(int argc, const char *const argv[])
 			out << ss.str() << std::endl;
 			std::cout << ss.str() << std::endl;
 			LOG(INFO) << ss.str();
+			if (programOptions.count("fix"))
+			{
+				std::vector<std::string> names = dm.GetCovariates().names;
+				std::stringstream ss;
+				ss << "------------------------------------" << std::endl;
+				ss<< "Cov\tEffect" << std::endl;
+				for (size_t i = 0; i < names.size(); i++)
+				{
+					ss << names[i] << ":\t" << fix[i] << "\n";
+				}
+				LOG(INFO) << ss.str();
+				std::cout<<ss.str() << std::endl;
+				out << ss.str() << std::endl;
+			}
 			if (programOptions.count("predict"))
 			{
 				int mode = programOptions["predict"].as<int>();
@@ -441,6 +456,7 @@ int main(int argc, const char *const argv[])
 		"|    Statistical Genetics and Statistical Learning Group   |\n"
 		"@----------------------------------------------------------@\n"
 		"\n";
+	int status=0;
 	std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
 	try
 	{
@@ -453,16 +469,19 @@ int main(int argc, const char *const argv[])
 	{
 		std::cout << e << std::endl;
 		LOG(ERROR) << e;
+		status = 1;
 	}
 	catch (const std::exception &err)
 	{
 		std::cout << err.what() << std::endl;
 		LOG(ERROR) << err.what();
+		status = 1;
 	}
 	catch (...)
 	{
 		std::cout << "Unknown Error" << std::endl;
 		LOG(ERROR) << "Unknown Error";
+		status=1;
 	}
 	//get now time
 	boost::posix_time::ptime timeLocal = boost::posix_time::second_clock::local_time();
@@ -471,7 +490,7 @@ int main(int argc, const char *const argv[])
 	std::chrono::duration<double, std::ratio<1, 1>> duration_s(end - start);
 	//std::cout << "Total elapse Time : " << (clock() - t1) * 1.0 / CLOCKS_PER_SEC * 1000 << " ms" << std::endl;
 	std::cout << "Computational time: " << duration_s.count() <<" second(s)."<< std::endl;
-	return 0;
+	return status;
 }
 
 void ReadData(boost::program_options::variables_map programOptions, DataManager &dm)
@@ -582,7 +601,7 @@ void ReadData(boost::program_options::variables_map programOptions, DataManager 
 	
 }
 
-int MINQUEAnalysis(boost::program_options::variables_map programOptions, DataManager &dm, Eigen::VectorXf &VarComp, Eigen::VectorXf &predict)
+int MINQUEAnalysis(boost::program_options::variables_map programOptions, DataManager &dm, Eigen::VectorXf &VarComp, Eigen::VectorXf & fix,Eigen::VectorXf &predict)
 {
 	MinqueOptions minopt;
 	readKNNParameter(programOptions, minopt);
@@ -597,7 +616,8 @@ int MINQUEAnalysis(boost::program_options::variables_map programOptions, DataMan
 	CovData Covs=dm.GetCovariates();
 	VarComp=dm.GetWeights();
 		// initialize the variance components vector with pre-set weights
-	Eigen::VectorXf fix(Covs.npar);
+	//Eigen::VectorXf fix(Covs.npar);
+	fix.resize(Covs.npar);
 	fix.setZero();
 	float iterateTimes = 0;
 	bool isecho = false;
@@ -612,6 +632,7 @@ int MINQUEAnalysis(boost::program_options::variables_map programOptions, DataMan
 		std::cout << "Loading initial values of variance components from command line." << std::endl;
 		std::vector<std::string> strVec;
 		boost::algorithm::split(strVec, VCs_str, boost::algorithm::is_any_of(","), boost::token_compress_on);
+		VarComp.resize(strVec.size());
 		for (int i = 0; i < strVec.size(); i++)
 		{
 			VarComp[i] = std::stof(strVec.at(i));
@@ -647,6 +668,7 @@ int MINQUEAnalysis(boost::program_options::variables_map programOptions, DataMan
 				throw std::string("Error: Unknow error when reading [" + saveNet + "].");
 			}
 		}
+		VarComp.resize(kd.size() + 1);
 		for (long long k = 0; k < kd.size()+1; k++)
 		{
 		
@@ -825,6 +847,12 @@ int MINQUEAnalysis(boost::program_options::variables_map programOptions, DataMan
 			//		std::cout << ss.str();
 			//		LOG(INFO) << ss.str();
 			//		out<<  ss.str();
+
+			std::ofstream out;
+			Eigen::MatrixXf out_data_M = pred.getPredictY();
+			out.open("Prediction_KNN.txt", std::ios::out);
+			out << out_data_M << std::endl;
+			out.close();
 		}
 
 	
@@ -1168,6 +1196,8 @@ std::vector<std::shared_ptr<Evaluate>>  FNNAnalysis(boost::program_options::vari
 			//		std::cout << "========================" << std::endl;
 			double best_lambda=lambdas[0];
 			torch::Tensor train_loss = torch::tensor(INFINITY);
+			std::stringstream Best_Par;
+			int epoch=0;
 			for (size_t i = 0; i < lambdas.size(); i++)
 			{
 				double lambda = lambdas[i];
@@ -1246,6 +1276,11 @@ std::vector<std::shared_ptr<Evaluate>>  FNNAnalysis(boost::program_options::vari
 				{
 					best_lambda = lambda;
 					train_loss = valid_loss;
+					ss.str(std::string());
+					epoch=f->epoch;
+					torch::serialize::OutputArchive output_archive;
+					f->save(output_archive);
+					output_archive.save_to(ss);
 				}
 			}
 
@@ -1255,7 +1290,13 @@ std::vector<std::shared_ptr<Evaluate>>  FNNAnalysis(boost::program_options::vari
 				ss << "Select lambda: " << best_lambda << "as best one to train the model.";
 				std::cout << ss.str() << std::endl;
 				LOG(INFO) << ss.str() << std::endl;
-				double lambda = best_lambda;
+				f = std::make_shared<FNN>(dims, best_lambda);
+				torch::serialize::InputArchive input_archive;
+				input_archive.load_from(ss);
+				f->load(input_archive);
+				f->epoch = epoch;
+				f->loss = train_loss;
+			/*	double lambda = best_lambda;
 				f = std::make_shared<FNN>(dims, lambda);
 				torch::Tensor valid_loss;
 				if (!basis)
@@ -1326,7 +1367,7 @@ std::vector<std::shared_ptr<Evaluate>>  FNNAnalysis(boost::program_options::vari
 				std::stringstream ss1;
 				ss1 << "Lambda: " << lambda << "\tepoch: " << f->epoch << "\tTraining: loss: " << f->loss.item<double>() << "\t Validation loss: " << train_loss.item<double>();
 				std::cout << ss1.str() << std::endl;
-				LOG(INFO) << ss1.str() << std::endl;
+				LOG(INFO) << ss1.str() << std::endl;*/
 			}
 
 			if (programOptions.count("save"))
@@ -1350,9 +1391,10 @@ std::vector<std::shared_ptr<Evaluate>>  FNNAnalysis(boost::program_options::vari
 				test = std::make_shared< Evaluate>(test_tensor->getY(), pred_test, test_tensor->dataType);
 				prediction_error.push_back(test);	
 				torch::Tensor out_data = torch::cat({ test_tensor->getY() , pred_test }, 1);
+				Eigen::MatrixXd out_data_M = dtt::libtorch2eigen<double>(out_data);
 				std::ofstream out;
 				out.open("Prediction_testing.txt", std::ios::out);
-				out << out_data << std::endl;
+				out << out_data_M << std::endl;
 				out.close();
 			}
 			else
@@ -1366,9 +1408,12 @@ std::vector<std::shared_ptr<Evaluate>>  FNNAnalysis(boost::program_options::vari
 			train = std::make_shared< Evaluate>(train_tensor->getY(), pred_train, train_tensor->dataType);
 			prediction_error.push_back(train);
 			torch::Tensor out_data = torch::cat({ train_tensor->getY() , pred_train }, 1);
+
+			Eigen::MatrixXd out_data_M = dtt::libtorch2eigen<double>(out_data);
+
 			std::ofstream out;
 			out.open("Prediction_training.txt", std::ios::out);
-			out << out_data << std::endl;
+			out << out_data_M << std::endl;
 			out.close();
 		}
 		else
@@ -1545,8 +1590,9 @@ std::vector<std::shared_ptr<Evaluate>>  FNNAnalysis(boost::program_options::vari
 				prediction_error.push_back(test);
 				torch::Tensor out_data = torch::cat({ test_tensor->getY() , pred_test }, 1);
 				std::ofstream out;
+				Eigen::MatrixXd out_data_M = dtt::libtorch2eigen<double>(out_data);
 				out.open("Prediction_testing.txt", std::ios::out);
-				out << out_data << std::endl;
+				out << out_data_M << std::endl;
 				out.close();
 	//			prediction_error.push_back(test.getAUC());
 			}
@@ -1562,9 +1608,10 @@ std::vector<std::shared_ptr<Evaluate>>  FNNAnalysis(boost::program_options::vari
 			train = std::make_shared< Evaluate>(train_tensor->getY(), pred_train, train_tensor->dataType);
 			prediction_error.push_back(train);
 			torch::Tensor out_data = torch::cat({ train_tensor->getY() , pred_train }, 1);
+			Eigen::MatrixXd out_data_M = dtt::libtorch2eigen<double>(out_data);
 			std::ofstream out;
 			out.open("Prediction_training.txt", std::ios::out);
-			out << out_data << std::endl;
+			out << out_data_M << std::endl;
 			out.close();
 		//	prediction_error.push_back(Total.getAUC());
 		}

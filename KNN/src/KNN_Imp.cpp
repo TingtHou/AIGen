@@ -235,20 +235,26 @@ void Fixed_estimator(MinqueOptions& minque, std::vector<Eigen::MatrixXf*>& Kerne
 	{
 		throw std::string("KNN can not be applied to the phenotype over 2 dimensions.");
 	}
+	LOG(INFO) << "Input Y";
 	varest.importY(pheV);
+	LOG(INFO) << "Input X";
 	varest.pushback_X(Covs, false);
 	for (int i = 0; i < Kernels.size(); i++)
 	{
+		LOG(INFO) << "Input Kernel " << i << std::endl;
 		varest.pushback_Vi(Kernels[i]);
 	}
 	Eigen::MatrixXf e(phe.fid_iid.size(), phe.fid_iid.size());
 	e.setIdentity();
+	LOG(INFO) << "Input Kernel error"  << std::endl;
 	varest.pushback_Vi(&e);
 	if (variances.size() != 0)
 	{
 		varest.pushback_W(variances);
 	}
+	LOG(INFO) << "estimation starting" << std::endl;
 	varest.estimateFix(variances);
+	LOG(INFO) << "Get Fixed effect" << std::endl;
 	coefs = varest.getfix();
 }
 
