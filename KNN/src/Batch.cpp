@@ -7,7 +7,7 @@
 //@param:	seed		The seed for shuffle process;
 //@param:	isclear		Clear old "kernels" or not;
 //@ret:		void;
-Batch::Batch(std::vector<Eigen::MatrixXf *>& kernels, Eigen::VectorXf &phe, Eigen::MatrixXf& Covs, int splitnum, int seed, bool isclear)
+Batch::Batch(std::vector<std::shared_ptr<Eigen::MatrixXf>> kernels, Eigen::VectorXf &phe, Eigen::MatrixXf& Covs, int splitnum, int seed, bool isclear)
 {
 	this->kernels = kernels;
 	this->splitnum = splitnum;
@@ -54,16 +54,17 @@ void Batch::start(int dataType)
 //@brief:	Get Kernels for each batch;
 //@param:	BatchedKernel	A 2D vector to store kernels for each batch;
 //@ret:		void;
-void Batch::GetBatchKernels(std::vector<std::vector<Eigen::MatrixXf*>>& BatchedKernel)
+void Batch::GetBatchKernels(std::vector< std::vector<std::shared_ptr<Eigen::MatrixXf>>> &BatchedKernel)
 {
-	BatchedKernel.resize(KernelBatched.size());
+	BatchedKernel = KernelBatched;
+	/*BatchedKernel.resize(KernelBatched.size());
 	#pragma omp parallel for 
 	for (int i = 0; i < KernelBatched.size(); i++)
 	{
 		BatchedKernel[i].resize(KernelBatched[i].size());
 		for (int j = 0; j < KernelBatched[i].size(); j++)
 		{
-			BatchedKernel[i][j] = &KernelBatched[i][j];
+			BatchedKernel[i][j] = KernelBatched[i][j];
 		}
 	}
 	/*
@@ -174,18 +175,19 @@ void Batch::shuffle()
 	#pragma omp parallel for
 	for (int i=0;i< IDinEach.size();i++)
 	{
-		std::vector<Eigen::MatrixXf> KerneleachBatch;
+		std::vector<std::shared_ptr<Eigen::MatrixXf>> KerneleachBatch;
 		for (int j=0;j<nkernels;j++)
 		{
-			Eigen::MatrixXf subMatrx(IDinEach[i].size(), IDinEach[i].size());
-			GetSubMatrix(kernels[j], &subMatrx, IDinEach[i], IDinEach[i]);
+			std::shared_ptr<Eigen::MatrixXf> subMatrx=std::make_shared<Eigen::MatrixXf>(IDinEach[i].size(), IDinEach[i].size());
+			
+			GetSubMatrix(kernels[j], subMatrx, IDinEach[i], IDinEach[i]);
 			KerneleachBatch.push_back(subMatrx);
 			
 		}
 		Eigen::VectorXf subVector(IDinEach[i].size());
 		GetSubVector(phe, subVector, IDinEach[i]);
 		Eigen::MatrixXf subCovMatrix(IDinEach[i].size(), Covs.cols());
-		GetSubMatrix(&Covs, &subCovMatrix, IDinEach[i]);
+		GetSubMatrix(Covs,subCovMatrix, IDinEach[i]);
 		pheBatched[i]=(subVector);
 		KernelBatched[i]=(KerneleachBatch);
 		CovsBatched[i] = subCovMatrix;
@@ -316,20 +318,22 @@ void Batch::shuffle_binary()
 	#pragma omp parallel for
 	for (int i = 0; i < IDinEach.size(); i++)
 	{
-		std::vector<Eigen::MatrixXf> KerneleachBatch;
+		std::vector<std::shared_ptr<Eigen::MatrixXf>> KerneleachBatch;
 		for (int j = 0; j < nkernels; j++)
 		{
-			Eigen::MatrixXf subMatrx(IDinEach[i].size(), IDinEach[i].size());
-			GetSubMatrix(kernels[j], &subMatrx, IDinEach[i], IDinEach[i]);
+	
+			std::shared_ptr<Eigen::MatrixXf> subMatrx = std::make_shared<Eigen::MatrixXf>(IDinEach[i].size(), IDinEach[i].size());
+
+			GetSubMatrix(kernels[j], subMatrx, IDinEach[i], IDinEach[i]);
 			KerneleachBatch.push_back(subMatrx);
 
 		}
 		Eigen::VectorXf subVector(IDinEach[i].size());
 		GetSubVector(phe, subVector, IDinEach[i]);
-		Eigen::MatrixXf subCovMatrix(IDinEach[i].size(), Covs.cols());
-		GetSubMatrix(&Covs, &subCovMatrix, IDinEach[i]);
+		std::shared_ptr<Eigen::MatrixXf> subCovMatrix= std::make_shared<Eigen::MatrixXf>(IDinEach[i].size(), Covs.cols());
+		GetSubMatrix(std::make_shared<Eigen::MatrixXf>(Covs), subCovMatrix, IDinEach[i]);
 		pheBatched[i] = (subVector);
 		KernelBatched[i] = (KerneleachBatch);
-		CovsBatched[i] = subCovMatrix;
+		CovsBatched[i] = *subCovMatrix;
 	}
 }

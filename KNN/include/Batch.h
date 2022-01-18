@@ -11,16 +11,16 @@
 class Batch
 {
 public:
-	Batch(std::vector<Eigen::MatrixXf *> &kernels, Eigen::VectorXf &phe, Eigen::MatrixXf &Covs, int splitnum, int seed, bool isclear);
+	Batch(std::vector<std::shared_ptr<Eigen::MatrixXf>> kernels, Eigen::VectorXf &phe, Eigen::MatrixXf &Covs, int splitnum, int seed, bool isclear);
 	void start(int dataType);
-	void GetBatchKernels(std::vector< std::vector<Eigen::MatrixXf*>> &BatchedKernel);
+	void GetBatchKernels(std::vector< std::vector<std::shared_ptr<Eigen::MatrixXf>>> &BatchedKernel);
 	void GetBatchPhe(std::vector< Eigen::VectorXf>  &phe);
 	void GetBatchCov(std::vector< Eigen::MatrixXf> & cov);
 	Eigen::VectorXi getSizesofBatch() {	return nindInEachBatch;	};
 	~Batch();
 private:
-	std::vector<Eigen::MatrixXf *> kernels;
-	std::vector< std::vector<Eigen::MatrixXf>>  KernelBatched;
+	std::vector<std::shared_ptr<Eigen::MatrixXf>> kernels;
+	std::vector<std::vector<std::shared_ptr<Eigen::MatrixXf>>>  KernelBatched;
 	std::vector< Eigen::VectorXf>  pheBatched;
 	std::vector< Eigen::MatrixXf>  CovsBatched;
 	Eigen::VectorXf phe;
