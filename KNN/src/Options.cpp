@@ -131,6 +131,7 @@ void Options::boostProgramOptionsRoutine(int argc, const char * const argv[])
 																	"The input should be a file containing the two columns, \n"
 																	"first column is the name of covariates, and the second column is its effect.\n"
 																	"Each variable per line.\n")
+		("NoE",  "If this option is true, the MIQNUE estimation will not be performed, the input weights will be considered as variance components.\n")
 		("thread", po::value<int>()->value_name("num"), "Set a 'num' size thread pool for multi-thread analysis.\n");
 
 	po::options_description optsFNNAlgorithm("FNN Algorithm Parameters");
