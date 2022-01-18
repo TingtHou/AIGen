@@ -415,7 +415,7 @@ void TryMain(int argc, const char *const argv[])
 				ss<< "Cov\tEffect" << std::endl;
 				for (size_t i = 0; i < names.size(); i++)
 				{
-					ss << names[i] << ":\t" << fix[i] << "\n";
+					ss << names[i] << "\t" << fix[i] << "\n";
 				}
 				LOG(INFO) << ss.str();
 				std::cout<<ss.str() << std::endl;
@@ -606,22 +606,31 @@ int MINQUEAnalysis(boost::program_options::variables_map programOptions, DataMan
 	MinqueOptions minopt;
 	readKNNParameter(programOptions, minopt);
 	bool GPU = false;
+	float ratio = programOptions["ratio"].as < float >();
+	float seed = programOptions["seed"].as < float >();
+	bool NoE = programOptions.count("NoE");
 	if (programOptions.count("GPU"))
 	{
 		GPU = true;
+	}
+	if (abs(ratio - 1) > 1e-6)
+	{
+		dm.shuffle(seed,ratio);
 	}
 	PhenoData phe=dm.getPhenotype();
 	std::vector<std::shared_ptr<KernelData>> kd;
 	kd= dm.GetKernel();
 	CovData Covs=dm.GetCovariates();
 	VarComp=dm.GetWeights();
-		// initialize the variance components vector with pre-set weights
+	long long train_size = phe.nind * ratio;
+	long long test_size = phe.nind - train_size;
+	// initialize the variance components vector with pre-set weights
 	//Eigen::VectorXf fix(Covs.npar);
 	fix.resize(Covs.npar);
 	fix.setZero();
 	float iterateTimes = 0;
 	bool isecho = false;
-	std::vector<Eigen::MatrixXf *> Kernels;
+	std::vector<std::shared_ptr<Eigen::MatrixXf>> Kernels;
 	if (programOptions.count("echo"))
 	{
 		isecho = programOptions["echo"].as<bool>();
@@ -687,21 +696,24 @@ int MINQUEAnalysis(boost::program_options::variables_map programOptions, DataMan
 		int alpha = programOptions["alphaKNN"].as<int>();
 		KernelExpansion ks(kd, alpha);
 	//	Kernels = ks.GetExtendMatrix();
-		auto Kmatrices = ks.GetExtendMatrix();
-		Kernels.resize(Kmatrices->size());
-		for (int i = 0; i < Kmatrices->size(); i++)
+		Kernels = ks.GetExtendMatrix();
+		/*
+		Kernels.resize(Kmatrices.size());
+		for (int i = 0; i < Kmatrices.size(); i++)
 		{
-			Kernels[i] = new Eigen::MatrixXf(Kmatrices->at(i).rows(), Kmatrices->at(i).cols());
+			Kernels[i] = std::make_shared<Eigen::MatrixXf> (Kmatrices->at(i).rows(), Kmatrices->at(i).cols());
 		   //	Kernels.push_back(&(Kmatrices->at(i)));
 			*Kernels[i] = Kmatrices->at(i);
 		}
+		*/
 		kd.clear();
 	}
 	else
 	{
+		
 		for (int i = 0; i < kd.size(); i++)
 		{
-			Kernels.push_back(&(kd.at(i)->kernelMatrix));
+			Kernels.push_back(kd[i]->kernelMatrix);
 		}
 	}
 	if (VarComp.size() != 0)
@@ -711,12 +723,178 @@ int MINQUEAnalysis(boost::program_options::variables_map programOptions, DataMan
 			throw std::string("Error: The size of pre-specified weight vector is not equal to the number of variance components.");
 		}
 	}
-	
-
-	if (programOptions.count("predict") || programOptions.count("fix"))
+	std::vector<std::shared_ptr<Eigen::MatrixXf>> TrainingSet=Kernels;
+	Eigen::VectorXf phe_train(phe.nind);
+	Eigen::VectorXf phe_test(test_size);
+	Eigen::MatrixXf Cov_train = Covs.Covariates;
+	Eigen::MatrixXf Cov_test(test_size, Covs.npar);
+	if (phe.Phenotype.cols() == 1)
 	{
-		if (programOptions.count("fix"))
+		phe_train = Eigen::Map<Eigen::VectorXf>(phe.Phenotype.data(), phe.Phenotype.rows());
+	}
+	else
+	{
+		throw std::string("KNN can not be applied to the phenotype over 2 dimensions.");
+	}
+	if (abs(ratio-1)>1e-6)
+	{
+		std::stringstream ss;
+		ss << "Split the dataset into two sub-dataset, training, testing";
+		TrainingSet.clear();
+		TrainingSet.resize(Kernels.size());
+		for (size_t i = 0; i < Kernels.size(); i++)
 		{
+			TrainingSet[i]=std::make_shared<Eigen::MatrixXf>(train_size,train_size);
+			*TrainingSet[i]= Kernels[i]->block(0, 0, train_size, train_size);
+		//	TrainingSet.push_back(train);
+		//	std::cout << train->block(0, 0, 10, 10) << std::endl;
+		}
+		Eigen::VectorXf All_Phe = phe_train;
+		phe_train.resize(train_size);
+		phe_test.resize(test_size);
+		Cov_train.resize(train_size, Covs.npar);
+		Cov_test.resize(test_size, Covs.npar);
+		phe_train = All_Phe.block(0, 0,train_size,1);
+		phe_test = All_Phe.block(train_size, 0, test_size, 1);
+		Cov_train = Covs.Covariates.block(0, 0, train_size, Covs.npar);
+		Cov_test = Covs.Covariates.block(train_size, 0, test_size, Covs.npar);
+	
+		std::cout << ss.str() << std::endl;
+		LOG(INFO) << ss.str();
+		ss.str("");
+		ss.clear();
+		ss << "Spliting Completed. There are " << phe_train.size() << " individuals in the training dataset, and " << phe_test.size() << " individuals in the testing dataset" << "." << std::endl;
+		ss<<"In the training datset,  mean is "<< phe_train.mean() <<" and standard deviation is "<<std::sqrt(Variance(phe_train))<<"."<<std::endl;
+		ss << "In the testing datset,  mean is " << phe_test.mean() << " and standard deviation is " << std::sqrt(Variance(phe_test)) << "." << std::endl;
+		std::cout << ss.str();
+		LOG(INFO) << ss.str();
+	}
+	if (!NoE)
+	{
+		if (GPU)
+		{
+			/*
+	#ifndef CPU
+			if (programOptions.count("minque0"))
+			{
+				cudaMINQUE0(minopt, Kernels, phe, Covs.Covariates, VarComp, fix);
+				iterateTimes = 1;
+			}
+			else
+			{
+				cudaMINQUE1(minopt, Kernels, phe, Covs.Covariates, VarComp, fix, iterateTimes, isecho);
+			}
+	#else*/
+			throw std::string("This is a CPU program. Please use GPU version.");
+			//#endif
+		}
+		else
+		{
+			if (programOptions.count("batch"))
+			{
+				//		throw std::string("Error: batch function is under maintenance, and will back soon.");
+						/*
+						for (size_t i = 0; i < Kernels.size(); i++)
+						{
+							std::stringstream ss;
+							ss << "kernel: " << i << "in Main" << std::endl;
+							ss << "First 10x10: \n" << Kernels[i]->block(0, 0, 10, 10) << std::endl;
+							ss << "Last 10x10: \n" << Kernels[i]->block(Kernels[i]->rows() - 10, Kernels[i]->cols() - 10, 10, 10);
+							LOG(INFO) << ss.str() << std::endl;
+						}
+						*/
+				int nthread = 10;
+				int nsplit = programOptions["batch"].as<int>();
+				int seed = 0;
+				if (!programOptions.count("pseudo"))
+				{
+					minopt.allowPseudoInverse = 0;
+				}
+				if (programOptions.count("thread"))
+				{
+					nthread = programOptions["thread"].as<int>();
+				}
+				if (programOptions.count("seed"))
+				{
+					seed = programOptions["seed"].as<float>();
+				}
+				if (programOptions.count("minque0"))
+				{
+					BatchMINQUE0(minopt, TrainingSet, phe_train, Cov_train, VarComp, fix, nsplit, seed, nthread, phe.dataType);
+					iterateTimes = 1;
+				}
+				else
+				{
+					BatchMINQUE1(minopt, TrainingSet, phe_train, Cov_train, VarComp, fix, iterateTimes, nsplit, seed, nthread, isecho, phe.dataType);
+				}
+
+
+			}
+			else
+			{
+				isecho = true;
+				if (programOptions.count("echo"))
+				{
+					isecho = programOptions["echo"].as<bool>();
+				}
+				if (programOptions.count("minque0"))
+				{
+					cMINQUE0(minopt, TrainingSet, phe_train, Cov_train, VarComp, fix);
+					iterateTimes = 1;
+				}
+				else
+				{
+					if (!VarComp.size())
+					{
+						std::cout << "Using results from MINQUE(0) as inital value." << std::endl;
+						LOG(INFO) << "Using results from MINQUE(0) as inital value.";
+
+						std::vector<std::shared_ptr<Eigen::MatrixXf>> Kernels_imq(TrainingSet.size());
+						int nind = phe.fid_iid.size();
+						for (int i = 0; i < Kernels.size(); i++)
+						{
+							Kernels_imq[i] = std::make_shared<Eigen::MatrixXf>(*TrainingSet[i]);
+							//*Kernels_imq[i] = *Kernels[i];
+						}
+						cMINQUE0(minopt, Kernels_imq, phe_train, Cov_train, VarComp, fix);
+						for (int i = 0; i < TrainingSet.size(); i++)
+						{
+							Kernels_imq[i] = nullptr;
+						}
+						Kernels_imq.clear();
+						//cMINQUE0(minopt, Kernels, phe, Covs.Covariates, VarComp, fix);
+					}
+
+					cMINQUE1(minopt, TrainingSet, phe_train, Cov_train, VarComp, fix, iterateTimes, isecho);
+				}
+
+			}
+		}
+	}
+	
+	if (programOptions.count("fix"))
+	{
+		if (Cov_train.cols()==0)
+		{
+			std::stringstream ss;
+			ss << "[Warning]: There are no covariates, skip the fixed effects estimation process.";
+			std::cout << ss.str() << std::endl;
+			LOG(WARNING) << ss.str();
+		}
+		else
+		{
+			for (int i = 0; i < TrainingSet.size(); i++)
+			{
+				std::cout << "Used count: " << TrainingSet[i].use_count() << std::endl;
+			}
+			TrainingSet.clear();
+			TrainingSet.resize(Kernels.size());
+			for (size_t i = 0; i < Kernels.size(); i++)
+			{
+				TrainingSet[i] = std::make_shared<Eigen::MatrixXf>(train_size, train_size);
+				*TrainingSet[i] = Kernels[i]->block(0, 0, train_size, train_size);
+				//	std::cout << train->block(0, 0, 10, 10) << std::endl;
+			}
 			if (Covs.names.size() <= 0)
 			{
 				throw(std::string("[Error]: There are neither covariates nor intercept."));
@@ -727,19 +905,26 @@ int MINQUEAnalysis(boost::program_options::variables_map programOptions, DataMan
 				isecho = programOptions["echo"].as<bool>();
 			}
 			std::cout << "Starting fix effects estimation." << std::endl;
-			Fixed_estimator(minopt, Kernels, phe, Covs.Covariates, VarComp, fix, iterateTimes, isecho);
+			Fixed_estimator(minopt, TrainingSet, phe_train, Cov_train, VarComp, fix, iterateTimes, isecho);
 			std::cout << "Fix effects eatimation is done." << std::endl;
 			LOG(INFO) << "Fix effects eatimation is done.";
-			
+
 			std::stringstream ss;
-			ss<< "Fix effects:"<<std::endl;
+			ss << "Fix effects:" << std::endl;
 			for (size_t i = 0; i < Covs.names.size(); i++)
 			{
 				ss << Covs.names[i] << "\t" << fix[i] << "\n";
 			}
 			LOG(INFO) << ss.str();
-			std::cout << ss.str()<<std:: endl;
+			std::cout << ss.str() << std::endl;
+			TrainingSet.clear();
 		}
+	
+	}
+
+	if (programOptions.count("predict") )
+	{
+		
 		if (programOptions.count("effects"))
 		{
 			std::string fix_effect = programOptions["effects"].as < std::string >();
@@ -827,21 +1012,43 @@ int MINQUEAnalysis(boost::program_options::variables_map programOptions, DataMan
 			{
 				throw std::string("KNN can not be applied to the phenotype over 2 dimensions.");
 			}
-			Prediction pred(pheV, Kernels, VarComp, Covs.Covariates, fix, phe.dataType == 1 ? true : false, mode);
-			Evaluate Eva(pheV, pred.getPredictY(), phe.dataType);
+			std::shared_ptr<Prediction> pred;
+		
+
+			std::shared_ptr<Evaluate> Eva;
+			if (abs(ratio-1)<1e-6)
+			{
+				Eigen::VectorXf phe_all = Eigen::Map<Eigen::VectorXf>(phe.Phenotype.data(), phe.Phenotype.rows());
+				pred = std::make_shared<Prediction>(phe_all, Kernels, VarComp, Covs.Covariates, fix, phe.dataType == 1 ? true : false, mode, ratio);
+				Eva=std::make_shared<Evaluate>(phe_all, pred->getPredictY(), phe.dataType);
+			}
+			else
+			{
+				if (!mode)
+				{
+					Eigen::VectorXf phe_all = Eigen::Map<Eigen::VectorXf>(phe.Phenotype.data(), phe.Phenotype.rows());
+
+					pred = std::make_shared<Prediction>(phe_all, Kernels, VarComp, Covs.Covariates, fix, phe.dataType == 1 ? true : false, mode, ratio);
+				}
+				else
+				{
+					pred = std::make_shared<Prediction>(phe_test, Kernels, VarComp, Cov_test, fix, phe.dataType == 1 ? true : false, mode);
+				}
+				Eva = std::make_shared<Evaluate>(phe_test, pred->getPredictY(), phe.dataType);
+			}
 			predict.resize(2);
 
 			//	std::stringstream ss;
 			if (phe.dataType == 1)
 			{
-				predict[0] = Eva.getMSE();
-				predict[1] = Eva.getAUC();
+				predict[0] = Eva->getMSE();
+				predict[1] = Eva->getAUC();
 				//	ss << "misclassification error:\t" << pred.getMSE() << std::endl << "AUC:\t" << pred.getAUC() << std::endl;
 			}
 			else
 			{
-				predict[0] = Eva.getMSE();
-				predict[1] = Eva.getAUC();
+				predict[0] = Eva->getMSE();
+				predict[1] = Eva->getAUC();
 				//ss << "MSE:\t" << pred.getMSE() << std::endl << "Correlation:\t" << pred.getCor() << std::endl;
 			}
 			//		std::cout << ss.str();
@@ -849,7 +1056,7 @@ int MINQUEAnalysis(boost::program_options::variables_map programOptions, DataMan
 			//		out<<  ss.str();
 
 			std::ofstream out;
-			Eigen::MatrixXf out_data_M = pred.getPredictY();
+			Eigen::MatrixXf out_data_M = pred->getPredictY();
 			out.open("Prediction_KNN.txt", std::ios::out);
 			out << out_data_M << std::endl;
 			out.close();
@@ -857,109 +1064,7 @@ int MINQUEAnalysis(boost::program_options::variables_map programOptions, DataMan
 
 	
 	}
-	else
-	{
-
-		if (GPU)
-		{
-			/*
-	#ifndef CPU
-			if (programOptions.count("minque0"))
-			{
-				cudaMINQUE0(minopt, Kernels, phe, Covs.Covariates, VarComp, fix);
-				iterateTimes = 1;
-			}
-			else
-			{
-				cudaMINQUE1(minopt, Kernels, phe, Covs.Covariates, VarComp, fix, iterateTimes, isecho);
-			}
-	#else*/
-			throw std::string("This is a CPU program. Please use GPU version.");
-			//#endif
-		}
-		else
-		{
-			if (programOptions.count("batch"))
-			{
-				//		throw std::string("Error: batch function is under maintenance, and will back soon.");
-						/*
-						for (size_t i = 0; i < Kernels.size(); i++)
-						{
-							std::stringstream ss;
-							ss << "kernel: " << i << "in Main" << std::endl;
-							ss << "First 10x10: \n" << Kernels[i]->block(0, 0, 10, 10) << std::endl;
-							ss << "Last 10x10: \n" << Kernels[i]->block(Kernels[i]->rows() - 10, Kernels[i]->cols() - 10, 10, 10);
-							LOG(INFO) << ss.str() << std::endl;
-						}
-						*/
-				int nthread = 10;
-				int nsplit = programOptions["batch"].as<int>();
-				int seed = 0;
-				if (!programOptions.count("pseudo"))
-				{
-					minopt.allowPseudoInverse = 0;
-				}
-				if (programOptions.count("thread"))
-				{
-					nthread = programOptions["thread"].as<int>();
-				}
-				if (programOptions.count("seed"))
-				{
-					seed = programOptions["seed"].as<float>();
-				}
-				if (programOptions.count("minque0"))
-				{
-					BatchMINQUE0(minopt, Kernels, phe, Covs.Covariates, VarComp, fix, nsplit, seed, nthread);
-					iterateTimes = 1;
-				}
-				else
-				{
-					BatchMINQUE1(minopt, Kernels, phe, Covs.Covariates, VarComp, fix, iterateTimes, nsplit, seed, nthread, isecho);
-				}
-
-
-			}
-			else
-			{
-				isecho = true;
-				if (programOptions.count("echo"))
-				{
-					isecho = programOptions["echo"].as<bool>();
-				}
-				if (programOptions.count("minque0"))
-				{
-					cMINQUE0(minopt, Kernels, phe, Covs.Covariates, VarComp, fix);
-					iterateTimes = 1;
-				}
-				else
-				{
-					if (!VarComp.size())
-					{
-						std::cout << "Using results from MINQUE(0) as inital value." << std::endl;
-						LOG(INFO) << "Using results from MINQUE(0) as inital value.";
-						
-						std::vector<Eigen::MatrixXf*> Kernels_imq(Kernels.size());
-						int nind = phe.fid_iid.size();
-						for (int i = 0; i < Kernels.size(); i++)
-						{
-							Kernels_imq[i] = new Eigen::MatrixXf(nind, nind);
-							*Kernels_imq[i] = *Kernels[i];
-						}
-						cMINQUE0(minopt, Kernels_imq, phe, Covs.Covariates, VarComp, fix);
-						for (int i = 0; i < Kernels.size(); i++)
-						{
-							delete Kernels_imq[i];
-							Kernels_imq[i] = nullptr;
-						}
-						//cMINQUE0(minopt, Kernels, phe, Covs.Covariates, VarComp, fix);
-					}
-
-					cMINQUE1(minopt, Kernels, phe, Covs.Covariates, VarComp, fix, iterateTimes, isecho);
-				}
-
-			}
-		}
-	}
+	
 
 
 	if (programOptions.count("save"))
@@ -988,6 +1093,7 @@ int MINQUEAnalysis(boost::program_options::variables_map programOptions, DataMan
 
 std::vector<std::shared_ptr<Evaluate>>  FNNAnalysis(boost::program_options::variables_map programOptions, DataManager& dm)
 {
+	torch::manual_seed(0);
 	std::vector<std::shared_ptr<Evaluate>> prediction_error;
  /// All data in FNN/NN framework will be treated as double precision.
 	auto options = torch::TensorOptions().dtype(torch::kFloat64);
@@ -1126,10 +1232,12 @@ std::vector<std::shared_ptr<Evaluate>>  FNNAnalysis(boost::program_options::vari
 			//	std::cout << "========================" << std::endl;
 			std::shared_ptr<NN> f = std::make_shared<NN>(dims, lambdas[0]);
 			f->build(ncovs);
-			torch::serialize::InputArchive archive;
+			f->eval();
+		//	torch::serialize::InputArchive archive;
 			//	std::string file("test_model.pt");
-			archive.load_from(loadNet);
-			f->load(archive);
+		//	archive.load_from(loadNet);
+			//f->load(archive);
+			torch::load(f, loadNet);
 
 			torch::Tensor pred_total = f->forward(data);
 			std::shared_ptr<Evaluate> Total=std::make_shared<Evaluate>(data->getY(), pred_total, data->dataType);
@@ -1158,7 +1266,14 @@ std::vector<std::shared_ptr<Evaluate>>  FNNAnalysis(boost::program_options::vari
 		LOG(INFO) << ss.str();
 		ss.str("");
 		ss.clear();
-		std::tie(subtrain, valid) =train->split(seed, ratio);
+		if (abs(ratio-1)<1e-6)
+		{
+			std::tie(subtrain, valid) = train->split(seed, 0.8);
+		}
+		else
+		{
+			std::tie(subtrain, valid) = train->split(seed, ratio);
+		}
 		//std::shared_ptr<TensorData> d=std::make_shared<TensorData>(dm.getPhenotype(), dm.getGenotype(), dm.GetCovariates());
 		std::cout << "Apply the training data for Analysis." << std::endl;
 		ss << "Spliting Completed. There are " << subtrain->phe.nind << " individuals in the training dataset used for training, and " << valid->phe.nind << " individuals for validation.";
@@ -1170,6 +1285,31 @@ std::vector<std::shared_ptr<Evaluate>>  FNNAnalysis(boost::program_options::vari
 		std::shared_ptr<TensorData> test_tensor = std::make_shared<TensorData>(test->phe, test->geno, test->cov);
 		train_tensor->dataType = loss;
 		test_tensor->dataType = loss;
+		/*
+		std::ofstream test_y;
+		test_y.open("Testing_Y.txt");
+
+		std::ofstream test_z;
+		test_z.open("Testing_Z.txt");
+
+		for (int i = 0; i < test->phe.Phenotype.size(); i++)
+		{
+			test_y << (i+1) << "\t" << 1 << "\t" <<test->phe.Phenotype(i,0) << std::endl;
+			if (i==0)
+			{
+				test_z << "FID\tIID\t";
+				for (size_t j = 0; j < test->cov.names.size(); j++)
+				{
+					test_z << test->cov.names[j] << "\t";
+				}
+				test_z << std::endl;
+			}
+			test_z << (i + 1) << "\t" << 1<<"\t" << test->cov.Covariates.row(i)<< std::endl;
+		}
+	
+		test_y.close();
+		test_z.close();
+		*/
 		//std::shared_ptr<TensorData> subtrain_tensor = nullptr;
 	//	std::shared_ptr<TensorData> valid_tensor =nullptr;
 		std::shared_ptr<TensorData> subtrain_tensor = std::make_shared<TensorData>(subtrain->phe, subtrain->geno, subtrain->cov);
@@ -1572,28 +1712,56 @@ std::vector<std::shared_ptr<Evaluate>>  FNNAnalysis(boost::program_options::vari
 				
 
 			}
+			f->eval();
 			if (programOptions.count("save"))
 			{
 				std::string saveNet = programOptions["save"].as < std::string >();
 				//	string model_path = "model.pt";
-				torch::serialize::OutputArchive output_archive;
-				f->save(output_archive);
-				output_archive.save_to(saveNet);
+		//		torch::serialize::OutputArchive output_archive;
+		//		f->save(output_archive);
+		//		output_archive.save_to(saveNet);
+				torch::save(f, saveNet);
 			}
-
-			f->eval();
-
+		 
 			if (test_tensor->getY().sizes()[0] != 0)
 			{
+
 				torch::Tensor pred_test = f->forward(test_tensor);
-				std::shared_ptr<Evaluate> test = std::make_shared<Evaluate>(test_tensor->getY(), pred_test, test_tensor->dataType);
-				prediction_error.push_back(test);
-				torch::Tensor out_data = torch::cat({ test_tensor->getY() , pred_test }, 1);
+				std::shared_ptr<Evaluate> test_eva = std::make_shared<Evaluate>(test_tensor->getY(), pred_test, test_tensor->dataType);
+				prediction_error.push_back(test_eva);
+				/*torch::Tensor out_data = torch::cat({ test_tensor->getY() , pred_test }, 1);
 				std::ofstream out;
 				Eigen::MatrixXd out_data_M = dtt::libtorch2eigen<double>(out_data);
 				out.open("Prediction_testing.txt", std::ios::out);
 				out << out_data_M << std::endl;
 				out.close();
+				*/  /*
+				
+				std::vector<int> shuffledID(test->phe.nind);
+				#pragma omp parallel for
+				for (int i = 0; i < shuffledID.size(); i++)
+				{
+					shuffledID[i] = i;
+				}
+				auto rng = std::default_random_engine{};
+				rng.seed(seed);
+				std::shuffle(std::begin(shuffledID), std::end(shuffledID), rng);
+				std::stringstream ss_bug;
+				ss << "\\\\\\\\\\\\\\\\\\\\\n" << "Covs\tMSE\tCor" << std::endl;
+				for (int i = 0; i < test->cov.npar; i++)
+				{
+					CovData cov_shuffle = test->cov;
+					for (size_t j = 0; j < shuffledID.size(); j++)
+					{
+						cov_shuffle.Covariates(j, i) = test->cov.Covariates(shuffledID[j], i);
+					}
+					std::shared_ptr<TensorData> test_tensor_shuffle = std::make_shared<TensorData>(test->phe, test->geno, cov_shuffle);
+					torch::Tensor pred_test_shuffle = f->forward(test_tensor_shuffle);
+					std::shared_ptr<Evaluate> test_eva_shuffle = std::make_shared<Evaluate>(test_tensor->getY(), pred_test_shuffle, test_tensor->dataType);
+					ss << cov_shuffle.names[i] << "\t" << test_eva_shuffle->getMSE() << "\t" << test_eva_shuffle->getCor() << std::endl;
+				}
+				std::cout << ss.str() << std::endl;
+				*/
 	//			prediction_error.push_back(test.getAUC());
 			}
 			else
@@ -1603,16 +1771,45 @@ std::vector<std::shared_ptr<Evaluate>>  FNNAnalysis(boost::program_options::vari
 			}
 
 			
-			std::shared_ptr<Evaluate> train = nullptr;
+			std::shared_ptr<Evaluate> train_eva = nullptr;
 			torch::Tensor pred_train = f->forward(train_tensor);
-			train = std::make_shared< Evaluate>(train_tensor->getY(), pred_train, train_tensor->dataType);
-			prediction_error.push_back(train);
+			train_eva = std::make_shared< Evaluate>(train_tensor->getY(), pred_train, train_tensor->dataType);
+			prediction_error.push_back(train_eva);
+			///////////
+			/*
+			std::vector<int> shuffledID(train->phe.nind);
+			#pragma omp parallel for
+			for (int i = 0; i < shuffledID.size(); i++)
+			{
+				shuffledID[i] = i;
+			}
+			auto rng = std::default_random_engine{};
+			rng.seed(seed);
+			std::shuffle(std::begin(shuffledID), std::end(shuffledID), rng);
+			std::stringstream ss_bug;
+			ss << "\\\\\\\\\\\\\\\\\\\\\n" << "Covs\tMSE\tCor" << std::endl;
+			for (int i = 0; i < train->cov.npar; i++)
+			{
+				CovData cov_shuffle = train->cov;
+				for (size_t j = 0; j < shuffledID.size(); j++)
+				{
+					cov_shuffle.Covariates(j, i) = train->cov.Covariates(shuffledID[j], i);
+				}
+				std::shared_ptr<TensorData> train_tensor_shuffle = std::make_shared<TensorData>(train->phe, train->geno, cov_shuffle);
+				torch::Tensor pred_train_shuffle = f->forward(train_tensor_shuffle);
+				std::shared_ptr<Evaluate> train_eva_shuffle = std::make_shared<Evaluate>(train_tensor->getY(), pred_train_shuffle, train_tensor->dataType);
+				ss << cov_shuffle.names[i] << "\t" << train_eva_shuffle->getMSE() << "\t" << train_eva_shuffle->getCor() << std::endl;
+			}
+			std::cout << ss.str() << std::endl;
+			*/
+			/*
 			torch::Tensor out_data = torch::cat({ train_tensor->getY() , pred_train }, 1);
 			Eigen::MatrixXd out_data_M = dtt::libtorch2eigen<double>(out_data);
 			std::ofstream out;
 			out.open("Prediction_training.txt", std::ios::out);
 			out << out_data_M << std::endl;
 			out.close();
+			*/
 		//	prediction_error.push_back(Total.getAUC());
 		}
 	}
