@@ -108,7 +108,7 @@ struct MinqueOptions
 struct KernelData
 {
 	boost::bimap<int, std::string> fid_iid;
-	Eigen::MatrixXf kernelMatrix;
+	std::shared_ptr< Eigen::MatrixXf> kernelMatrix;
 	Eigen::MatrixXf VariantCountMatrix;
 };
 
@@ -188,8 +188,9 @@ void set_difference(boost::bimap<int, std::string> &map1, boost::bimap<int, std:
 boost::bimap<int, std::string> set_difference(boost::bimap<int, std::string>& map1, boost::bimap<int, std::string>& map2);
 boost::bimap<int, std::string> set_difference(std::vector<boost::bimap<int, std::string>>& mapList);
 void set_difference(boost::bimap<int, std::string>& map1, boost::bimap<int, std::string>& map2, boost::bimap<int, std::string>& map3, std::vector<std::string>& overlap);
-void GetSubMatrix(Eigen::MatrixXf* oMatrix, Eigen::MatrixXf* subMatrix, std::vector<int> rowIds, std::vector<int> colIDs);
-void GetSubMatrix(Eigen::MatrixXf* oMatrix, Eigen::MatrixXf* subMatrix, std::vector<int> rowIds);
+void GetSubMatrix(std::shared_ptr<Eigen::MatrixXf> oMatrix, std::shared_ptr<Eigen::MatrixXf>  subMatrix, std::vector<int> rowIds, std::vector<int> colIDs);
+void GetSubMatrix(std::shared_ptr<Eigen::MatrixXf>  oMatrix, std::shared_ptr<Eigen::MatrixXf>  subMatrix, std::vector<int> rowIds);
+void GetSubMatrix(Eigen::MatrixXf& oMatrix, Eigen::MatrixXf& subMatrix, std::vector<int> rowIds);
 void GetSubVector(Eigen::VectorXf &oVector, Eigen::VectorXf &subVector, std::vector<int> IDs);
 std::vector<std::string> UniqueCount(std::vector<std::string> vec);
 

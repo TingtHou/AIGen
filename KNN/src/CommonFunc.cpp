@@ -316,7 +316,7 @@ void set_difference(boost::bimap<int, std::string>& map1, boost::bimap<int, std:
 //@param:	rowIds			A vector containing row IDs to be kept;
 //@param:	colIDs			A vector containing column IDs to be kept;
 //@ret:		void	
-void GetSubMatrix(Eigen::MatrixXf*  oMatrix, Eigen::MatrixXf* subMatrix, std::vector<int> rowIds, std::vector<int> colIDs)
+void GetSubMatrix(std::shared_ptr<Eigen::MatrixXf>  oMatrix, std::shared_ptr<Eigen::MatrixXf> subMatrix, std::vector<int> rowIds, std::vector<int> colIDs)
 {
 	for (int i=0;i<rowIds.size();i++)
 	{
@@ -332,7 +332,7 @@ void GetSubMatrix(Eigen::MatrixXf*  oMatrix, Eigen::MatrixXf* subMatrix, std::ve
 //@param:	subMatrix		A subset matrix of the origianl matrix;
 //@param:	rowIds			A vector containing row IDs to be kept;
 //@ret:		void	
-void GetSubMatrix(Eigen::MatrixXf* oMatrix, Eigen::MatrixXf* subMatrix, std::vector<int> rowIds)
+void GetSubMatrix(std::shared_ptr<Eigen::MatrixXf> oMatrix, std::shared_ptr<Eigen::MatrixXf> subMatrix, std::vector<int> rowIds)
 {
 #pragma omp parallel for  collapse(2)
 	for (int i = 0; i < rowIds.size(); i++)
@@ -340,6 +340,23 @@ void GetSubMatrix(Eigen::MatrixXf* oMatrix, Eigen::MatrixXf* subMatrix, std::vec
 		for (int j = 0; j < oMatrix->cols(); j++)
 		{
 			(*subMatrix)(i, j) = (*oMatrix)(rowIds[i], j);
+		}
+	}
+}
+
+//@brief:	Get a subset of a float matrix given specific row IDs;
+//@param:	oMatrix			The original matrix;
+//@param:	subMatrix		A subset matrix of the origianl matrix;
+//@param:	rowIds			A vector containing row IDs to be kept;
+//@ret:		void	
+void GetSubMatrix(Eigen::MatrixXf &oMatrix, Eigen::MatrixXf &subMatrix, std::vector<int> rowIds)
+{
+#pragma omp parallel for  collapse(2)
+	for (int i = 0; i < rowIds.size(); i++)
+	{
+		for (int j = 0; j < oMatrix.cols(); j++)
+		{
+			subMatrix(i, j) = oMatrix(rowIds[i], j);
 		}
 	}
 }
