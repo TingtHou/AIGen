@@ -33,16 +33,16 @@ void minque1::estimateVCs()
 //		debug_ss1 << "Last 10x10: \n" << Vi[i]->block(Vi[i]->rows() - 10, Vi[i]->cols() - 10, 10, 10);
 //		LOG(INFO) << debug_ss1.str();
 //	if (W[i] < -1e2) W[i] = 1e-6;
-		float* pr_Vi = (*Vi[i]).data();
+		float* pr_Vi = Vi[i]->data();
 		pr_vi_list[i] = Vi[i]->data();
 		cblas_sgemm(CblasColMajor, CblasNoTrans, CblasNoTrans, nind, nind, nind, W[i], pr_Vi, nind, pr_Identity, nind, 1, pr_VW, nind);
 	}
 	Identity.resize(0, 0);
 	std::stringstream debug_ss;
-//	debug_ss << "VM in thread " << omp_get_thread_num() << std::endl;;
-//	debug_ss << "VM First 10x10: \n" << VW.block(0, 0, 10, 10) << std::endl;
-//	debug_ss << "Last 10x10: \n" << VW.block(VW.rows() - 10, VW.cols() - 10, 10, 10);
-//	LOG(INFO) << debug_ss.str();
+	debug_ss << "VM in thread " << omp_get_thread_num() << std::endl;;
+	debug_ss << "VM First 10x10: \n" << VW.block(0, 0, 10, 10) << std::endl;
+	debug_ss << "Last 10x10: \n" << VW.block(VW.rows() - 10, VW.cols() - 10, 10, 10);
+	LOG(INFO) << debug_ss.str();
 	LOG(INFO) << "Inverse VW";
 	int status=Inverse(VW, Decomposition, altDecomposition, allowPseudoInverse);
 	CheckInverseStatus("V matrix",status, allowPseudoInverse);
@@ -85,8 +85,8 @@ void minque1::estimateVCs()
 		LOG(INFO) << "calc XtB=Xt*B";
 		cblas_sgemm(CblasColMajor, CblasTrans, CblasNoTrans, X.cols(), X.cols(), nind, 1, pr_X, nind, pr_B, nind, 0, pr_Xt_B, X.cols());
 		//inv(XtB)
-		LOG(INFO) << "inverse XtB";
-		int status = Inverse(Xt_B, Cholesky , SVD, false);
+		LOG(INFO) << "inverse XtB:\n"<< Xt_B;
+		int status = Inverse(Xt_B, LU , SVD, false);
 		LOG(WARNING) << "Check inverse status";
 		CheckInverseStatus("P matrix",status, false);
 		//inv_XtB_Bt=inv(XtB)*Bt
@@ -130,11 +130,12 @@ void minque1::estimateVCs()
 		(*Vi[i]) = RV;
 	}
 	RV.resize(0, 0);
+	VW.resize(0, 0);
 //	omp_set_num_threads(nthread);
 	LOG(INFO) << "calc F";
 	Eigen::MatrixXf F(nVi, nVi);
 	//Eigen::MatrixXf F_(nVi, nVi);
-	#pragma omp parallel for shared(RV,F)
+//	#pragma omp parallel for shared(RV,F)
 	for (int k = 0; k < (nVi + 1) * nVi / 2; k++)
 	{
 		int i = k / nVi, j = k % nVi;
