@@ -8,7 +8,7 @@ void MinqueBase::importY(Eigen::VectorXf &Y)
 	Vi.clear();
 }
 
-void MinqueBase::pushback_Vi(Eigen::MatrixXf *vi)
+void MinqueBase::pushback_Vi(std::shared_ptr<Eigen::MatrixXf> vi)
 {
 	Vi.insert(Vi.end(), vi);
 	nVi++;
@@ -93,7 +93,8 @@ void MinqueBase::estimateFix(Eigen::VectorXf VCs_hat)
 	LOG(INFO) << "Clac VW in fix effect estimation.";
 	for (int i = 0; i < nVi; i++)
 	{
-		float* pr_Vi = (*Vi[i]).data();
+		LOG(INFO) << "Clac VW in with "<<i<<"Kernel";
+		float* pr_Vi =Vi[i]->data();
 		cblas_sgemm(CblasColMajor, CblasNoTrans, CblasNoTrans, nind, nind, nind, VCs_hat[i], pr_Vi, nind, pr_Identity, nind, 1, pr_VW, nind);
 	}
 	Identity.resize(0, 0);

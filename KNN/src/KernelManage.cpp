@@ -82,7 +82,7 @@ void KernelReader::BinFileReader(std::ifstream &fin, std::shared_ptr< KernelData
 		unsigned long long pointer = id * bytesize;
 		char* str2 = new char[bytesize];
 		memcpy(str2, &f_buf[pointer], bytesize);
-		kdata->kernelMatrix(j, i) = kdata->kernelMatrix(i, j) = *(float*)str2;
+		(*kdata->kernelMatrix)(j, i) = (*kdata->kernelMatrix)(i, j) = *(float*)str2;
 		delete str2;
 	}
 
@@ -150,11 +150,11 @@ void KernelReader::read()
 	IDfileReader(IDifstream, Kernels);
 	//printf("Reading the IDs from [ %s ] : Done. \n", IDfileName.c_str());
 	LOG(INFO) << "Total " << nind << " indiviudals are included.";
-	Kernels->kernelMatrix.resize(nind, nind);
+	Kernels->kernelMatrix=std::make_shared<Eigen::MatrixXf>(nind, nind);
 //	std::cout << "Resizing the matrix." << std::endl;
 //	LOG(INFO) << "Resizing the matrix.";
 	//Kernels.VariantCountMatrix.resize(nind, nind);
-	Kernels->kernelMatrix.setZero();
+	Kernels->kernelMatrix->setZero();
 	std::ostringstream ss_bin;
 	ss_bin << "Reading the kernel matrix from [ " + BinFileName + " ].";
 	std::cout << ss_bin.str()+"\n";
@@ -235,7 +235,7 @@ void KernelWriter::writeText(std::string filename)
 		for (int j = 0; j < nind; j++)
 		{
 			Kwriter.setf(std::ios::fixed);
-			Kwriter << std::setprecision(4) << Kernels.kernelMatrix(i, j) << "\t";
+			Kwriter << std::setprecision(4) << (*Kernels.kernelMatrix)(i, j) << "\t";
 		}
 		Kwriter << std::endl;
 	}
@@ -353,7 +353,7 @@ void KernelWriter::BinFileWriter(std::ofstream & fin, KernelData & kdata)
 		unsigned long long id = i + ((j * (j + 1)) / 2);
 		unsigned long long pointer = id * bytesize;
 		char* str2 = new char[bytesize];
-		float value = kdata.kernelMatrix(i, j);
+		float value = (*kdata.kernelMatrix)(i, j);
 		//int ret = snprintf(str2, sizeof(str2), "%f", kdata.kernelMatrix(i, j));
 		memcpy(&f_buf[pointer], (char*)&value, bytesize);
 		

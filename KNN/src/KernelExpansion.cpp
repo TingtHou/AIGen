@@ -1,15 +1,19 @@
 #include "../include/KernelExpansion.h"
 
-
+/*
 KernelExpansion::KernelExpansion(std::vector<Eigen::MatrixXf> &MatrixHList, int dimension)
 {
-	this->OriKernelList = MatrixHList;
+	for (int i = 0; i < MatrixHList.size(); i++)
+	{
+		OriKernelList.push_back(std::make_shared<Eigen::MatrixXf>(MatrixHList));
+	}
 	this->dimension = dimension;
 	KernelCount = MatrixHList.size();
-	ncol = OriKernelList[0].cols();
-	nrow = OriKernelList[0].rows();
+	ncol = OriKernelList[0]->cols();
+	nrow = OriKernelList[0]->rows();
 	Expanse(dimension, ExtendedMatrix);
 }
+*/
 
 KernelExpansion::KernelExpansion(std::vector<KernelData> *kernels, int dimension)
 {
@@ -19,8 +23,8 @@ KernelExpansion::KernelExpansion(std::vector<KernelData> *kernels, int dimension
 	}
 	KernelCount = OriKernelList.size();
 	this->dimension = dimension;
-	ncol = OriKernelList[0].cols();
-	nrow = OriKernelList[0].rows();
+	ncol = OriKernelList[0]->cols();
+	nrow = OriKernelList[0]->rows();
 	Expanse(dimension, ExtendedMatrix);
 }
 
@@ -32,13 +36,24 @@ KernelExpansion::KernelExpansion(std::vector<std::shared_ptr<KernelData>> kernel
 	}
 	KernelCount = OriKernelList.size();
 	this->dimension = dimension;
-	ncol = OriKernelList[0].cols();
-	nrow = OriKernelList[0].rows();
+	ncol = OriKernelList[0]->cols();
+	nrow = OriKernelList[0]->rows();
 	Expanse(dimension, ExtendedMatrix);
 }
 
 KernelExpansion::~KernelExpansion()
 {
+}
+std::vector<std::shared_ptr<Eigen::MatrixXf>> KernelExpansion::GetExtendMatrix()
+{
+	/*
+	std::vector<std::shared_ptr<Eigen::MatrixXf>> ExtendK;
+	for (size_t i = 0; i < ExtendedMatrix.size(); i++)
+	{
+		ExtendK.push_back(std::make_shared<Eigen::MatrixXf>(ExtendedMatrix[i]));
+	}
+	*/
+	return ExtendedMatrix;
 }
 /*
 void KernelExpansion::test()
@@ -114,7 +129,7 @@ void KernelExpansion::GetUniqueIndex(std::vector<std::vector<int>>& Comb, std::v
 		}
 	}
 }
-void KernelExpansion::Expanse(int degree,  std::vector<Eigen::MatrixXf> &EMatrix)
+void KernelExpansion::Expanse(int degree,  std::vector<std::shared_ptr<Eigen::MatrixXf>> EMatrix)
 {
 	std::vector<std::vector<int>> ExpansedIndex;
 	for (int i=1;i<=degree;i++)
@@ -127,14 +142,15 @@ void KernelExpansion::Expanse(int degree,  std::vector<Eigen::MatrixXf> &EMatrix
 		ExpansedIndex.insert(ExpansedIndex.end(),UniqueComb.begin(),UniqueComb.end());
 		delete Index;
 	}
+	EMatrix.resize(ExpansedIndex.size());
 	for (int i = 0; i < ExpansedIndex.size(); i++)
 	{
-		Eigen::MatrixXf exMatrix(nrow,ncol);
-		exMatrix.setOnes();
+		EMatrix[i]=std::make_shared< Eigen::MatrixXf> (nrow,ncol);
+		EMatrix[i]->setOnes();
 		for (int j=0;j<ExpansedIndex[i].size();j++)
 		{
-			exMatrix = exMatrix.cwiseProduct(OriKernelList[ExpansedIndex[i][j]]);
+			*EMatrix[i] = EMatrix[i]->cwiseProduct(*OriKernelList[ExpansedIndex[i][j]]);
 		}
-		EMatrix.push_back(exMatrix);
+		//EMatrix.push_back(exMatrix);
 	}
 }
