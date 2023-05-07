@@ -755,10 +755,16 @@ int MINQUEAnalysis(boost::program_options::variables_map programOptions, DataMan
 		Cov_train.resize(train_size, Covs.npar);
 		Cov_test.resize(test_size, Covs.npar);
 		phe_train = All_Phe.block(0, 0,train_size,1);
+
 		phe_test = All_Phe.block(train_size, 0, test_size, 1);
+	
 		Cov_train = Covs.Covariates.block(0, 0, train_size, Covs.npar);
 		Cov_test = Covs.Covariates.block(train_size, 0, test_size, Covs.npar);
-	
+		if (programOptions["scaley"].as<bool>())
+		{
+			phe_train = (phe_train.array() - phe_train.mean()) / std::sqrt(Variance(phe_train));
+			phe_test = (phe_test.array() - phe_test.mean()) / std::sqrt(Variance(phe_test));
+		}
 		std::cout << ss.str() << std::endl;
 		LOG(INFO) << ss.str();
 		ss.str("");
@@ -769,6 +775,14 @@ int MINQUEAnalysis(boost::program_options::variables_map programOptions, DataMan
 		std::cout << ss.str();
 		LOG(INFO) << ss.str();
 	}
+	else
+	{
+		if (programOptions["scaley"].as<bool>())
+		{
+			phe_train = (phe_train.array() - phe_train.mean()) / std::sqrt(Variance(phe_train));
+		}
+	}
+
 	if (!NoE)
 	{
 		if (GPU)
@@ -1019,6 +1033,10 @@ int MINQUEAnalysis(boost::program_options::variables_map programOptions, DataMan
 			if (abs(ratio-1)<1e-6)
 			{
 				Eigen::VectorXf phe_all = Eigen::Map<Eigen::VectorXf>(phe.Phenotype.data(), phe.Phenotype.rows());
+				if (programOptions["scale"].as<bool>())
+				{
+					phe_all = (phe_all.array() - phe_all.mean()) / std::sqrt(Variance(phe_all));
+				}
 				pred = std::make_shared<Prediction>(phe_all, Kernels, VarComp, Covs.Covariates, fix, phe.dataType == 1 ? true : false, mode, ratio);
 				Eva=std::make_shared<Evaluate>(phe_all, pred->getPredictY(), phe.dataType);
 			}
@@ -1026,8 +1044,13 @@ int MINQUEAnalysis(boost::program_options::variables_map programOptions, DataMan
 			{
 				if (!mode)
 				{
-					Eigen::VectorXf phe_all = Eigen::Map<Eigen::VectorXf>(phe.Phenotype.data(), phe.Phenotype.rows());
-
+					Eigen::VectorXf phe_all(phe_train.size() + phe_test.size());
+					phe_all << phe_train, phe_test;
+		//			Eigen::VectorXf phe_all = Eigen::Map<Eigen::VectorXf>(phe.Phenotype.data(), phe.Phenotype.rows());
+//					if (programOptions["scale"].as<bool>())
+	//				{
+	//					phe_all = (phe_all.array() - phe_all.mean()) / std::sqrt(Variance(phe_all));
+//					}
 					pred = std::make_shared<Prediction>(phe_all, Kernels, VarComp, Covs.Covariates, fix, phe.dataType == 1 ? true : false, mode, ratio);
 				}
 				else
@@ -1056,9 +1079,12 @@ int MINQUEAnalysis(boost::program_options::variables_map programOptions, DataMan
 			//		out<<  ss.str();
 
 			std::ofstream out;
-			Eigen::MatrixXf out_data_M = pred->getPredictY();
+			Eigen::VectorXf Predict_value = pred->getPredictY();
+			Eigen::MatrixXf AUROC(Predict_value.rows(), 2);
+			AUROC << phe_test, Predict_value;
 			out.open("Prediction_KNN.txt", std::ios::out);
-			out << out_data_M << std::endl;
+			out << "True\tPrediction" << std::endl;
+			out << AUROC << std::endl;
 			out.close();
 		}
 
