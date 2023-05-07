@@ -142,13 +142,7 @@ int Inverse(Eigen::MatrixXd & Ori_Matrix, int DecompositionMode, int AltDecompos
 float Variance(Eigen::VectorXf & Y)
 {
 	float meanY = mean(Y);
-	float variance = 0;
-	int nind = Y.size();
-	for (int i=0;i<nind;i++)
-	{
-		variance += (Y[i] - meanY)*(Y[i] - meanY);
-	}
-	variance /= (float)(nind-1);
+	float variance = (Y.array() - Y.mean()).square().sum() / (Y.size() - 1);
 	return variance;
 }
 
@@ -382,6 +376,17 @@ std::vector<std::string> UniqueCount(std::vector<std::string> vec)
 	vec.erase(unique(vec.begin(), vec.end()), vec.end());
 	return vec;
 }
+double normalCDF(double x, bool lowerTail)
+{
+	double cdf = std::erfc(-x / std::sqrt(2)) / 2;
+	if (!lowerTail)
+	{
+
+		cdf = 1 - cdf;
+	}
+	return cdf;
+}
+
 /*
 //@brief:	Initialize class ROC;
 //@param:	Response		A vector of responses;

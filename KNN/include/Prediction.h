@@ -12,7 +12,7 @@
 class Prediction
 {
 public:
-	Prediction(Eigen::VectorXf& Real_Y, std::vector<std::shared_ptr<Eigen::MatrixXf>> Kernels, Eigen::VectorXf& vcs, Eigen::MatrixXf& X, Eigen::VectorXf& fixed, bool isbinary, int mode,float ratio=1);
+	Prediction(Eigen::VectorXf& Real_Y, std::vector<std::shared_ptr<Eigen::MatrixXf>> Kernels, Eigen::VectorXf& vcs, Eigen::MatrixXf& X, Eigen::VectorXf& fixed, bool isbinary, int mode,float ratio=0);
 	Eigen::VectorXf getPredictY() { return Predict_Y; };
 private:
 	Eigen::VectorXf Real_Y;

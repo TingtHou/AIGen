@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #define EIGEN_USE_MKL_ALL
 #include <map>
 #include <torch/torch.h>
@@ -193,6 +193,7 @@ void GetSubMatrix(std::shared_ptr<Eigen::MatrixXf>  oMatrix, std::shared_ptr<Eig
 void GetSubMatrix(Eigen::MatrixXf& oMatrix, Eigen::MatrixXf& subMatrix, std::vector<int> rowIds);
 void GetSubVector(Eigen::VectorXf &oVector, Eigen::VectorXf &subVector, std::vector<int> IDs);
 std::vector<std::string> UniqueCount(std::vector<std::string> vec);
+double normalCDF(double x, bool lowerTail = true);
 
 /*
 //ROC curve analysis
