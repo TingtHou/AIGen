@@ -145,10 +145,11 @@ void minque1::estimateVCs()
 		F(i, j) = (float)sum;
 		F(j, i) = F(i, j);
 	}
-	LOG(INFO) << "inverse F";
-	status = Inverse(F, Cholesky,  SVD, true);
+	LOG(INFO) << "inverse F:\n" << F << std::endl;
+	status = Inverse(F, LU,  SVD, true);
 	CheckInverseStatus("S matrix",status,true);
 	vcs = F * u;
+
 	
 }
 
