@@ -54,8 +54,59 @@ Usage
 Kernel neural network
 ---------------------
 
+Building kernel matrix
+^^^^^^^^^^^^^^^^^^^^^^
+
+The software accepts input data in either binary or text format. Use the "--bfile" option for binary data and "--file" option for text data. Additionally, the "--make-kernel" and "--make-bin" options enable the generation of a kernel matrix, which is saved in binary file format compatible with GCTA (*.grm.bin, *.grm.id)::
+
+$ ./KNN --bfile ./example/sample --make-kernel 2 --make-bin ./example/product
+
+
+This command will read PLINK binary files (sample.bim, sample.bed, and sample.fam) located in the "example" folder, generating a product kernel matrix. The output, in binary format, is saved as product.grm.bin and product.grm.id within the same "example" folder.
+
+The software supports various kernel modes as follows:
+
+1. Mode **0**: CAR (Covariance Allele Regression) Kernel
+2. Mode **1**: Identity Kernel
+3. Mode **2**: Product Kernel
+4. Mode **3**: Polynomial Kernel
+5. Mode **4**: Gaussian Kernel
+6. Mode **5**: IBS (Identity By State)
+
+Estimation and Prediction
+^^^^^^^^^^^^^^^^^^^^^^^^^
+After generating kernel matrix, the variance component in the KNN model could be estimated using iterative IMINQUE with following command::
+
+$ ./KNN --kernel ./example/kernel1 --phe ../../example/phenW.1.phen  --qcovar ../example/Covs.txt --KNN --iterate 100 --tolerance 1e-5 --out ./result/out
+
+**Command Options** :
+
+- ``--kernel ./example/kernel1`` : Specifies the prefix for kernel matrix files located in the ``./example`` directory.
+- ``--phe ../../s3/phenW.1.phen`` : Specifies the phenotype file path.
+- ``--qcovar ../../s3/Covs.txt`` : Specifies the quantitative covariates file path.
+- ``--KNN`` : Initiates KNN analysis.
+- ``--iterate 100`` : Sets the iteration count for the MINQUE algorithm to 100.
+- ``--tolerance 1e-5`` : Sets the tolerance threshold for the MINQUE algorithm.
+- ``--out ./result/out`` : Specifies the output file location and name in the ``./result`` directory.
+
+To use multiple kernel matrices in the analysis, the ``--mkernel`` option is available. This option allows specifying a file that contains the paths to multiple kernel matrix files. The following command is a example::
+
+$ ./KNN --mkernel ./example/mltgrm --phe ../../example/phenW.1.phen  --qcovar ../example/Covs.txt --KNN --iterate 100 --tolerance 1e-5 --out ./result/out
+
+Here, the file ``./example/mltgrm`` should list the paths to the individual kernel matrix files for use in the analysis.
+
+
+This software allows for phenotype prediction using the --predict option::
+
+$ ./KNN --mkernel ./example/mltgrm --phe ../../example/phenW.1.phen  --qcovar ../example/Covs.txt --KNN --iterate 100 --tolerance 1e-5 --out ./result/out --predict 0
+
+In this context, **"1"** signifies the Leave-One-Out prediction method, whereas **"0"** denotes the use of BLUP (Best Linear Unbiased Prediction).
+
+
 Functional neural network
 -------------------------
+
+
 
 
 
