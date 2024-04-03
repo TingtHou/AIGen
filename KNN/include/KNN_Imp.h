@@ -15,17 +15,18 @@
 #include "../include/imnq.h"
 #include "../include/Prediction.h"
 #include "../include/MINQUE0.h"
+#include "../include/MNQTest.h"
 
 
 
 void BatchMINQUE1(MinqueOptions& minque, std::vector<std::shared_ptr<Eigen::MatrixXf>> Kernels, Eigen::VectorXf& pheV, Eigen::MatrixXf& Covs, Eigen::VectorXf& variances, 
 	Eigen::VectorXf& coefs, float& iterateTimes, int nsplit, int seed, int nthread, bool isecho, bool dataType);
 
-void cMINQUE1(MinqueOptions& minque, std::vector<std::shared_ptr<Eigen::MatrixXf>> Kernels, Eigen::VectorXf& pheV, Eigen::MatrixXf& Covs, Eigen::VectorXf& variances, Eigen::VectorXf& coefs, float& iterateTimes, bool isecho);
+std::shared_ptr<MinqueBase> cMINQUE1(MinqueOptions& minque, std::vector<std::shared_ptr<Eigen::MatrixXf>> Kernels, Eigen::VectorXf& pheV, Eigen::MatrixXf& Covs, Eigen::VectorXf& variances, Eigen::VectorXf& coefs, float& iterateTimes, bool isecho);
 
 
 void BatchMINQUE0(MinqueOptions& minque, std::vector<std::shared_ptr<Eigen::MatrixXf>> Kernels, Eigen::VectorXf& pheV, Eigen::MatrixXf& Covs, Eigen::VectorXf& variances, 
 	Eigen::VectorXf& coefs, int nsplit, int seed, int nthread, bool dataType);
 
-void cMINQUE0(MinqueOptions& minque, std::vector<std::shared_ptr<Eigen::MatrixXf>> Kernels, Eigen::VectorXf& pheV, Eigen::MatrixXf& Covs, Eigen::VectorXf& variances, Eigen::VectorXf& coefs);
+std::shared_ptr< MinqueBase>	 cMINQUE0(MinqueOptions& minque, std::vector<std::shared_ptr<Eigen::MatrixXf>> Kernels, Eigen::VectorXf& pheV, Eigen::MatrixXf& Covs, Eigen::VectorXf& variances, Eigen::VectorXf& coefs);
 void Fixed_estimator(MinqueOptions& minque, std::vector<std::shared_ptr<Eigen::MatrixXf>> Kernels, Eigen::VectorXf& pheV, Eigen::MatrixXf& Covs, Eigen::VectorXf& variances, Eigen::VectorXf& coefs, float& iterateTimes, bool isecho);
