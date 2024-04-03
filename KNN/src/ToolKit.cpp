@@ -1,6 +1,6 @@
 #include "../include/ToolKit.h"
 
-void ToolKit::ArraytoVector(float ** a, int n, int m, vector<vector<float>>& v, bool Transpose)
+void ToolKit::ArraytoVector(float ** a, int n, int m, std::vector< std::vector<float>>& v, bool Transpose)
 {
 	v.clear();
 	if (Transpose)
@@ -56,7 +56,7 @@ void ToolKit::Array2toArrat1(float **a, int n, int m, float *b, bool Colfirst)
 	}
 }
 
-void ToolKit::Vector2toArray1(vector<vector<float>>& v, float * b, bool Colfirst)
+void ToolKit::Vector2toArray1(std::vector< std::vector<float>>& v, float * b, bool Colfirst)
 {
 	int n = v.size();
 	int m = v[0].size();
@@ -83,7 +83,7 @@ void ToolKit::Vector2toArray1(vector<vector<float>>& v, float * b, bool Colfirst
 	}
 }
 
-void ToolKit::Stringsplit(string & org, vector<string>& splited, string delim)
+void ToolKit::Stringsplit(std::string & org, std::vector< std::string>& splited, std::string delim)
 {
 	splited.clear();
 	size_t current;
@@ -93,7 +93,7 @@ void ToolKit::Stringsplit(string & org, vector<string>& splited, string delim)
 		current = next + 1;
 		next = org.find_first_of(delim, current);
 		splited.push_back(org.substr(current, next - current));
-	} while (next != string::npos);
+	} while (next != std::string::npos);
 }
 
 void ToolKit::dec2bin(int num, int *bin)

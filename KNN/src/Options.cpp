@@ -82,14 +82,18 @@ void Options::boostProgramOptionsRoutine(int argc, const char * const argv[])
 		("intercept", po::value<bool>()->value_name("True/False")->default_value(false), "Specify whether insert a intercept into covariates matrix, default to false.\n");
 		po::options_description optsFilesOperation("File Operations");
 		optsFilesOperation.add_options()
-		("impute", po::value<bool>()->value_name("True/False"),
-				"Impute missing genotypes.\n")
-		("recode", po::value<std::string>()->value_name("[filename]"),
-				"Recode the binary kernel file to text format.\n")
-		("precision", po::value<int>()->value_name("precision"),
+			("impute", po::value<bool>()->value_name("True/False"),
+			"Impute missing genotypes.\n")
+			("recode", po::value<std::string>()->value_name("[filename]"),
+			"Recode the binary kernel file to text format.\n")
+			("precision", po::value<int>()->value_name("precision"),
 				"Set precision for output kernel file (binary format); 0 for float, 1 for float.\n")
-		("make-bin", po::value<std::string>()->value_name("{prefix}"),
-				"Generate .grm.bin + .grm.N.bin + .grm.id (GCTA triangular binary relationship matrix).\n");
+			("make-bin", po::value<std::string>()->value_name("{prefix}"),
+				"Generate .grm.bin + .grm.N.bin + .grm.id (GCTA triangular binary relationship matrix).\n")
+			("save", po::value<std::string>()->value_name("[filename]"), "If this option works with 'KNN', then the vairnace components will be saved into a binary file;\n"
+				"If this option works with 'FNN/NN', then the trained model will be saved.\n")
+			("load", po::value<std::string>()->value_name("[filename]"), "If this option works with 'KNN', then saved  the vairnace components will be loaded;\n"
+					"If this option works with 'FNN/NN', then the saved model will be loaded.\n");
 	po::options_description optsKernelGenr("Kernel Parameters");
 	optsKernelGenr.add_options()
 		("make-kernel", po::value<std::string>()->value_name("[kernel name]"), "Compute kernel matrix.\n"
@@ -104,6 +108,7 @@ void Options::boostProgramOptionsRoutine(int argc, const char * const argv[])
 	optsKNNAlgorithm.add_options()
 		("KNN", "Implement KNN analysis.\n")
 	//	("minque1","Use MINQUE(1) for estimate.\n")
+		("scaley", po::value<bool>()->value_name("True/False")->default_value(true),"standardize or not.\n The standardiztion of training data and  testing data are independent.")
 		("minque0", "Use MINQUE(0) for estimate.\n")
 		("iterate", po::value<int>()->value_name("times"), "The iterate times used in iterate minque method.\nDefault to 100.\n")
 		("tolerance", po::value<float>()->value_name("value"), "The threshold value used in iterate minque method.\nDefault to 1e-6.\n")
@@ -121,26 +126,31 @@ void Options::boostProgramOptionsRoutine(int argc, const char * const argv[])
 		("batch", po::value<int>()->value_name("num"), "Split a super-large kernels into 'num' smaller batch to analysis.\n")
 		("seed", po::value<float>()->value_name("num")->default_value(1), "Set seed for random process.\n")
 		("echo", po::value<bool>()->value_name("True/False"), "Print the results at each iterate or not")
-		("fix",  "Skip fixed effects estimation.\n")
+		("fix",  "Perfrom fixed effects estimation. The fixed effects need be estimated after random effects estimation, with the option --vcs\n")
+		("vcs", po::value<std::string>(), "Input the known variance components for fix effcts estimation and prediction.\n")
+		("effects", po::value<std::string>()->value_name("[filename]"), "Input the known fix effcts for the  prediction.\n"
+																	"The input should be a file containing the two columns, \n"
+																	"first column is the name of covariates, and the second column is its effect.\n"
+																	"Each variable per line.\n")
+		("NoE",  "If this option is true, the MIQNUE estimation will not be performed, the input weights will be considered as variance components.\n")
 		("thread", po::value<int>()->value_name("num"), "Set a 'num' size thread pool for multi-thread analysis.\n");
 
 	po::options_description optsFNNAlgorithm("FNN Algorithm Parameters");
 	optsFNNAlgorithm.add_options()
 		("FNN", "Implement functional nerual network analysis.\n")
-		("NN",  "Implement traditional nerual network analysis.\n")
+		("NN", "Implement traditional nerual network analysis.\n")
 		("layer", po::value<std::string>()->value_name("inputs,layer1,layer2, ..., output"), "define the numbers of nodes in the hidden layers.\n"
 			"In FNN, the number of layers indicates the number of the basis function used to fit the data in this layer.\n"
 			"In NN, the number of layers indicates the data points in this layer\n"
 			"If the phenotype is categorical data, the output equals to the number of class.\n")
-		("epoch", po::value<double>()->value_name("num")->default_value(3000), "set Epoch number for the training.\n")
+			("epoch", po::value<double>()->value_name("num")->default_value(3000), "set Epoch number for the training.\n")
 		("lr", po::value<double>()->value_name("num")->default_value(0.001), "set learning rate for the training.\n")
-		("optim", po::value<int>()->value_name("num")->default_value(1), "set optimizer  for the training, 0 Adam; 1 SGD.\n")
+		("optim", po::value<int>()->value_name("num")->default_value(0), "set optimizer  for the training, 0 Adam; 1 SGD.\n")
 		("lambda", po::value<std::string>()->value_name("num")->default_value("1"), "define the lambda value for training, default 1.\n")
 		("loss", po::value<int>()->value_name("[0|1|2]")->default_value(0), "define the loss function for training, 0: MSE; 1: BCE; 2: CrossEntropy.\n")
 		("ratio", po::value<float>()->value_name("num")->default_value(0.8), "define the ratio of training dataset to testing dataset\n")
-		("basis", po::value<int>()->value_name("[0|1]")->default_value(0), "define the basis function in the hidden layers, 0: Wavelet basis; 1: B spline basis.\n")
-		("save", po::value<std::string>()->value_name("[filename]"), "save the model.\n")
-		("load", po::value<std::string>()->value_name("[filename]"), "load the model from a file.\n");
+		("basis", po::value<int>()->value_name("[0|1]")->default_value(0), "define the basis function in the hidden layers, 0: Wavelet basis; 1: B spline basis.\n");
+	
 	/*
 	po::options_description optsComputerDevice("Computing Device Options");
 	optsComputerDevice.add_options()

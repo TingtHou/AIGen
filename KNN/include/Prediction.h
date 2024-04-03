@@ -1,20 +1,23 @@
 #pragma once
+//#define MKL_INT size_t
 #define EIGEN_USE_MKL_ALL
 #include <Eigen/Dense>
 #include <vector>
+#include <mkl.h>
 #include "Random.h"
 #include <fstream>
 #include "CommonFunc.h"
 #include "Toolkit.h"
+#include "easylogging++.h"
 class Prediction
 {
 public:
-	Prediction(Eigen::VectorXf& Real_Y, std::vector<Eigen::MatrixXf *>& Kernels, Eigen::VectorXf& vcs, Eigen::MatrixXf& X, Eigen::VectorXf& fixed, bool isbinary, int mode);
+	Prediction(Eigen::VectorXf& Real_Y, std::vector<std::shared_ptr<Eigen::MatrixXf>> Kernels, Eigen::VectorXf& vcs, Eigen::MatrixXf& X, Eigen::VectorXf& fixed, bool isbinary, int mode,float ratio=0);
 	Eigen::VectorXf getPredictY() { return Predict_Y; };
 private:
 	Eigen::VectorXf Real_Y;
 	Eigen::VectorXf Predict_Y;
-	std::vector<Eigen::MatrixXf *> Kernels;
+	std::vector<std::shared_ptr<Eigen::MatrixXf>> Kernels;
 	Eigen::VectorXf vcs;
 	Eigen::MatrixXf X;
 	Eigen::VectorXf fixed;
@@ -25,8 +28,9 @@ private:
 	float cor=0;
 	float auc = 0;
 	int mode=0;
+	float ratio=1;
 private:
-	void predictY();
-	
+	void predictWithKernel();
 	void PredictYLOO();
+	void predictBLUP();
 };

@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #define EIGEN_USE_MKL_ALL
 #include <map>
 #include <torch/torch.h>
@@ -76,6 +76,7 @@ namespace dtt {
 }
 
 
+
 enum MatrixDecompostionOptions :int
 {
 	Cholesky = 0,
@@ -107,7 +108,7 @@ struct MinqueOptions
 struct KernelData
 {
 	boost::bimap<int, std::string> fid_iid;
-	Eigen::MatrixXf kernelMatrix;
+	std::shared_ptr< Eigen::MatrixXf> kernelMatrix;
 	Eigen::MatrixXf VariantCountMatrix;
 };
 
@@ -187,11 +188,14 @@ void set_difference(boost::bimap<int, std::string> &map1, boost::bimap<int, std:
 boost::bimap<int, std::string> set_difference(boost::bimap<int, std::string>& map1, boost::bimap<int, std::string>& map2);
 boost::bimap<int, std::string> set_difference(std::vector<boost::bimap<int, std::string>>& mapList);
 void set_difference(boost::bimap<int, std::string>& map1, boost::bimap<int, std::string>& map2, boost::bimap<int, std::string>& map3, std::vector<std::string>& overlap);
-void GetSubMatrix(Eigen::MatrixXf* oMatrix, Eigen::MatrixXf* subMatrix, std::vector<int> rowIds, std::vector<int> colIDs);
-void GetSubMatrix(Eigen::MatrixXf* oMatrix, Eigen::MatrixXf* subMatrix, std::vector<int> rowIds);
+void GetSubMatrix(std::shared_ptr<Eigen::MatrixXf> oMatrix, std::shared_ptr<Eigen::MatrixXf>  subMatrix, std::vector<int> rowIds, std::vector<int> colIDs);
+void GetSubMatrix(std::shared_ptr<Eigen::MatrixXf>  oMatrix, std::shared_ptr<Eigen::MatrixXf>  subMatrix, std::vector<int> rowIds);
+void GetSubMatrix(Eigen::MatrixXf& oMatrix, Eigen::MatrixXf& subMatrix, std::vector<int> rowIds);
 void GetSubVector(Eigen::VectorXf &oVector, Eigen::VectorXf &subVector, std::vector<int> IDs);
 std::vector<std::string> UniqueCount(std::vector<std::string> vec);
+double normalCDF(double x, bool lowerTail = true);
 
+/*
 //ROC curve analysis
 class ROC
 {
@@ -206,6 +210,7 @@ private:
 	Eigen::VectorXf thresholds; //	the thresholds at which the sensitivitiesand specificities were computed.
 	Eigen::VectorXf Sensitivity;
 	Eigen::VectorXf Specificity;
+	Eigen::VectorXf FPR; //false positive rate (FPR)
 	int nind = 0;
 	float step = 0;
 	float auc = 0;
@@ -213,7 +218,7 @@ private:
 	void Calc();
 	void AUC();
 };
-
+*/
 
 class Evaluate
 {
@@ -231,7 +236,7 @@ private:
 	float mse = 0;
 	Eigen::VectorXf cor;
 	float auc = 0;
-	std::shared_ptr<ROC> ROC_ptr=nullptr;
+	//std::shared_ptr<ROC> ROC_ptr=nullptr;
 	float calc_mse(Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic>& Real_Y, Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic>& Predict_Y);
 	Eigen::VectorXf calc_cor(Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic>& Real_Y, Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic>& Predict_Y);
 	float calc_cor(Eigen::VectorXf& Real_Y, Eigen::VectorXf& Predict_Y);

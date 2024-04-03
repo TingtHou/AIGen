@@ -11,7 +11,7 @@ torch::Tensor training(std::shared_ptr<Net> net, std::shared_ptr<TensorData> tra
 {
 	//net->fit_init(dataset);
 	net->train();
-	Optim optimizer(net->parameters(), lr);
+	Optim optimizer(net->parameters(),lr);
 	std::stringstream ss;
 	int64_t epoch = 0;
 	double risk_min = INFINITY;
@@ -30,6 +30,7 @@ torch::Tensor training(std::shared_ptr<Net> net, std::shared_ptr<TensorData> tra
 			torch::Tensor pen = net->penalty(miniBatch->nind);
 			torch::Tensor loss = (*f_loss)(prediction, miniBatch->getY());
 			torch::Tensor risk = loss / miniBatch->std_y.pow(2) + pen;
+			//std::cout << "===================================\nepoch: " << epoch << "\t loss: " << loss.item<double>() << "\tpen: " << pen << "\trisk: " << risk << std::endl;
 			risk.backward();
 			optimizer.step();
 	//		std::cout << "===================================\nepoch: " << epoch << "\t loss: " << loss.item<double>() << "\tpen: "<< pen <<"\trisk: "<< risk<< std::endl;

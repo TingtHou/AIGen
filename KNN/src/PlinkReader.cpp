@@ -45,6 +45,12 @@ void PlinkReader::read(std::string pedfile, std::string mapfile)
 		else
 		{
 			removeMissing();
+			if (nmarker <= 0)
+			{
+				std::stringstream ss;
+				ss << "[Error]: After removing missing SNPs, only " << nmarker << " SNPs remains. Please check the input bed file!";
+				throw(ss.str());
+			}
 		}
 	}
 	
@@ -72,6 +78,12 @@ void PlinkReader::read(std::string bedfile, std::string bimfile, std::string fam
 		else
 		{
 			removeMissing();
+			if (nmarker <= 0)
+			{
+				std::stringstream ss;
+				ss << "[Error]: After removing missing SNPs, only " << nmarker << " SNPs remains. Please check the input bed file!";
+				throw(ss.str());
+			}
 		}
 	}
 }
@@ -93,7 +105,7 @@ void PlinkReader::readPedfile(std::string pedfile)
 	{
 		throw  std::string("Error: can not open the file [" + pedfile + "] to read!" );
 	}
-	std::cout << "Reading genotype file from [" + pedfile + "]." << endl;
+	std::cout << "Reading genotype file from [" + pedfile + "]." << std::endl;
 	for (int i=0;i<nmarker;i++)
 	{
 		minor_allele.push_back("1");
@@ -106,7 +118,7 @@ void PlinkReader::readPedfile(std::string pedfile)
 	while (str_buf!="")
 	{
 		
-		std::vector<string> SplitVec;
+		std::vector< std::string> SplitVec;
 		boost::split(SplitVec, str_buf, boost::is_any_of(" \t"), boost::token_compress_on);
 		fid.push_back(SplitVec[0]);
 		iid.push_back(SplitVec[1]);
@@ -179,7 +191,7 @@ void PlinkReader::ReadMapFile(std::string mapfile)
 		throw  std::string("Error: can not open the file [" + mapfile + "] to read!");
 		
 	}
-	std::cout << "Reading map file from [" + mapfile + "]." << endl;
+	std::cout << "Reading map file from [" + mapfile + "]." << std::endl;
 
 	chr.clear();
 	marker_name.clear();
@@ -212,7 +224,7 @@ void PlinkReader::ReadFamFile(std::string famfile)
 	{
 		throw  std::string("Error: can not open the file [" + famfile + "] to read.");
 	}
-	std::cout << "Reading pedigree information from [" << famfile << "]." << endl;
+	std::cout << "Reading pedigree information from [" << famfile << "]." << std::endl;
 	fid_iid_index.clear();
 	PaternalID.clear();
 	MaternalID.clear();
@@ -280,7 +292,7 @@ void PlinkReader::ReadBimFile(std::string bimfile)
 		Bim.close();
 		throw  std::string("Error: can not open the file [" + bimfile + "] to read!");
 	}
-	std::cout << "Reading map (extended format) from [" + bimfile + "]." << endl;
+	std::cout << "Reading map (extended format) from [" + bimfile + "]." << std::endl;
 	chr.clear();
 	marker_name.clear();
 	Gene_distance.clear();
@@ -319,7 +331,7 @@ void PlinkReader::ReadBedFile(std::string bedfile)
 		Bed.close();
 		throw  std::string("Error: can not open the file [" + bedfile + "] to read.");
 	}
-	std::cout << "Reading genotype bitfile from [" + bedfile + "]." << endl;
+	std::cout << "Reading genotype bitfile from [" + bedfile + "]." << std::endl;
 	char byte_buf;
 	for (int i=0;i<2;i++)
 	{
@@ -400,7 +412,7 @@ void PlinkReader::ReadBedFile(std::string bedfile)
 		Marker = _marker;
 	}
 	Bed.close();
-	std::cout << "Before frequency and genotyping pruning, there are "<<nmarker<< " SNPs." << endl;
+	std::cout << "Before frequency and genotyping pruning, there are "<<nmarker<< " SNPs." << std::endl;
 }
 
 void PlinkReader::buildMAF()
@@ -516,6 +528,7 @@ void PlinkReader::removeMissing()
 			bp.push_back(tmppos[i]);
 		}
 	}
+	nmarker = nmarker - MissnSNP;
 }
 
 GenoData PlinkReader::GetGeno()
@@ -648,7 +661,7 @@ void PlinkReader::savepedfile(std::string pedfile)
 		Ped.flush();
 	}
 	Ped.close();
-	std::cout <<"Writing "<< nind << " individuals and " << nmarker << " markers to [" + pedfile + "]." << endl;
+	std::cout <<"Writing "<< nind << " individuals and " << nmarker << " markers to [" + pedfile + "]." << std::endl;
 }
 
 void PlinkReader::savemapfile(std::string mapfile)
@@ -666,5 +679,5 @@ void PlinkReader::savemapfile(std::string mapfile)
 		Map.flush();
 	}
 	Map.close();
-	std::cout << "Writing "<<nmarker << " markers to [" + mapfile + "]." << endl;
+	std::cout << "Writing "<<nmarker << " markers to [" + mapfile + "]." << std::endl;
 }
