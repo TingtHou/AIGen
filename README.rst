@@ -48,6 +48,17 @@ then::
     $ cmake --build . --config Release
 
 
+Usage
+=====
+
+Kernel neural network
+---------------------------
+
+Functional neural network
+---------------------------
+
+
+
 
 
  
