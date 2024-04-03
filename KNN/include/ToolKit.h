@@ -5,6 +5,8 @@
 #include <stdio.h>
 #include <iostream>
 #include <mkl.h>
+#include <numeric>
+#include <iterator>
 class ToolKit
 {
 public:
@@ -25,5 +27,9 @@ public:
 	static bool comput_inverse_logdet_LU_mkl(Eigen::MatrixXd& Vi);
 	static bool comput_inverse_logdet_QR_mkl(Eigen::MatrixXd& Vi);
 	static bool comput_inverse_logdet_SVD_mkl(Eigen::MatrixXd& Vi);
+	static bool comput_msqrt_SVD_mkl(Eigen::MatrixXd& Vi);
+	static bool comput_msqrt_SVD_mkl(Eigen::MatrixXf& Vi);
+	static bool Matrix_remove_row_col(Eigen::MatrixXf& OrgM, Eigen::MatrixXf& NewM, std::vector<int> rowid, std::vector<int> colid);
+	static bool Vector_remove_elements(Eigen::VectorXf& OrgV, Eigen::VectorXf& NewV, std::vector<int> rowid);
 };
 
