@@ -1,5 +1,14 @@
 #include "../include/imnq.h"
 
+imnq::imnq(MinqueOptions mnqoptions)
+{
+	this->itr = mnqoptions.iterate;
+	this->tol = mnqoptions.tolerance;
+	this->Decomposition = mnqoptions.MatrixDecomposition;
+	this->altDecomposition = mnqoptions.altMatrixDecomposition;
+	this->allowPseudoInverse = mnqoptions.allowPseudoInverse;
+}
+
 void imnq::estimateVCs()
 {
 	IterateTimes=Iterate();
@@ -14,15 +23,12 @@ void imnq::setOptions(MinqueOptions mnqoptions)
 	this->allowPseudoInverse = mnqoptions.allowPseudoInverse;
 }
 
-int imnq::getIterateTimes()
-{
-	return IterateTimes;
-}
 
-void imnq::isEcho(bool isecho)
-{
-	this->isecho = isecho;
 
+
+Eigen::VectorXf imnq::estimateVCs_Null(std::vector<int> DropIndex)
+{
+	return Eigen::VectorXf();
 }
 
 /*
@@ -125,6 +131,7 @@ int  imnq::Iterate()
 		mnq.setThreadId(ThreadId);
 		mnq.estimateVCs();
 		vc1=mnq.getvcs();
+		vc1[nVi - 1] = vc1[nVi - 1] < 0 ? 1 : vc1[nVi - 1];
 	    diff = (vc1 - vc0).squaredNorm() / vc0.squaredNorm();
 		std::stringstream ss;
 		ss << std::fixed << "Thread ID: " << ThreadId << std::setprecision(3) << "\tIt: " << initIterate << "\t" << vc1.transpose() << "\tdiff: ";

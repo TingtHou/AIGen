@@ -19,6 +19,7 @@ class minque1 :
 public:
 	minque1(int DecompositionMode, int altDecompositionMode, bool allowPseudoInverse);
 	void estimateVCs();
+	Eigen::VectorXf estimateVCs_Null(std::vector<int> DropIndex);
 	~minque1();
 private:
 };

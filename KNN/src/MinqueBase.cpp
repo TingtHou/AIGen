@@ -118,6 +118,53 @@ void MinqueBase::estimateFix(Eigen::VectorXf VCs_hat)
 	fix = inv_XtB_Bt * Y;
 }
 
+Eigen::MatrixXf MinqueBase::getVaraince()
+{
+	if (VarianceEst == nullptr)
+	{
+		Eigen::MatrixXf Sigma_est(nind, nind);
+		Sigma_est.setZero();
+		std::vector<std::shared_ptr<Eigen::MatrixXf>> SigmaVi(nVi);
+		for (size_t i = 0; i <nVi; i++)
+		{
+			
+			cblas_saxpby(nind * nind,vcs[i], Vi[i]->data(), 1, 1, Sigma_est.data(), 1);
+
+		}
+		for (size_t i = 0; i < nVi; i++)
+		{
+			SigmaVi[i] = std::make_shared<Eigen::MatrixXf>(nind, nind);
+			cblas_ssymm(CblasColMajor, CblasLeft, CblasUpper, nind, nind, 1, Vi[i]->data(), nind, Sigma_est.data(), nind, 0, SigmaVi[i]->data(), nind);
+			
+		}
+	
+		Eigen::MatrixXf CovMat(nVi, nVi);
+		for (int k = 0; k < (nVi + 1) * nVi / 2; k++)
+		{
+			int i = k / nVi, j = k % nVi;
+			if (j < i) i = nVi - i, j = nVi - j - 1;
+			Eigen::MatrixXf RVij = (*SigmaVi[i]).transpose().cwiseProduct((*SigmaVi[j]));
+			double sum = RVij.cast<double>().sum();
+			CovMat(i, j) = (float)2 * sum;
+			CovMat(j, i) = CovMat(i, j);
+		}
+		VarianceEst=std::make_shared<Eigen::MatrixXf>(FInverse * CovMat * FInverse);
+	}
+	return *VarianceEst;
+}
+
+int MinqueBase::getIterateTimes()
+{
+	return IterateTimes;
+}
+
+void MinqueBase::isEcho(bool isecho)
+{
+	this->isecho = isecho;
+}
+
+
+
 void MinqueBase::CheckInverseStatus(std::string MatrixType, int status, bool allowPseudoInverse)
 {
 	

@@ -23,10 +23,11 @@ class imnq :
 	public MinqueBase
 {
 public:
+	imnq(MinqueOptions mnqoptions);
 	void estimateVCs();										//starting estimation
 	void setOptions(MinqueOptions mnqoptions);				//
-	int getIterateTimes();
-	void isEcho(bool isecho);
+
+	Eigen::VectorXf estimateVCs_Null(std::vector<int> DropIndex);
 private:
 	float tol = 1e-5; //convergence tolerence (def=1e-5)
 	int itr = 20;	//iterations allowed (def=20)
