@@ -34,10 +34,10 @@ namespace dtt {
 
 	template <typename V>
 	torch::Tensor eigen2libtorch(MatrixX<V>& M) {
-		//auto options = torch::TensorOptions().dtype(torch::kFloat64);
+		auto options = torch::TensorOptions().dtype(torch::kFloat64);
 		Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> E(M.template cast<double>());
 		std::vector<int64_t> dims = { E.rows(), E.cols() };
-		auto T = torch::from_blob(E.data(), dims).clone();//.to(torch::kCPU);
+		auto T = torch::from_blob(E.data(), dims, options).clone();//.to(torch::kCPU);
 		return T;
 	}
 
@@ -46,7 +46,7 @@ namespace dtt {
 		auto options = torch::TensorOptions().dtype(torch::kFloat64);
 		Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> E(M.template cast<double>());
 		std::vector<int64_t> dims = { E.rows(), E.cols() };
-		auto T = torch::from_blob(E.data(), dims).clone(); //.to(torch::kCPU);
+		auto T = torch::from_blob(E.data(), dims, options).clone(); //.to(torch::kCPU);
 		return T;
 	}
 
@@ -55,7 +55,7 @@ namespace dtt {
 	torch::Tensor eigen2libtorch(MatrixXrm<V>& E, bool copydata = true) {
 		//	auto options = torch::TensorOptions().dtype(torch::kFloat64);
 		std::vector<int64_t> dims = { E.rows(), E.cols() };
-		auto T = torch::from_blob(E.data(), dims);
+		auto T = torch::from_blob(E.data(), dims, options).clone();
 		if (copydata)
 			return T.clone();
 		else
@@ -232,6 +232,7 @@ public:
 	void test();
 	void setMSE(double mse) { this->mse = mse; };
 	int dataType;
+	int isnull = 0;
 private:
 	float mse = 0;
 	Eigen::VectorXf cor;

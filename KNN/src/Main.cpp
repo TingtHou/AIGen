@@ -70,7 +70,7 @@ void ReadData(boost::program_options::variables_map programOptions, DataManager 
 
 
 int MINQUEAnalysis(boost::program_options::variables_map programOptions, DataManager& dm, Eigen::VectorXf& VarComp, Eigen::VectorXf& fix, Eigen::VectorXf& predict_train, Eigen::VectorXf& predict_test, std::vector<float>& pvalue);
-std::vector<std::shared_ptr<Evaluate>>   FNNAnalysis(boost::program_options::variables_map programOptions, DataManager& dm);
+std::vector<Evaluate>   FNNAnalysis(boost::program_options::variables_map programOptions, DataManager& dm);
 
 
 
@@ -147,7 +147,7 @@ void TryMain(int argc, const char *const argv[])
 	//////////////////////////////////////////////////////////////////////////////
 	if (programOptions.count("FNN") || programOptions.count("NN"))
 	{
-		std::vector<std::shared_ptr<Evaluate>>  error = FNNAnalysis(programOptions, dm);
+		std::vector<Evaluate>  error = FNNAnalysis(programOptions, dm);
 		std::ofstream out;
 		out.open(result, std::ios::out);
 		LOG(INFO) << "---Result----";
@@ -158,13 +158,13 @@ void TryMain(int argc, const char *const argv[])
 		{
 			LOG(INFO) << "---full dataset----";
 			ss << "---full dataset----" << std::endl;
-			if (error[0]->dataType != 0)
+			if (error[0].dataType != 0)
 			{
-				ss << "misclassification error:\t" << error[0]->getMSE() << std::endl << "AUC:\t" << error[0]->getAUC() << std::endl;
+				ss << "misclassification error:\t" << error[0].getMSE() << std::endl << "AUC:\t" << error[0].getAUC() << std::endl;
 			}
 			else
 			{
-				ss << "MSE:\t" << error[0]->getMSE() << std::endl << "Correlation:\t" << error[0]->getCor().transpose() << std::endl;
+				ss << "MSE:\t" << error[0].getMSE() << std::endl << "Correlation:\t" << error[0].getCor().transpose() << std::endl;
 			}
 			std::cout << ss.str();
 			LOG(INFO) << ss.str();
@@ -174,27 +174,27 @@ void TryMain(int argc, const char *const argv[])
 		{
 			LOG(INFO) << "---Training dataset----";
 			ss << "---Training dataset----" << std::endl;
-			if (error[1]->dataType != 0)
+			if (error[1].dataType != 0)
 			{
-				ss << "misclassification error:\t" << error[1]->getMSE() << std::endl << "AUC:\t" << error[1]->getAUC() << std::endl;
+				ss << "misclassification error:\t" << error[1].getMSE() << std::endl << "AUC:\t" << error[1].getAUC() << std::endl;
 			}
 			else
 			{
-				ss << "MSE:\t" << error[1]->getMSE() << std::endl << "Correlation:\t" << error[1]->getCor().transpose() << std::endl;
+				ss << "MSE:\t" << error[1].getMSE() << std::endl << "Correlation:\t" << error[1].getCor().transpose() << std::endl;
 			}
 
 
-			if (error[0] != nullptr)
+			if (!error[0].isnull)
 			{
 				LOG(INFO) << "---Testing dataset----";
 				ss << "---Testing dataset----" << std::endl;
-				if (error[0]->dataType != 0)
+				if (error[0].dataType != 0)
 				{
-					ss << "misclassification error:\t" << error[0]->getMSE() << std::endl << "AUC:\t" << error[0]->getAUC() << std::endl;
+					ss << "misclassification error:\t" << error[0].getMSE() << std::endl << "AUC:\t" << error[0].getAUC() << std::endl;
 				}
 				else
 				{
-					ss << "MSE:\t" << error[0]->getMSE() << std::endl << "Correlation:\t" << error[0]->getCor().transpose() << std::endl;
+					ss << "MSE:\t" << error[0].getMSE() << std::endl << "Correlation:\t" << error[0].getCor().transpose() << std::endl;
 				}
 			}
 			else
@@ -1191,10 +1191,10 @@ int MINQUEAnalysis(boost::program_options::variables_map programOptions, DataMan
 //	out.close();
 }
 
-std::vector<std::shared_ptr<Evaluate>>  FNNAnalysis(boost::program_options::variables_map programOptions, DataManager& dm)
+std::vector<Evaluate>  FNNAnalysis(boost::program_options::variables_map programOptions, DataManager& dm)
 {
-	torch::manual_seed(0);
-	std::vector<std::shared_ptr<Evaluate>> prediction_error;
+//	torch::manual_seed(0);
+	std::vector<Evaluate> prediction_error;
  /// All data in FNN/NN framework will be treated as double precision.
 	auto options = torch::TensorOptions().dtype(torch::kFloat64);
 	torch::Tensor one = torch::ones(1, options);
@@ -1299,11 +1299,11 @@ std::vector<std::shared_ptr<Evaluate>>  FNNAnalysis(boost::program_options::vari
 		//	std::string file("test_model.pt");
 			archive.load_from(loadNet);
 			f->load(archive);
-			std::shared_ptr< Evaluate> Total = nullptr;
+			Evaluate Total;
 			if (data->isBalanced)
 			{
 				torch::Tensor pred_test = f->forward(data);
-				Total = std::make_shared< Evaluate>(data->getY(), pred_test, data->dataType);
+				 Total = Evaluate(data->getY(), pred_test, data->dataType);
 				//	Evaluate Total(data->getY(), pred_test, data->dataType);
 			}
 			else
@@ -1319,7 +1319,7 @@ std::vector<std::shared_ptr<Evaluate>>  FNNAnalysis(boost::program_options::vari
 						torch::Tensor pred_test_new = f->forward(sample);
 						pred_test = torch::cat({ pred_test, pred_test_new }, 0);
 					}
-					Total = std::make_shared< Evaluate>(data->getY(), pred_test, data->dataType);
+					Total = Evaluate(data->getY(), pred_test, data->dataType);
 				}
 
 			}
@@ -1340,7 +1340,7 @@ std::vector<std::shared_ptr<Evaluate>>  FNNAnalysis(boost::program_options::vari
 			torch::load(f, loadNet);
 
 			torch::Tensor pred_total = f->forward(data);
-			std::shared_ptr<Evaluate> Total=std::make_shared<Evaluate>(data->getY(), pred_total, data->dataType);
+			Evaluate Total(data->getY(), pred_total, data->dataType);
 			prediction_error.push_back(Total);
 		}
 	}
@@ -1626,9 +1626,9 @@ std::vector<std::shared_ptr<Evaluate>>  FNNAnalysis(boost::program_options::vari
 			if (test_tensor->nind != 0)
 			{
 
-				std::shared_ptr<Evaluate> test = nullptr;
+				//Evaluate> test = nullptr;
 				torch::Tensor pred_test = f->forward(test_tensor);
-				test = std::make_shared< Evaluate>(test_tensor->getY(), pred_test, test_tensor->dataType);
+				Evaluate  test(test_tensor->getY(), pred_test, test_tensor->dataType);
 				prediction_error.push_back(test);	
 				torch::Tensor out_data = torch::cat({ test_tensor->getY() , pred_test }, 1);
 				Eigen::MatrixXd out_data_M = dtt::libtorch2eigen<double>(out_data);
@@ -1639,13 +1639,12 @@ std::vector<std::shared_ptr<Evaluate>>  FNNAnalysis(boost::program_options::vari
 			}
 			else
 			{
-				prediction_error.push_back(nullptr);
+				prediction_error.push_back(Evaluate());
 			}
 			////////////////////////////////////////////////////////////
 			// evaluate the total dataset
-			std::shared_ptr<Evaluate> train = nullptr;
 			torch::Tensor pred_train = f->forward(train_tensor);
-			train = std::make_shared< Evaluate>(train_tensor->getY(), pred_train, train_tensor->dataType);
+			Evaluate train(train_tensor->getY(), pred_train, train_tensor->dataType);
 			prediction_error.push_back(train);
 			torch::Tensor out_data = torch::cat({ train_tensor->getY() , pred_train }, 1);
 
@@ -1827,7 +1826,7 @@ std::vector<std::shared_ptr<Evaluate>>  FNNAnalysis(boost::program_options::vari
 			{
 
 				torch::Tensor pred_test = f->forward(test_tensor);
-				std::shared_ptr<Evaluate> test_eva = std::make_shared<Evaluate>(test_tensor->getY(), pred_test, test_tensor->dataType);
+				Evaluate test_eva(test_tensor->getY(), pred_test, test_tensor->dataType);
 				prediction_error.push_back(test_eva);
 				/*torch::Tensor out_data = torch::cat({ test_tensor->getY() , pred_test }, 1);
 				std::ofstream out;
@@ -1866,14 +1865,13 @@ std::vector<std::shared_ptr<Evaluate>>  FNNAnalysis(boost::program_options::vari
 			}
 			else
 			{
-				prediction_error.push_back(nullptr);
+				prediction_error.push_back(Evaluate());
 				//prediction_error.push_back(-9);
 			}
 
 			
-			std::shared_ptr<Evaluate> train_eva = nullptr;
 			torch::Tensor pred_train = f->forward(train_tensor);
-			train_eva = std::make_shared< Evaluate>(train_tensor->getY(), pred_train, train_tensor->dataType);
+			Evaluate train_eva(train_tensor->getY(), pred_train, train_tensor->dataType);
 			prediction_error.push_back(train_eva);
 			///////////
 			/*

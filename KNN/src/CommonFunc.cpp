@@ -489,6 +489,7 @@ void ROC::AUC()
 
 Evaluate::Evaluate()
 {
+	isnull = 1;
 	cor.resize(1);
 	cor[0] = -9;
 }
