@@ -1437,7 +1437,9 @@ std::vector<Evaluate>  FNNAnalysis(boost::program_options::variables_map program
 			double best_lambda=lambdas[0];
 			torch::Tensor train_loss = torch::tensor(INFINITY);
 			std::stringstream Best_Par;
-			int epoch=0;
+		//	int epoch=0;
+
+		
 			for (size_t i = 0; i < lambdas.size(); i++)
 			{
 				double lambda = lambdas[i];
