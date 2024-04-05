@@ -105,7 +105,7 @@ void ToolKit::dec2bin(int num, int *bin)
 			bin[7 - i] = 0;
 	}
 }
-
+/*
 bool ToolKit::Inv_Cholesky(Eigen::MatrixXf & Ori_Matrix)
 {
 	Eigen::MatrixXf Inv_Matrix(Ori_Matrix.rows(), Ori_Matrix.cols());
@@ -123,7 +123,7 @@ bool ToolKit::Inv_Cholesky(Eigen::MatrixXf & Ori_Matrix)
 //	Inv_Matrix = Ori_Matrix.ldlt().solve(IdentityMatrix);
 	return true;
 }
-
+*/
 bool ToolKit::comput_inverse_logdet_LDLT_mkl(Eigen::MatrixXf &Vi)
 {
 
@@ -209,7 +209,7 @@ bool ToolKit::comput_inverse_logdet_LDLT_mkl(Eigen::MatrixXd & Vi)
 
 }
 
-
+/*
 bool ToolKit::Inv_LU(Eigen::MatrixXf & Ori_Matrix, Eigen::MatrixXf & Inv_Matrix)
 {
 	Eigen::PartialPivLU<Eigen::MatrixXf> LU(Ori_Matrix);
@@ -219,7 +219,7 @@ bool ToolKit::Inv_LU(Eigen::MatrixXf & Ori_Matrix, Eigen::MatrixXf & Inv_Matrix)
 	bool a_solution_exists = (Ori_Matrix*Inv_Matrix).isApprox(IdentityMatrix, 1e-10);
 	return a_solution_exists;
 }
-
+*/
 bool ToolKit::comput_inverse_logdet_LU_mkl(Eigen::MatrixXf &Vi)
 {
 	int n = Vi.cols();
@@ -561,6 +561,7 @@ bool ToolKit::Vector_remove_elements(Eigen::VectorXf & OrgV, Eigen::VectorXf& Ne
 	return true;
 }
 
+/*
 bool ToolKit::Inv_SVD(Eigen::MatrixXf & Ori_Matrix, bool allowPseudoInverse)
 {
 
@@ -614,3 +615,4 @@ bool ToolKit::Inv_QR(Eigen::MatrixXf & Ori_Matrix, bool allowPseudoInverse)
 	return true;
 }
 
+*/
