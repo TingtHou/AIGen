@@ -17,9 +17,9 @@ void MINQUE0::estimateVCs()
 	Eigen::VectorXf Ry(nind);
 	std::vector<float*> pr_rv_list(nVi);
 	std::vector<float*> pr_vi_list(nVi);
-	Eigen::VectorXd u(nVi);
-	Eigen::MatrixXd F(nVi, nVi);
-
+	
+	
+	u.resize(nVi);
 	u.setZero();
 	LOG(INFO) << "Getting pointer of Vi";
 //	#pragma omp parallel for
@@ -89,7 +89,7 @@ void MINQUE0::estimateVCs()
 		//	{
 		//		sum += Ry_Vi_Ry[i];
 		//	}
-			u[i] = Ry_Vi_Ry.sum();
+			u[i] = (float)Ry_Vi_Ry.sum();
 		//	u_dd.push_back(sum);
 		}
 		LOG(INFO) << "u:\n" << u << std::endl;
@@ -150,6 +150,7 @@ void MINQUE0::estimateVCs()
 //	std::vector<long double> f_dd;
 	//Eigen::MatrixXf F_(nVi, nVi);
 //	#pragma omp parallel for shared(RV,F)
+	F.resize(nVi, nVi);
 	for (int k = 0; k < (nVi+1) * nVi / 2; k++) 
 	{
 		int i = k / nVi, j = k % nVi;
@@ -167,7 +168,7 @@ void MINQUE0::estimateVCs()
 //			sum_dd += RVij(i,j);
 //		}
 		LOG(INFO) << " calculate F " << i << " " << j;
-		F(i, j) = sum;
+		F(i, j) = (float)sum;
 		F(j, i) = F(i, j);
 //		f_dd.push_back(sum_dd);
 	}
@@ -181,18 +182,24 @@ void MINQUE0::estimateVCs()
 	}
 	LOG(INFO) << ss.str();
 	*/
+	FInverse = F;
 	LOG(INFO) << "Inverse F";
 	LOG(INFO) << "F:\n" << F << std::endl;
-	int status = Inverse(F, Cholesky, SVD, true);
+	int status = Inverse(FInverse, Cholesky, SVD, true);
 	CheckInverseStatus("S matrix", status,true);
-	Eigen::VectorXd vcs_d = F * u;
-	#pragma omp parallel for 
-	for (int i = 0; i < nVi; i++)
-	{
-		vcs[i] = (float)vcs_d[i];
-	}
+	vcs = FInverse * u;
 }
 
+Eigen::VectorXf   MINQUE0::estimateVCs_Null(std::vector<int> DropIndex)
+{
+	Eigen::MatrixXf F_Null(nVi - DropIndex.size(), nVi - DropIndex.size());
+	Eigen::VectorXf u_Null(nVi - DropIndex.size());
+	ToolKit::Matrix_remove_row_col(F, F_Null, DropIndex, DropIndex);
+	ToolKit::Vector_remove_elements(u, u_Null, DropIndex);
+	int status = Inverse(F_Null, Cholesky, SVD, true);
+	Eigen::VectorXf vcs_null = F_Null * u_Null;
+	return vcs_null;
+}
 MINQUE0::~MINQUE0()
 {
 }

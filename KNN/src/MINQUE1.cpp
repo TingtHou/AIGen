@@ -101,7 +101,7 @@ void minque1::estimateVCs()
 		//Ry = VW *Y; 
 	}
 	LOG(INFO) << "calc u";
-	Eigen::VectorXf u(nVi);
+	u.resize(nVi);
 	u.setZero();
 	#pragma omp parallel for shared(Ry)
 	for (int i = 0; i < nVi; i++)
@@ -133,7 +133,8 @@ void minque1::estimateVCs()
 	VW.resize(0, 0);
 //	omp_set_num_threads(nthread);
 	LOG(INFO) << "calc F";
-	Eigen::MatrixXf F(nVi, nVi);
+	F.resize(nVi, nVi);
+	//Eigen::MatrixXf F(nVi, nVi);
 	//Eigen::MatrixXf F_(nVi, nVi);
 //	#pragma omp parallel for shared(RV,F)
 	for (int k = 0; k < (nVi + 1) * nVi / 2; k++)
@@ -145,12 +146,19 @@ void minque1::estimateVCs()
 		F(i, j) = (float)sum;
 		F(j, i) = F(i, j);
 	}
-	LOG(INFO) << "inverse F:\n" << F << std::endl;
-	status = Inverse(F, LU,  SVD, true);
-	CheckInverseStatus("S matrix",status,true);
-	vcs = F * u;
+	FInverse = F;
+	LOG(INFO) << "Inverse F";
+	LOG(INFO) << "F:\n" << F << std::endl;
+	status = Inverse(FInverse, Cholesky, SVD, true);
+	CheckInverseStatus("S matrix", status, true);
+	vcs = FInverse * u;
 
 	
+}
+
+Eigen::VectorXf minque1::estimateVCs_Null(std::vector<int> DropIndex)
+{
+	return Eigen::VectorXf();
 }
 
 minque1::~minque1()

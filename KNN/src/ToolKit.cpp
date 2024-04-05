@@ -105,7 +105,7 @@ void ToolKit::dec2bin(int num, int *bin)
 			bin[7 - i] = 0;
 	}
 }
-
+/*
 bool ToolKit::Inv_Cholesky(Eigen::MatrixXf & Ori_Matrix)
 {
 	Eigen::MatrixXf Inv_Matrix(Ori_Matrix.rows(), Ori_Matrix.cols());
@@ -123,7 +123,7 @@ bool ToolKit::Inv_Cholesky(Eigen::MatrixXf & Ori_Matrix)
 //	Inv_Matrix = Ori_Matrix.ldlt().solve(IdentityMatrix);
 	return true;
 }
-
+*/
 bool ToolKit::comput_inverse_logdet_LDLT_mkl(Eigen::MatrixXf &Vi)
 {
 
@@ -209,7 +209,7 @@ bool ToolKit::comput_inverse_logdet_LDLT_mkl(Eigen::MatrixXd & Vi)
 
 }
 
-
+/*
 bool ToolKit::Inv_LU(Eigen::MatrixXf & Ori_Matrix, Eigen::MatrixXf & Inv_Matrix)
 {
 	Eigen::PartialPivLU<Eigen::MatrixXf> LU(Ori_Matrix);
@@ -219,7 +219,7 @@ bool ToolKit::Inv_LU(Eigen::MatrixXf & Ori_Matrix, Eigen::MatrixXf & Inv_Matrix)
 	bool a_solution_exists = (Ori_Matrix*Inv_Matrix).isApprox(IdentityMatrix, 1e-10);
 	return a_solution_exists;
 }
-
+*/
 bool ToolKit::comput_inverse_logdet_LU_mkl(Eigen::MatrixXf &Vi)
 {
 	int n = Vi.cols();
@@ -426,6 +426,142 @@ bool ToolKit::comput_inverse_logdet_SVD_mkl(Eigen::MatrixXd& Vi)
 	return true;
 }
 
+
+bool ToolKit::comput_msqrt_SVD_mkl(Eigen::MatrixXd& Vi)
+{
+	int n = Vi.cols();
+	double* Vi_mkl = Vi.data();
+	MKL_INT  lwork;
+	MKL_INT info;
+	double wkopt;
+	double* work;
+	char jobu = 'S';
+	char jobvt = 'S';
+	double* s = (double*)malloc(n * sizeof(double));
+	double* u = (double*)malloc(n * n * sizeof(double));
+	double* vt = (double*)malloc(n * n * sizeof(double));
+	lwork = -1;
+	dgesvd(&jobu, &jobvt, &n, &n, Vi_mkl, &n, s, u, &n, vt, &n, &wkopt, &lwork, &info);
+	lwork = (MKL_INT)wkopt;
+	work = (double*)malloc(lwork * sizeof(double));
+	dgesvd(&jobu, &jobvt, &n, &n, Vi_mkl, &n, s, u, &n, vt, &n, work, &lwork, &info);
+	if (info > 0)
+	{
+		free(s);
+		free(u);
+		free(vt);
+		throw  std::string("The algorithm computing SVD failed to converge.\n");
+	}
+	if (info < 0)
+	{
+		free(s);
+		free(u);
+		free(vt);
+		throw  std::string("Error: SVD decomposition failed. Invalid values found in the matrix.\n");
+	}
+	//u=(s^-1)*U
+	MKL_INT incx = 1;
+#pragma omp parallel for
+	for (int i = 0; i < n; i++)
+	{
+		double ss;
+		if (s[i] > 1.0e-9)
+			ss = std::sqrt(s[i]);
+		else
+			ss = s[i];
+		dscal(&n, &ss, &u[i * n], &incx);
+	}
+	//inv(A)=(Vt)^T *u^T
+	double alpha = 1.0, beta = 0.0;
+	MKL_INT ld_inva = n;
+	dgemm("T", "T", &n, &n, &n, &alpha, vt, &n, u, &n, &beta, Vi_mkl, &ld_inva);
+	free(s);
+	free(u);
+	free(vt);
+	return true;
+}
+bool ToolKit::comput_msqrt_SVD_mkl(Eigen::MatrixXf& Vi)
+{
+	int n = Vi.cols();
+	float* Vi_mkl = Vi.data();
+	MKL_INT  lwork;
+	MKL_INT info;
+	float wkopt;
+	float* work;
+	char jobu = 'S';
+	char jobvt = 'S';
+	float* s = (float*)malloc(n * sizeof(float));
+	float* u = (float*)malloc(n * n * sizeof(float));
+	float* vt = (float*)malloc(n * n * sizeof(float));
+	lwork = -1;
+	sgesvd(&jobu, &jobvt, &n, &n, Vi_mkl, &n, s, u, &n, vt, &n, &wkopt, &lwork, &info);
+	lwork = (MKL_INT)wkopt;
+	work = (float*)malloc(lwork * sizeof(float));
+	sgesvd(&jobu, &jobvt, &n, &n, Vi_mkl, &n, s, u, &n, vt, &n, work, &lwork, &info);
+	if (info > 0)
+	{
+		free(s);
+		free(u);
+		free(vt);
+		throw  std::string("The algorithm computing SVD failed to converge.\n");
+	}
+	if (info < 0)
+	{
+		free(s);
+		free(u);
+		free(vt);
+		throw  std::string("Error: SVD decomposition failed. Invalid values found in the matrix.\n");
+	}
+	//u=(s^-1)*U
+	MKL_INT incx = 1;
+#pragma omp parallel for
+	for (int i = 0; i < n; i++)
+	{
+		float ss;
+		if (s[i] > 1.0e-9)
+			ss = std::sqrt(s[i]);
+		else
+			ss = s[i];
+		sscal(&n, &ss, &u[i * n], &incx);
+	}
+	//inv(A)=(Vt)^T *u^T
+	float alpha = 1.0, beta = 0.0;
+	MKL_INT ld_inva = n;
+	sgemm("T", "T", &n, &n, &n, &alpha, vt, &n, u, &n, &beta, Vi_mkl, &ld_inva);
+	free(s);
+	free(u);
+	free(vt);
+	return true;
+}
+
+bool ToolKit::Matrix_remove_row_col(Eigen::MatrixXf& OrgM, Eigen::MatrixXf& NewM, std::vector<int> rowid, std::vector<int> colid)
+{
+	int nrow = OrgM.rows(), ncol = OrgM.cols();
+	std::vector<int> rows(nrow),cols(ncol);
+	std::vector<int> RowsKeep(nrow - rowid.size()), ColsKeep(ncol - colid.size());
+	std::iota(rows.begin(), rows.end(), 0); std::iota(cols.begin(), cols.end(), 0);
+	std::set_difference(rows.begin(), rows.end(), rowid.begin(), rowid.end(), RowsKeep.begin());
+	std::set_difference(cols.begin(), cols.end(), colid.begin(), colid.end(), ColsKeep.begin());
+	std::sort(RowsKeep.begin(), RowsKeep.end());
+	std::sort(ColsKeep.begin(), ColsKeep.end());
+	NewM = OrgM(RowsKeep, ColsKeep);
+	return true;
+}
+
+
+bool ToolKit::Vector_remove_elements(Eigen::VectorXf & OrgV, Eigen::VectorXf& NewV, std::vector<int> rowid)
+{
+	int nrow = OrgV.rows();
+	std::vector<int> rows(nrow);
+	std::vector<int> RowsKeep(nrow - rowid.size());
+	std::iota(rows.begin(), rows.end(), 0);
+	std::set_difference(rows.begin(), rows.end(), rowid.begin(), rowid.end(), RowsKeep.begin());
+	std::sort(RowsKeep.begin(), RowsKeep.end());
+	NewV = OrgV(RowsKeep);
+	return true;
+}
+
+/*
 bool ToolKit::Inv_SVD(Eigen::MatrixXf & Ori_Matrix, bool allowPseudoInverse)
 {
 
@@ -479,3 +615,4 @@ bool ToolKit::Inv_QR(Eigen::MatrixXf & Ori_Matrix, bool allowPseudoInverse)
 	return true;
 }
 
+*/

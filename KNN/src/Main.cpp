@@ -48,6 +48,7 @@
 #include "../include/Random.h"
 #include "../include/KNN_Imp.h"
 #include "../include/FNN.h"
+#include "../include/MNQTest.h"
 #include "../include/NN.h"
 #include "../include/TensorData.h"
 #include "../include/TensorCommon.h"
@@ -67,8 +68,9 @@ void readKNNParameter(boost::program_options::variables_map programOptions, Minq
 
 void ReadData(boost::program_options::variables_map programOptions, DataManager &dm);
 
-int MINQUEAnalysis(boost::program_options::variables_map programOptions, DataManager& dm, Eigen::VectorXf& VarComp, Eigen::VectorXf& fix, Eigen::VectorXf& predict);
-std::vector<std::shared_ptr<Evaluate>>   FNNAnalysis(boost::program_options::variables_map programOptions, DataManager& dm);
+
+int MINQUEAnalysis(boost::program_options::variables_map programOptions, DataManager& dm, Eigen::VectorXf& VarComp, Eigen::VectorXf& fix, Eigen::VectorXf& predict_train, Eigen::VectorXf& predict_test, std::vector<float>& pvalue);
+std::vector<Evaluate>   FNNAnalysis(boost::program_options::variables_map programOptions, DataManager& dm);
 
 
 
@@ -145,7 +147,7 @@ void TryMain(int argc, const char *const argv[])
 	//////////////////////////////////////////////////////////////////////////////
 	if (programOptions.count("FNN") || programOptions.count("NN"))
 	{
-		std::vector<std::shared_ptr<Evaluate>>  error = FNNAnalysis(programOptions, dm);
+		std::vector<Evaluate>  error = FNNAnalysis(programOptions, dm);
 		std::ofstream out;
 		out.open(result, std::ios::out);
 		LOG(INFO) << "---Result----";
@@ -156,13 +158,13 @@ void TryMain(int argc, const char *const argv[])
 		{
 			LOG(INFO) << "---full dataset----";
 			ss << "---full dataset----" << std::endl;
-			if (error[0]->dataType != 0)
+			if (error[0].dataType != 0)
 			{
-				ss << "misclassification error:\t" << error[0]->getMSE() << std::endl << "AUC:\t" << error[0]->getAUC() << std::endl;
+				ss << "misclassification error:\t" << error[0].getMSE() << std::endl << "AUC:\t" << error[0].getAUC() << std::endl;
 			}
 			else
 			{
-				ss << "MSE:\t" << error[0]->getMSE() << std::endl << "Correlation:\t" << error[0]->getCor().transpose() << std::endl;
+				ss << "MSE:\t" << error[0].getMSE() << std::endl << "Correlation:\t" << error[0].getCor().transpose() << std::endl;
 			}
 			std::cout << ss.str();
 			LOG(INFO) << ss.str();
@@ -172,27 +174,27 @@ void TryMain(int argc, const char *const argv[])
 		{
 			LOG(INFO) << "---Training dataset----";
 			ss << "---Training dataset----" << std::endl;
-			if (error[1]->dataType != 0)
+			if (error[1].dataType != 0)
 			{
-				ss << "misclassification error:\t" << error[1]->getMSE() << std::endl << "AUC:\t" << error[1]->getAUC() << std::endl;
+				ss << "misclassification error:\t" << error[1].getMSE() << std::endl << "AUC:\t" << error[1].getAUC() << std::endl;
 			}
 			else
 			{
-				ss << "MSE:\t" << error[1]->getMSE() << std::endl << "Correlation:\t" << error[1]->getCor().transpose() << std::endl;
+				ss << "MSE:\t" << error[1].getMSE() << std::endl << "Correlation:\t" << error[1].getCor().transpose() << std::endl;
 			}
 
 
-			if (error[0] != nullptr)
+			if (!error[0].isnull)
 			{
 				LOG(INFO) << "---Testing dataset----";
 				ss << "---Testing dataset----" << std::endl;
-				if (error[0]->dataType != 0)
+				if (error[0].dataType != 0)
 				{
-					ss << "misclassification error:\t" << error[0]->getMSE() << std::endl << "AUC:\t" << error[0]->getAUC() << std::endl;
+					ss << "misclassification error:\t" << error[0].getMSE() << std::endl << "AUC:\t" << error[0].getAUC() << std::endl;
 				}
 				else
 				{
-					ss << "MSE:\t" << error[0]->getMSE() << std::endl << "Correlation:\t" << error[0]->getCor().transpose() << std::endl;
+					ss << "MSE:\t" << error[0].getMSE() << std::endl << "Correlation:\t" << error[0].getCor().transpose() << std::endl;
 				}
 			}
 			else
@@ -341,9 +343,11 @@ void TryMain(int argc, const char *const argv[])
 	if (programOptions.count("KNN"))
 	{
 			Eigen::VectorXf VarComp;
-			Eigen::VectorXf predict;
+			Eigen::VectorXf predict_train;
+			Eigen::VectorXf predict_test;
 			Eigen::VectorXf fix;
-			int iterateTimes=MINQUEAnalysis(programOptions, dm, VarComp, fix, predict);
+			std::vector<float> pvalue;
+			int iterateTimes=MINQUEAnalysis(programOptions, dm, VarComp, fix, predict_train, predict_test, pvalue);
 
 			std::ofstream out;
 			out.open(result, std::ios::out);
@@ -361,6 +365,19 @@ void TryMain(int argc, const char *const argv[])
 				int index = i + 1;
 				ss.str("");
 				ss << "V(G" << index << ")\t" << VarComp(i);
+				if (pvalue.size()!=0)
+				{
+					if (pvalue[index] != 0)
+					{
+						ss << "\t" << pvalue[index];
+						if (index == VarComp.size() - 1)
+						{
+							ss << "\t" << pvalue[0];
+						}
+					}
+				}
+				
+			
 				out << ss.str() << std::endl;
 				std::cout << ss.str() << std::endl;
 				LOG(INFO) << ss.str();
@@ -430,11 +447,13 @@ void TryMain(int argc, const char *const argv[])
 				std::stringstream ss;
 				if (dm.getPhenotype().dataType ==1)
 				{
-					ss << "misclassification error:\t" << predict[0] << std::endl << "AUC:\t" << predict[1] << std::endl;
+					ss << "Traning:\nmisclassification error:\t" << predict_train[0] << std::endl << "AUC:\t" << predict_train[1] << std::endl;
+					ss << "Testing:\nmisclassification error:\t" << predict_test[0] << std::endl << "AUC:\t" << predict_test[1] << std::endl;
 				}
 				else
 				{
-					ss << "MSE:\t" << predict[0] << std::endl << "Correlation:\t" << predict[1] << std::endl;
+					ss << "Traning:\nMSE:\t" << predict_train[0] << std::endl << "Correlation:\t" << predict_train[1] << std::endl;
+					ss << "Testing:\nMSE:\t" << predict_test[0] << std::endl << "Correlation:\t" << predict_test[1] << std::endl;
 				}
 				std::cout << ss.str();
 				LOG(INFO) << ss.str();
@@ -601,7 +620,7 @@ void ReadData(boost::program_options::variables_map programOptions, DataManager 
 	
 }
 
-int MINQUEAnalysis(boost::program_options::variables_map programOptions, DataManager &dm, Eigen::VectorXf &VarComp, Eigen::VectorXf & fix,Eigen::VectorXf &predict)
+int MINQUEAnalysis(boost::program_options::variables_map programOptions, DataManager &dm, Eigen::VectorXf &VarComp, Eigen::VectorXf & fix,Eigen::VectorXf &predict_train, Eigen::VectorXf& predict_test, std::vector<float> &pvalue)
 {
 	MinqueOptions minopt;
 	readKNNParameter(programOptions, minopt);
@@ -782,7 +801,7 @@ int MINQUEAnalysis(boost::program_options::variables_map programOptions, DataMan
 			phe_train = (phe_train.array() - phe_train.mean()) / std::sqrt(Variance(phe_train));
 		}
 	}
-
+	std::shared_ptr<MinqueBase> minqueobj;
 	if (!NoE)
 	{
 		if (GPU)
@@ -853,8 +872,49 @@ int MINQUEAnalysis(boost::program_options::variables_map programOptions, DataMan
 				}
 				if (programOptions.count("minque0"))
 				{
-					cMINQUE0(minopt, TrainingSet, phe_train, Cov_train, VarComp, fix);
+					auto varest=cMINQUE0(minopt, TrainingSet, phe_train, Cov_train, VarComp, fix);
+					if (programOptions.count("Testing"))
+					{
+						std::string Par_index = programOptions["Testing"].as < std::string >();
+						std::vector<std::string> indexstr;
+						std::vector<int> index;
+						boost::algorithm::split(indexstr, Par_index, boost::algorithm::is_any_of(","), boost::token_compress_on);
+						for (int i = 0; i < indexstr.size(); i++)
+						{
+							int num = atoi(indexstr.at(i).c_str());
+							if (num > 0)
+							{
+								index.push_back(num);
+							}
+							else if (num != -9)
+							{
+								std::stringstream ss;
+								ss << "[Error]: index of paramter of interested must >=0 except -9 means overall testing\n";
+								throw  std::string(ss.str());
+							}
+
+						}
+
+						Eigen::MatrixXf covm = varest->getVaraince();
+						MINQUETest mnqtest(varest);
+						Eigen::VectorXf wgts = covm.diagonal();
+						wgts = wgts.cwiseSqrt();
+						wgts = wgts.cwiseInverse();
+						float pvalueoverall = mnqtest.MINQUE0_overall(wgts, index);
+						pvalue.resize(1 + varest->GetKernelNum());
+						std::fill(pvalue.begin(), pvalue.end(), 0);
+						pvalue[0]= pvalueoverall;
+						for (size_t i = 0; i < index.size(); i++)
+						{
+							Eigen::VectorXf est_null_linear = varest->estimateVCs_Null(std::vector<int>{index[i]});
+							float pvalue_par = mnqtest.MINQUE0_singleparameter(est_null_linear, index[i]);
+							pvalue[index[i]+1]=pvalue_par;
+							//	std::cout << "overall: " << pvalue << "\t Linear: " << pvalue_linear << "\t NonLinear: " << pvalue_nonlinear << std::endl;
+						}
+					}
+
 					iterateTimes = 1;
+
 				}
 				else
 				{
@@ -870,22 +930,43 @@ int MINQUEAnalysis(boost::program_options::variables_map programOptions, DataMan
 							Kernels_imq[i] = std::make_shared<Eigen::MatrixXf>(*TrainingSet[i]);
 							//*Kernels_imq[i] = *Kernels[i];
 						}
-						cMINQUE0(minopt, Kernels_imq, phe_train, Cov_train, VarComp, fix);
+						auto varest= cMINQUE0(minopt, Kernels_imq, phe_train, Cov_train, VarComp, fix);
+
 						for (int i = 0; i < TrainingSet.size(); i++)
 						{
 							Kernels_imq[i] = nullptr;
 						}
 						Kernels_imq.clear();
+
 						//cMINQUE0(minopt, Kernels, phe, Covs.Covariates, VarComp, fix);
 					}
 
-					cMINQUE1(minopt, TrainingSet, phe_train, Cov_train, VarComp, fix, iterateTimes, isecho);
+					minqueobj=cMINQUE1(minopt, TrainingSet, phe_train, Cov_train, VarComp, fix, iterateTimes, isecho);
 				}
 
 			}
 		}
 	}
 	
+
+	if (programOptions.count("Testing"))
+	{
+		std::string pars = programOptions["Testing"].as<std::string>();
+		std::vector<std::string> strVec;
+		boost::algorithm::split(strVec, pars, boost::algorithm::is_any_of(","), boost::token_compress_on);
+		std::string mode = strVec[0];
+		std::vector<int> TestingIndex;
+		for (int i = 10; i < strVec.size(); i++)
+		{
+			TestingIndex.push_back(atoi(strVec.at(i).c_str()));
+		}
+		if (mode=="normal")
+		{
+			MINQUETest test(minqueobj);
+			Eigen::VectorXf weights = Eigen::VectorXf::Ones(TestingIndex.size());
+			test.MINQUE_Normal(weights, TestingIndex);
+		}
+	}
 	if (programOptions.count("fix"))
 	{
 		if (Cov_train.cols()==0)
@@ -1026,58 +1107,50 @@ int MINQUEAnalysis(boost::program_options::variables_map programOptions, DataMan
 			{
 				throw std::string("KNN can not be applied to the phenotype over 2 dimensions.");
 			}
-			std::shared_ptr<Prediction> pred;
-		
+			std::shared_ptr<Prediction> pred_test;
+			std::shared_ptr<Prediction> pred_train;
 
-			std::shared_ptr<Evaluate> Eva;
-			if (abs(ratio-1)<1e-6)
+			std::shared_ptr<Evaluate> Eva_test;
+			std::shared_ptr<Evaluate> Eva_train;
+			pred_train = std::make_shared<Prediction>(phe_train, TrainingSet, VarComp, Covs.Covariates, fix, phe.dataType == 1 ? true : false, mode, 1);
+			Eva_train = std::make_shared<Evaluate>(phe_train, pred_train->getPredictY(), phe.dataType);
+			if (!mode)
 			{
-				Eigen::VectorXf phe_all = Eigen::Map<Eigen::VectorXf>(phe.Phenotype.data(), phe.Phenotype.rows());
-				if (programOptions["scale"].as<bool>())
-				{
-					phe_all = (phe_all.array() - phe_all.mean()) / std::sqrt(Variance(phe_all));
-				}
-				pred = std::make_shared<Prediction>(phe_all, Kernels, VarComp, Covs.Covariates, fix, phe.dataType == 1 ? true : false, mode, ratio);
-				Eva=std::make_shared<Evaluate>(phe_all, pred->getPredictY(), phe.dataType);
+				Eigen::VectorXf phe_all(phe_train.size() + phe_test.size());
+				phe_all << phe_train, phe_test;
+
+				pred_test = std::make_shared<Prediction>(phe_all, Kernels, VarComp, Covs.Covariates, fix, phe.dataType == 1 ? true : false, mode, ratio);
 			}
 			else
 			{
-				if (!mode)
-				{
-					Eigen::VectorXf phe_all(phe_train.size() + phe_test.size());
-					phe_all << phe_train, phe_test;
-		//			Eigen::VectorXf phe_all = Eigen::Map<Eigen::VectorXf>(phe.Phenotype.data(), phe.Phenotype.rows());
-//					if (programOptions["scale"].as<bool>())
-	//				{
-	//					phe_all = (phe_all.array() - phe_all.mean()) / std::sqrt(Variance(phe_all));
-//					}
-					pred = std::make_shared<Prediction>(phe_all, Kernels, VarComp, Covs.Covariates, fix, phe.dataType == 1 ? true : false, mode, ratio);
-				}
-				else
-				{
-					pred = std::make_shared<Prediction>(phe_test, Kernels, VarComp, Cov_test, fix, phe.dataType == 1 ? true : false, mode);
-				}
-				Eva = std::make_shared<Evaluate>(phe_test, pred->getPredictY(), phe.dataType);
+				pred_test = std::make_shared<Prediction>(phe_test, Kernels, VarComp, Cov_test, fix, phe.dataType == 1 ? true : false, mode);
 			}
-			predict.resize(2);
-
+			Eva_test = std::make_shared<Evaluate>(phe_test, pred_test->getPredictY(), phe.dataType);
+			
+			predict_train.resize(2);
+			predict_test.resize(2);
+			predict_train[0] = Eva_train->getMSE();
+			predict_test[0] = Eva_test->getMSE();
+			predict_train[1] = Eva_train->getAUC();
+			predict_test[1] = Eva_test->getAUC();
 			//	std::stringstream ss;
+			/*
 			if (phe.dataType == 1)
 			{
-				predict[0] = Eva->getMSE();
-				predict[1] = Eva->getAUC();
+				
+				
 				//	ss << "misclassification error:\t" << pred.getMSE() << std::endl << "AUC:\t" << pred.getAUC() << std::endl;
 			}
 			else
 			{
-				predict[0] = Eva->getMSE();
-				predict[1] = Eva->getAUC();
+				predict_train[1] = Eva_train->getCor()[0];
+				predict_test[1] = Eva_test->getCor()[0];
 				//ss << "MSE:\t" << pred.getMSE() << std::endl << "Correlation:\t" << pred.getCor() << std::endl;
 			}
 			//		std::cout << ss.str();
 			//		LOG(INFO) << ss.str();
 			//		out<<  ss.str();
-
+			/*
 			std::ofstream out;
 			Eigen::VectorXf Predict_value = pred->getPredictY();
 			Eigen::MatrixXf AUROC(Predict_value.rows(), 2);
@@ -1086,6 +1159,7 @@ int MINQUEAnalysis(boost::program_options::variables_map programOptions, DataMan
 			out << "True\tPrediction" << std::endl;
 			out << AUROC << std::endl;
 			out.close();
+			*/
 		}
 
 	
@@ -1117,10 +1191,10 @@ int MINQUEAnalysis(boost::program_options::variables_map programOptions, DataMan
 //	out.close();
 }
 
-std::vector<std::shared_ptr<Evaluate>>  FNNAnalysis(boost::program_options::variables_map programOptions, DataManager& dm)
+std::vector<Evaluate>  FNNAnalysis(boost::program_options::variables_map programOptions, DataManager& dm)
 {
-	torch::manual_seed(0);
-	std::vector<std::shared_ptr<Evaluate>> prediction_error;
+//	torch::manual_seed(0);
+	std::vector<Evaluate> prediction_error;
  /// All data in FNN/NN framework will be treated as double precision.
 	auto options = torch::TensorOptions().dtype(torch::kFloat64);
 	torch::Tensor one = torch::ones(1, options);
@@ -1225,11 +1299,11 @@ std::vector<std::shared_ptr<Evaluate>>  FNNAnalysis(boost::program_options::vari
 		//	std::string file("test_model.pt");
 			archive.load_from(loadNet);
 			f->load(archive);
-			std::shared_ptr< Evaluate> Total = nullptr;
+			Evaluate Total;
 			if (data->isBalanced)
 			{
 				torch::Tensor pred_test = f->forward(data);
-				Total = std::make_shared< Evaluate>(data->getY(), pred_test, data->dataType);
+				 Total = Evaluate(data->getY(), pred_test, data->dataType);
 				//	Evaluate Total(data->getY(), pred_test, data->dataType);
 			}
 			else
@@ -1245,7 +1319,7 @@ std::vector<std::shared_ptr<Evaluate>>  FNNAnalysis(boost::program_options::vari
 						torch::Tensor pred_test_new = f->forward(sample);
 						pred_test = torch::cat({ pred_test, pred_test_new }, 0);
 					}
-					Total = std::make_shared< Evaluate>(data->getY(), pred_test, data->dataType);
+					Total = Evaluate(data->getY(), pred_test, data->dataType);
 				}
 
 			}
@@ -1266,7 +1340,7 @@ std::vector<std::shared_ptr<Evaluate>>  FNNAnalysis(boost::program_options::vari
 			torch::load(f, loadNet);
 
 			torch::Tensor pred_total = f->forward(data);
-			std::shared_ptr<Evaluate> Total=std::make_shared<Evaluate>(data->getY(), pred_total, data->dataType);
+			Evaluate Total(data->getY(), pred_total, data->dataType);
 			prediction_error.push_back(Total);
 		}
 	}
@@ -1363,7 +1437,9 @@ std::vector<std::shared_ptr<Evaluate>>  FNNAnalysis(boost::program_options::vari
 			double best_lambda=lambdas[0];
 			torch::Tensor train_loss = torch::tensor(INFINITY);
 			std::stringstream Best_Par;
-			int epoch=0;
+		//	int epoch=0;
+
+		
 			for (size_t i = 0; i < lambdas.size(); i++)
 			{
 				double lambda = lambdas[i];
@@ -1552,9 +1628,9 @@ std::vector<std::shared_ptr<Evaluate>>  FNNAnalysis(boost::program_options::vari
 			if (test_tensor->nind != 0)
 			{
 
-				std::shared_ptr<Evaluate> test = nullptr;
+				//Evaluate> test = nullptr;
 				torch::Tensor pred_test = f->forward(test_tensor);
-				test = std::make_shared< Evaluate>(test_tensor->getY(), pred_test, test_tensor->dataType);
+				Evaluate  test(test_tensor->getY(), pred_test, test_tensor->dataType);
 				prediction_error.push_back(test);	
 				torch::Tensor out_data = torch::cat({ test_tensor->getY() , pred_test }, 1);
 				Eigen::MatrixXd out_data_M = dtt::libtorch2eigen<double>(out_data);
@@ -1565,13 +1641,12 @@ std::vector<std::shared_ptr<Evaluate>>  FNNAnalysis(boost::program_options::vari
 			}
 			else
 			{
-				prediction_error.push_back(nullptr);
+				prediction_error.push_back(Evaluate());
 			}
 			////////////////////////////////////////////////////////////
 			// evaluate the total dataset
-			std::shared_ptr<Evaluate> train = nullptr;
 			torch::Tensor pred_train = f->forward(train_tensor);
-			train = std::make_shared< Evaluate>(train_tensor->getY(), pred_train, train_tensor->dataType);
+			Evaluate train(train_tensor->getY(), pred_train, train_tensor->dataType);
 			prediction_error.push_back(train);
 			torch::Tensor out_data = torch::cat({ train_tensor->getY() , pred_train }, 1);
 
@@ -1753,7 +1828,7 @@ std::vector<std::shared_ptr<Evaluate>>  FNNAnalysis(boost::program_options::vari
 			{
 
 				torch::Tensor pred_test = f->forward(test_tensor);
-				std::shared_ptr<Evaluate> test_eva = std::make_shared<Evaluate>(test_tensor->getY(), pred_test, test_tensor->dataType);
+				Evaluate test_eva(test_tensor->getY(), pred_test, test_tensor->dataType);
 				prediction_error.push_back(test_eva);
 				/*torch::Tensor out_data = torch::cat({ test_tensor->getY() , pred_test }, 1);
 				std::ofstream out;
@@ -1792,14 +1867,13 @@ std::vector<std::shared_ptr<Evaluate>>  FNNAnalysis(boost::program_options::vari
 			}
 			else
 			{
-				prediction_error.push_back(nullptr);
+				prediction_error.push_back(Evaluate());
 				//prediction_error.push_back(-9);
 			}
 
 			
-			std::shared_ptr<Evaluate> train_eva = nullptr;
 			torch::Tensor pred_train = f->forward(train_tensor);
-			train_eva = std::make_shared< Evaluate>(train_tensor->getY(), pred_train, train_tensor->dataType);
+			Evaluate train_eva(train_tensor->getY(), pred_train, train_tensor->dataType);
 			prediction_error.push_back(train_eva);
 			///////////
 			/*

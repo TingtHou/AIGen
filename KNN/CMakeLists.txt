@@ -1,16 +1,33 @@
-cmake_minimum_required(VERSION 3.0 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.18 FATAL_ERROR)
 project(KNN)
-
-option(USE_MKL "use MKL as pytorch LAPACK backend" ON)
+#set(CMAKE_VERBOSE_MAKEFILE ON)
+set(CMAKE_EXE_LINKER_FLAGS "-static")
 option(USE_STATIC_LIBTORCH "use LibTorch static library" ON)
 
 set(Boost_USE_STATIC_LIBS ON)
+
+
+if(NOT DEFINED MKLROOT)
+	set(MKLROOT "/opt/intel/oneapi/mkl/2024.1")
+endif()
+
+#list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
+INCLUDE_DIRECTORIES( ${MKLROOT}/include )
+add_compile_options(-DMKL_ILP64  -m64)
+
+MESSAGE( [Main] " MKL_INCLUDE_DIRS = ${MKLROOT}/include") 
+MESSAGE( [Main] " MKL_LIBRARIES = ${MKLROOT}/lib/") 
+
+
+
 FIND_PACKAGE( Boost COMPONENTS program_options REQUIRED )
 MESSAGE( [Main] " Boost_INCLUDE_DIRS = ${Boost_INCLUDE_DIR}") 
 MESSAGE( [Main] " Boost_LIBRARIES = ${Boost_LIBRARIES}") 
 INCLUDE_DIRECTORIES( ${Boost_INCLUDE_DIR} )
 
+
 find_package (Eigen3 3.3 REQUIRED NO_MODULE)
+#set(EIGEN3_INCLUDE_DIRS "/home/ting/eigen-3.4.0/")
 INCLUDE_DIRECTORIES( ${EIGEN3_INCLUDE_DIRS} )
 MESSAGE( [Main] " Eigen_INCLUDE_DIRS = ${EIGEN3_INCLUDE_DIRS}") 
 
@@ -23,78 +40,24 @@ if (OPENMP_FOUND)
 endif()
 
 
-if(USE_MKL AND USE_STATIC_LIBTORCH)
-    if(NOT DEFINED MKL_HOME)
-        set(MKL_HOME "/opt/intel/mkl")
-    endif()
-    if(NOT EXISTS ${MKL_HOME})
-        message(FATAL "unable to locate MKL library, either set MKL_HOME or install MKL")
-    endif()
-	
-	#if(NOT DEFINED MKL_ROOT)
-	#	set(MKL_ROOT "/opt/intel/compilers_and_libraries_2020.4.304/linux/mkl")
-	#endif()
-    #if(NOT EXISTS ${MKL_ROOT})
-    #    message(FATAL "unable to locate MKL library, either set MKL_HOME or install MKL")
-    #endif()
-    if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-        set(MKL_ARCHITECTURES intel64)
-    else()
-        set(MKL_ARCHITECTURES ia32)
-    endif()
-    #must consistent with pytorch static library.
-    set(INT_LIB "libmkl_intel_lp64.a")
-    set(SEQ_LIB "libmkl_sequential.a")
-    #set(THR_LIB "libmkl_intel_thread.a")
-    set(THR_LIB "libmkl_gnu_thread.a")
-    set(COR_LIB "libmkl_core.a")
-    
-    find_path(MKL_INCLUDE_DIR NAMES mkl.h HINTS ${MKL_HOME}/include)
-    
-    set(MKL_LIB_PATH ${MKL_HOME}/lib/${MKL_ARCHITECTURES})
-    find_library(MKL_INTERFACE_LIBRARY
-                 NAMES ${INT_LIB}
-                 PATHS ${MKL_LIB_PATH}
-                 NO_DEFAULT_PATH)
-    
-    find_library(MKL_SEQUENTIAL_LAYER_LIBRARY
-                 NAMES ${SEQ_LIB}
-                 PATHS ${MKL_LIB_PATH}
-                 NO_DEFAULT_PATH)
-    
-    find_library(MKL_THREAD_LAYER_LIBRARY
-                 NAMES ${THR_LIB}
-                 PATHS ${MKL_LIB_PATH}
-                 NO_DEFAULT_PATH)
-    
-    find_library(MKL_CORE_LIBRARY
-                 NAMES ${COR_LIB}
-                 PATHS ${MKL_LIB_PATH}
-                 NO_DEFAULT_PATH)
-    
-    set(MKL_INCLUDE_DIRS ${MKL_INCLUDE_DIR})
-    set(MKL_LIBRARIES ${MKL_CORE_LIBRARY} ${MKL_THREAD_LAYER_LIBRARY} ${MKL_INTERFACE_LIBRARY} )
-#    set(MKL_LIBRARIES -Wl,--start-group ${MKL_LIBRARIES} -Wl,--end-group)
-endif()
-include_directories(${MKL_INCLUDE_DIRS})
-#find_package(MKL REQUIRED)
-MESSAGE( [Main] " MKL_INCLUDE_DIRS = ${MKL_INCLUDE_DIRS}") 
-MESSAGE( [Main] " MKL_LIBRARIES = ${MKL_LIBRARIES}")  
 
-find_package(Torch CONFIG REQUIRED)
+find_package(Torch REQUIRED)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${TORCH_CXX_FLAGS}")
+
 include_directories(${TORCH_INCLUDE_DIRS})
+INCLUDE_DIRECTORIES( ${TORCH_INCLUDE_DIRS} )
 MESSAGE( [Main] "TORCH_INCLUDE_DIRS = ${TORCH_INCLUDE_DIRS}") 
 MESSAGE( [Main] "TORCH_LIBRARIES = ${TORCH_LIBRARIES}") 
 
 
 include_directories( ${CMAKE_CURRENT_SOURCE_DIR}/include)
+
 file(GLOB SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
 
 
 #Set Linker flags
 add_executable(${PROJECT_NAME} ${SOURCES})
-set(CMAKE_EXE_LINKER_FLAGS "-static-libgcc -static-libstdc++ -static -Os")
-SET_TARGET_PROPERTIES (${PROJECT_NAME} PROPERTIES LINK_SEARCH_START_STATIC 1)
-SET_TARGET_PROPERTIES (${PROJECT_NAME} PROPERTIES LINK_SEARCH_END_STATIC 1)
-target_link_libraries(${PROJECT_NAME} "${Boost_LIBRARIES}"  "${CMAKE_DL_LIBS}" "${TORCH_LIBRARIES}" "-Wl,--start-group" ${MKL_LIBRARIES} "-Wl,--end-group -lpthread -lm -ldl -fopenmp -lrt -lnuma")
+#target_compile_options(${PROJECT_NAME} "-DMKL_ILP64  -m64")
+#set(CMAKE_EXE_LINKER_FLAGS "-static-libgcc -static-libstdc++")
+target_link_libraries(${PROJECT_NAME} "${Boost_LIBRARIES}"  "${CMAKE_DL_LIBS}" "${TORCH_LIBRARIES}" "-m64  -Wl,--start-group ${MKLROOT}/lib/libmkl_intel_ilp64.a ${MKLROOT}/lib/libmkl_gnu_thread.a ${MKLROOT}/lib/libmkl_core.a -Wl,--end-group -lgomp -lpthread -lm -ldl -fopenmp -lrt -lnuma")
+set_property(TARGET KNN PROPERTY CXX_STANDARD 17)

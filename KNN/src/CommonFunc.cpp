@@ -489,6 +489,7 @@ void ROC::AUC()
 
 Evaluate::Evaluate()
 {
+	isnull = 1;
 	cor.resize(1);
 	cor[0] = -9;
 }
@@ -506,14 +507,15 @@ Evaluate::Evaluate(Eigen::VectorXf Response, Eigen::VectorXf Predictor, int data
 	else
 	{
 		Eigen::VectorXf ref = Eigen::Map<Eigen::VectorXf>(y.data(), y.rows(), 1);
+		Eigen::MatrixXf pred_matrix(y_hat.size(), 2);
+		pred_matrix.setOnes();
+		pred_matrix.col(0) = pred_matrix.col(1) - y_hat.col(0);
+		pred_matrix.col(1) = y_hat.col(0);
+		auc = multiclass_auc(pred_matrix, ref.cast<int>());
 		if (dataType == 1)
 		{
 			
-			Eigen::MatrixXf pred_matrix(y_hat.size(), 2);
-			pred_matrix.setOnes();
-			pred_matrix.col(0) = pred_matrix.col(1) - y_hat.col(0);
-			pred_matrix.col(1) = y_hat.col(0);
-			auc = multiclass_auc(pred_matrix, ref.cast<int>());
+	
 			if (auc < 0.5)
 			{
 				auc = 1 - auc;
@@ -530,7 +532,6 @@ Evaluate::Evaluate(Eigen::VectorXf Response, Eigen::VectorXf Predictor, int data
 		else
 		{
 			mse = misclass(y, y_hat);
-			auc = -9;
 		}
 		
 	}

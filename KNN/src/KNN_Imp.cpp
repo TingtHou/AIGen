@@ -49,12 +49,12 @@ void BatchMINQUE1(MinqueOptions& minque, std::vector<std::shared_ptr<Eigen::Matr
 
 		printf("Starting CPU-based analysis on thread %d\n", i);
 		LOG(INFO) << "Starting CPU-based analysis on thread " << i;
-		imnq varest;
-		varest.isEcho(isecho);
-		varest.setThreadId(i);
-		varest.setOptions(minque);
-		varest.importY(PheBatch[i]);
-		varest.pushback_X(CovBatch[i], false);
+		std::shared_ptr<imnq> varest=std::make_shared<imnq>(minque);
+		varest->isEcho(isecho);
+		varest->setThreadId(i);
+	//	varest.setOptions(minque);
+		varest->importY(PheBatch[i]);
+		varest->pushback_X(CovBatch[i], false);
 
 		std::shared_ptr<Eigen::MatrixXf> e=std::make_shared<Eigen::MatrixXf>(PheBatch[i].size(), PheBatch[i].size());
 		e->setIdentity();
@@ -64,20 +64,20 @@ void BatchMINQUE1(MinqueOptions& minque, std::vector<std::shared_ptr<Eigen::Matr
 			
 			ss_bug << "10 *10 Kernel "<< j <<"on thread " << i<<"\n"<< KernelsBatch[i][j]->block(0, 0, 10, 10) << std::endl;
 			ss_bug << "Last 10 *10 Kernel " << j << "on thread " << i << "\n" << KernelsBatch[i][j]->block(KernelsBatch[i][j]->rows() - 10, KernelsBatch[i][j]->cols() - 10, 10, 10) << std::endl;
-			varest.pushback_Vi(KernelsBatch[i][j]);
+			varest->pushback_Vi(KernelsBatch[i][j]);
 		}
 		LOG(INFO) << ss_bug.str() << std::endl;
 
-		varest.pushback_Vi(e);
+		varest->pushback_Vi(e);
 		if (variances.size() != 0)
 		{
-			varest.pushback_W(variances);
+			varest->pushback_W(variances);
 		}
 		try
 		{
-			varest.estimateVCs();
-			varsBatch[i].resize(varest.getvcs().size());
-			Eigen::VectorXf::Map(&varsBatch[i][0], varest.getvcs().size()) = varest.getvcs();
+			varest->estimateVCs();
+			varsBatch[i].resize(varest->getvcs().size());
+			Eigen::VectorXf::Map(&varsBatch[i][0], varest->getvcs().size()) = varest->getvcs();
 		/*	if (!nofix)
 			{
 				varest.estimateFix();
@@ -177,11 +177,11 @@ void BatchMINQUE1(MinqueOptions& minque, std::vector<std::shared_ptr<Eigen::Matr
 	iterateTimes = accumulate(time.begin(), time.end(), 0.0) / time.size(); ;
 }
 
-void cMINQUE1(MinqueOptions& minque, std::vector<std::shared_ptr<Eigen::MatrixXf>> Kernels, Eigen::VectorXf& pheV, Eigen::MatrixXf& Covs, Eigen::VectorXf& variances, Eigen::VectorXf& coefs, float& iterateTimes, bool isecho)
+std::shared_ptr<MinqueBase> cMINQUE1(MinqueOptions& minque, std::vector<std::shared_ptr<Eigen::MatrixXf>> Kernels, Eigen::VectorXf& pheV, Eigen::MatrixXf& Covs, Eigen::VectorXf& variances, Eigen::VectorXf& coefs, float& iterateTimes, bool isecho)
 {
-	imnq varest;
-	varest.setOptions(minque);
-	varest.isEcho(isecho);
+	std::shared_ptr<imnq> varest=std::make_shared<imnq>(minque) ;
+	//varest->setOptions(minque);
+	varest->isEcho(isecho);
 //	Eigen::VectorXf pheV;
 //	if (phe.Phenotype.cols() == 1)
 //	{
@@ -191,42 +191,42 @@ void cMINQUE1(MinqueOptions& minque, std::vector<std::shared_ptr<Eigen::MatrixXf
 //	{
 //		throw std::string("KNN can not be applied to the phenotype over 2 dimensions.");
 //	}
-	varest.importY(pheV);
+	varest->importY(pheV);
 	if (Covs.size() > 0)
 	{
-		varest.pushback_X(Covs, false);
+		varest->pushback_X(Covs, false);
 	}
 	
 	for (int i = 0; i < Kernels.size(); i++)
 	{
-		varest.pushback_Vi(Kernels[i]);
+		varest->pushback_Vi(Kernels[i]);
 	}
 	
 	std::shared_ptr<Eigen::MatrixXf> e = std::make_shared<Eigen::MatrixXf>(pheV.size(), pheV.size());
 	e->setIdentity();
-	varest.pushback_Vi(e);
+	varest->pushback_Vi(e);
 	if (variances.size() != 0)
 	{
-		varest.pushback_W(variances);
+		varest->pushback_W(variances);
 	}
 	std::cout << "starting CPU MINQUE(1) " << std::endl;
-	varest.estimateVCs();
-	variances = varest.getvcs();
-	iterateTimes = varest.getIterateTimes();
+	varest->estimateVCs();
+	variances = varest->getvcs();
+	iterateTimes = varest->getIterateTimes();
 	/*if (coefs[0] != -999)
 	{
 		varest.estimateFix();
 		coefs = varest.getfix();
 	}
 	*/
-
+	return varest;
 }
 
 void Fixed_estimator(MinqueOptions& minque, std::vector<std::shared_ptr<Eigen::MatrixXf>> Kernels, Eigen::VectorXf& pheV, Eigen::MatrixXf& Covs, Eigen::VectorXf& variances, Eigen::VectorXf& coefs, float& iterateTimes, bool isecho)
 {
-	imnq varest;
-	varest.setOptions(minque);
-	varest.isEcho(isecho);
+	std::shared_ptr<imnq> varest=std::make_shared<imnq>(minque);
+//	varest.setOptions(minque);
+	varest->isEcho(isecho);
 //	Eigen::VectorXf pheV;
 //	if (phe.Phenotype.cols() == 1)
 //	{
@@ -237,26 +237,26 @@ void Fixed_estimator(MinqueOptions& minque, std::vector<std::shared_ptr<Eigen::M
 //		throw std::string("KNN can not be applied to the phenotype over 2 dimensions.");
 //	}
 	LOG(INFO) << "Input Y";
-	varest.importY(pheV);
+	varest->importY(pheV);
 	LOG(INFO) << "Input X";
-	varest.pushback_X(Covs, false);
+	varest->pushback_X(Covs, false);
 	for (int i = 0; i < Kernels.size(); i++)
 	{
 		LOG(INFO) << "Input Kernel " << i << std::endl;
-		varest.pushback_Vi(Kernels[i]);
+		varest->pushback_Vi(Kernels[i]);
 	}
 	std::shared_ptr<Eigen::MatrixXf> e = std::make_shared<Eigen::MatrixXf>(pheV.size(), pheV.size());
 	e->setIdentity();
 	LOG(INFO) << "Input Kernel error"  << std::endl;
-	varest.pushback_Vi(e);
+	varest->pushback_Vi(e);
 	if (variances.size() != 0)
 	{
-		varest.pushback_W(variances);
+		varest->pushback_W(variances);
 	}
 	LOG(INFO) << "estimation starting" << std::endl;
-	varest.estimateFix(variances);
+	varest->estimateFix(variances);
 	LOG(INFO) << "Get Fixed effect" << std::endl;
-	coefs = varest.getfix();
+	coefs = varest->getfix();
 }
 
 void BatchMINQUE0(MinqueOptions& minque, std::vector<std::shared_ptr<Eigen::MatrixXf>> Kernels, Eigen::VectorXf& pheV, 
@@ -426,9 +426,9 @@ void BatchMINQUE0(MinqueOptions& minque, std::vector<std::shared_ptr<Eigen::Matr
 
 }
 
-void cMINQUE0(MinqueOptions& minque, std::vector<std::shared_ptr<Eigen::MatrixXf>> Kernels, Eigen::VectorXf& pheV, Eigen::MatrixXf& Covs, Eigen::VectorXf& variances, Eigen::VectorXf& coefs)
+std::shared_ptr<MinqueBase> cMINQUE0(MinqueOptions& minque, std::vector<std::shared_ptr<Eigen::MatrixXf>> Kernels, Eigen::VectorXf& pheV, Eigen::MatrixXf& Covs, Eigen::VectorXf& variances, Eigen::VectorXf& coefs)
 {
-	MINQUE0 varest(minque.MatrixDecomposition, minque.altMatrixDecomposition, minque.allowPseudoInverse);
+	std::shared_ptr< MinqueBase> varest =std::make_shared< MINQUE0>(minque.MatrixDecomposition, minque.altMatrixDecomposition, minque.allowPseudoInverse);
 //	Eigen::VectorXf pheV;
 //	if (phe.Phenotype.cols() == 1)
 //	{
@@ -438,29 +438,34 @@ void cMINQUE0(MinqueOptions& minque, std::vector<std::shared_ptr<Eigen::MatrixXf
 //	{
 //		throw std::string("KNN can not be applied to the phenotype over 2 dimensions.");
 //	}
-	varest.importY(pheV);
+	varest->importY(pheV);
 	if (Covs.size() > 0)
 	{
-		varest.pushback_X(Covs, false);
+		varest->pushback_X(Covs, false);
 	}
 	for (int i = 0; i < Kernels.size(); i++)
 	{
-		varest.pushback_Vi(Kernels[i]);
+		varest->pushback_Vi(Kernels[i]);
 	}
 	std::shared_ptr<Eigen::MatrixXf> e = std::make_shared<Eigen::MatrixXf>(pheV.size(), pheV.size());
 	e->setIdentity();
-	varest.pushback_Vi(e);
+	varest->pushback_Vi(e);
 	std::cout << "starting CPU MINQUE(0) " << std::endl;
 	LOG(INFO) << "starting CPU MINQUE(0) ";
-	varest.estimateVCs();
-	variances = varest.getvcs();
+	varest->estimateVCs();
+	variances = varest->getvcs();
 /*	if (coefs[0] != -999)
 	{
 		varest.estimateFix();
 		coefs = varest.getfix();
 	}*/
 	std::stringstream ss;
-	ss << std::fixed << "Thread ID: 0" << std::setprecision(3) << "\tIt: " << 0 << "\t" << varest.getvcs().transpose();
+	ss << std::fixed << "Thread ID: 0" << std::setprecision(3) << "\tIt: " << 0 << "\t" << varest->getvcs().transpose();
 	printf("%s\n", ss.str().c_str());
 	LOG(INFO) << ss.str();
+	return varest;
+
+
+	
+
 }
