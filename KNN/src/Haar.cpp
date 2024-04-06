@@ -1,4 +1,4 @@
-#include "../include/haar.h"
+#include "../include/Haar.h"
 
 Haar::Haar(int64_t n_basis, bool linear)
 {
