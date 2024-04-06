@@ -225,7 +225,7 @@ bool ToolKit::comput_inverse_logdet_LU_mkl(Eigen::MatrixXf &Vi)
 	int n = Vi.cols();
 	float* Vi_mkl = Vi.data();
 	int N = (int)n;
-	int *IPIV = new int[n + 1];
+	long long int *IPIV = new long long int[n + 1];
 	int LWORK = N * N;
 	int INFO=0;
 	INFO =LAPACKE_sgetrf(LAPACK_COL_MAJOR, N, N, Vi_mkl, N, IPIV);
@@ -250,7 +250,7 @@ bool ToolKit::comput_inverse_logdet_LU_mkl(Eigen::MatrixXd & Vi)
 	double* Vi_mkl = Vi.data();
 
 	int N = (int)n;
-	int* IPIV = new int[n + 1];
+	long long int* IPIV = new long long int[n + 1];
 	int LWORK = N * N;
 	int INFO = 0;
 	INFO = LAPACKE_dgetrf(LAPACK_COL_MAJOR, N, N, Vi_mkl, N, IPIV);
@@ -320,7 +320,7 @@ bool ToolKit::comput_inverse_logdet_QR_mkl(Eigen::MatrixXd& Vi)
 
 bool ToolKit::comput_inverse_logdet_SVD_mkl(Eigen::MatrixXf& Vi)
 {
-	int n = Vi.cols();
+	long long int n = Vi.cols();
 	float* Vi_mkl = Vi.data();
 	MKL_INT  lwork;
 	MKL_INT info;
@@ -353,7 +353,7 @@ bool ToolKit::comput_inverse_logdet_SVD_mkl(Eigen::MatrixXf& Vi)
 	//u=(s^-1)*U
 	MKL_INT incx = 1;
 	#pragma omp parallel for
-	for (int i = 0; i < n; i++)
+	for (long long int i = 0; i < n; i++)
 	{
 		float ss;
 		if (s[i] > 1.0e-9)
@@ -374,7 +374,7 @@ bool ToolKit::comput_inverse_logdet_SVD_mkl(Eigen::MatrixXf& Vi)
 
 bool ToolKit::comput_inverse_logdet_SVD_mkl(Eigen::MatrixXd& Vi)
 {
-	int n = Vi.cols();
+	long long int n = Vi.cols();
 	double* Vi_mkl = Vi.data();
 	MKL_INT  lwork;
 	MKL_INT info;
@@ -407,7 +407,7 @@ bool ToolKit::comput_inverse_logdet_SVD_mkl(Eigen::MatrixXd& Vi)
 	//u=(s^-1)*U
 	MKL_INT incx = 1;
 #pragma omp parallel for
-	for (int i = 0; i < n; i++)
+	for (long long int i = 0; i < n; i++)
 	{
 		double ss;
 		if (s[i] > 1.0e-9)
@@ -429,7 +429,7 @@ bool ToolKit::comput_inverse_logdet_SVD_mkl(Eigen::MatrixXd& Vi)
 
 bool ToolKit::comput_msqrt_SVD_mkl(Eigen::MatrixXd& Vi)
 {
-	int n = Vi.cols();
+	long long int n = Vi.cols();
 	double* Vi_mkl = Vi.data();
 	MKL_INT  lwork;
 	MKL_INT info;
@@ -462,7 +462,7 @@ bool ToolKit::comput_msqrt_SVD_mkl(Eigen::MatrixXd& Vi)
 	//u=(s^-1)*U
 	MKL_INT incx = 1;
 #pragma omp parallel for
-	for (int i = 0; i < n; i++)
+	for (long long int i = 0; i < n; i++)
 	{
 		double ss;
 		if (s[i] > 1.0e-9)
@@ -482,7 +482,7 @@ bool ToolKit::comput_msqrt_SVD_mkl(Eigen::MatrixXd& Vi)
 }
 bool ToolKit::comput_msqrt_SVD_mkl(Eigen::MatrixXf& Vi)
 {
-	int n = Vi.cols();
+	long long int n = Vi.cols();
 	float* Vi_mkl = Vi.data();
 	MKL_INT  lwork;
 	MKL_INT info;
@@ -515,7 +515,7 @@ bool ToolKit::comput_msqrt_SVD_mkl(Eigen::MatrixXf& Vi)
 	//u=(s^-1)*U
 	MKL_INT incx = 1;
 #pragma omp parallel for
-	for (int i = 0; i < n; i++)
+	for (long long int i = 0; i < n; i++)
 	{
 		float ss;
 		if (s[i] > 1.0e-9)
@@ -560,7 +560,6 @@ bool ToolKit::Vector_remove_elements(Eigen::VectorXf & OrgV, Eigen::VectorXf& Ne
 	NewV = OrgV(RowsKeep);
 	return true;
 }
-
 /*
 bool ToolKit::Inv_SVD(Eigen::MatrixXf & Ori_Matrix, bool allowPseudoInverse)
 {
@@ -614,5 +613,4 @@ bool ToolKit::Inv_QR(Eigen::MatrixXf & Ori_Matrix, bool allowPseudoInverse)
 	Ori_Matrix = Inv_Matrix;
 	return true;
 }
-
 */

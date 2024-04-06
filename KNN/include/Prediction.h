@@ -7,7 +7,7 @@
 #include "Random.h"
 #include <fstream>
 #include "CommonFunc.h"
-#include "Toolkit.h"
+#include "ToolKit.h"
 #include "easylogging++.h"
 class Prediction
 {
