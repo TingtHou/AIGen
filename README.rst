@@ -106,10 +106,55 @@ In this context, **"1"** signifies the Leave-One-Out prediction method, whereas 
 Functional neural network
 -------------------------
 
+The KNN software provides a comprehensive suite of tools for statistical genetics and machine learning analyses, including the advanced Functional Neural Network (FNN) method. This section  guides users through the process of performing an FNN analysis, using  genetic and phenotype data。
+
+**Example**::
+
+$ ./KNN --bfile ../example/gene --phe ../example/y.txt  --FNN --layer 28,2,1  --basis 0 --optim 0 --epoch 3000 --lambda 0 --lr  0.001 --ratio 0.8
+
+- ``--bfile ../../train/gene`` : Specifies the binary input files (.bed, .bim, .fam) located in the ``../../train/gene`` directory.
+
+- ``--phe ../../train/y.txt`` : Points to the phenotype data file located in the ``../../train`` directory.
+
+- ``--FNN`` : Indicates the analysis should use the Functional Neural Network approach.
+
+- ``--layer 28,2,1`` : Defines the function neural network architecture with 28 nodes in the input layer, 2 nodes in the hidden layer, and 1 node in the output layer.
+
+- ``--basis 0`` : Chooses Wavelet basis functions for the hidden layers (0 denotes Wavelet basis).
+
+- ``--optim 0`` : Selects the Adam optimizer for training (0 for Adam).
+
+- ``--epoch 3000`` : Sets the number of training epochs to 3000.
+
+- ``--lambda 0`` : Specifies no regularization in the loss function (lambda = 0).
+
+- ``--lr 0.001`` : Sets the learning rate to 0.001.
+
+- ``--ratio 0.8`` : Uses 80% of the dataset for training and the remaining 20% for validation/testing.
+
+
+This example command instructs the software to train an FNN model on genetic data located in ../example/gene, with phenotype outcomes provided in ../example/y.txt. The network is structured with 28 nodes in the input layer, 2 nodes in one hidden layer, and 1 node in the output layer. The Wavelet basis function is used in the FNN, with the Adam optimizer, 3000 epochs, no regularization (lambda set to 0), a learning rate of 0.001, and 80% of the data used for training.
+
+
+Neural network
+-------------------------
+The KNN software also offers capabilities for performing analyses with Traditional Neural Networks. This manual section delivers comprehensive guidance on conducting a Traditional NN analysis, utilizing the KNN software's robust features for predicting phenotype given genetic and covariates data.
+
+Here's an example::
+
+$ ./KNN --bfile ../example/gene --phe ../example/y.txt  --NN --layer 28,2,1   --optim 0 --epoch 3000 --lambda 0 --lr  0.001 --ratio 0.8
+
+- ``--NN``: Indicates that the analysis will use a traditional Neural Network approach, as opposed to a Functional Neural Network (FNN) or other methods available in the software.
+
+- ``--layer 28,2,1`` : Specifies the architecture of the neural network, consisting of 28 nodes in the input layer, 2 nodes in the hidden layer, and 1 node in the output layer. **Important:** The number of nodes in the input layer must correspond to the number of genetic variants.
+
+Additional Information
+^^^^^^^^^^^^^^^^^^^^^^
+
+**Activation Functions**
+
+In the current version of the software, the activation function for the neural network layers is set to a linear function. In future releases, we plan to expand the available options by including a variety of other activation functions to enhance the model's flexibility and performance in capturing complex patterns within the data.
 
 
 
 
-
-
- 
