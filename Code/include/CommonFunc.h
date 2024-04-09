@@ -53,7 +53,7 @@ namespace dtt {
 
 	template <typename V>
 	torch::Tensor eigen2libtorch(MatrixXrm<V>& E, bool copydata = true) {
-		//	auto options = torch::TensorOptions().dtype(torch::kFloat64);
+		auto options = torch::TensorOptions().dtype(torch::kFloat64);
 		std::vector<int64_t> dims = { E.rows(), E.cols() };
 		auto T = torch::from_blob(E.data(), dims, options).clone();
 		if (copydata)
