@@ -5,6 +5,14 @@ AIGen is an artificial intelligence software for complex genetic data analysis. 
 Build AIGen from source
 =======================
 
+Install AIGen
+-------------
+We offer precompiled binaries for both Windows and Linux platforms. For Windows, simply download the software and it's ready to use. However, for the Linux version, you'll need to export a shared library::
+
+$export LD_LIBRARY_PATH=LD_LIBRARY_PATH:/path/to/AIGen/lib
+
+Additionally, please note that the Linux version of AIGen requires GLIBC>=2.34 and GLIBCXX>=3.4.29. Due to these dependencies, we highly recommend generating your own AIGen under Linux to ensure compatibility.
+
 On any operating system, you should get the latest AIGen source the usual way::
 
 $ git clone https://github.com/TingtHou/AIGen.git
