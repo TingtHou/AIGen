@@ -158,7 +158,7 @@ Additional Information
 
 **Activation Functions**
 
-In the current version of the software, the activation function for the neural network layers is set to a linear function. In future releases, we plan to expand the available options by including a variety of other activation functions to enhance the model's flexibility and performance in capturing complex patterns within the data.
+In the current version of the software, the activation function for the neural network layers is set to a sigmoid function. In future releases, we plan to expand the available options by including a variety of other activation functions to enhance the model's flexibility and performance in capturing complex patterns within the data.
 
 
 
