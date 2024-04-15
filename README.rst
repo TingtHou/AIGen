@@ -7,18 +7,15 @@ Build AIGen from source
 
 Install AIGen
 -------------
-We offer precompiled binaries for both Windows and Linux platforms. For Windows, simply download the software and it's ready to use. However, for the Linux version, you'll need to export a shared library::
+Windows:
+^^^^^^^^
+Precompiled Package: We offer a ready-to-use, precompiled package of AIGen that includes all necessary dependencies for libtorch. Simply download and run the package for immediate use.
 
-$export LD_LIBRARY_PATH=LD_LIBRARY_PATH:/path/to/AIGen/lib
+Linux:
+^^^^^^
+Executable File: A precompiled executable is available which depends on the libtorch library. Due to potential compatibility issues, we highly recommend building the software from source if you experience any difficulties.
 
-Additionally, please note that the Linux version of AIGen requires GLIBC>=2.34 and GLIBCXX>=3.4.29. Due to these dependencies, we highly recommend generating your own AIGen under Linux to ensure compatibility.
-
-On any operating system, you should get the latest AIGen source the usual way::
-
-$ git clone https://github.com/TingtHou/AIGen.git
-$ cd AIGen
-
-Then you need to get dependencies installed and configured for your operating system.
+For users who prefer or require manual compilation, detailed instructions are provided to build AIGen from source. This approach helps ensure the best compatibility with your system's specific configuration.
 
 Building on Linux
 -----------------
