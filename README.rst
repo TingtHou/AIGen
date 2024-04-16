@@ -147,11 +147,11 @@ The KNN software also offers capabilities for performing analyses with Tradition
 
 Here's an example::
 
-$ ./AIGen --bfile ./example/sample --phe ./example/y.txt  --NN --layer 50,2,1   --optim 0 --epoch 3000 --lambda 0 --lr  0.001 --ratio 0.8
+$ ./AIGen --bfile ./example/sample --phe ./example/y.txt  --NN --layer 50,20,1   --optim 0 --epoch 3000 --lambda 0 --lr  0.001 --ratio 0.8
 
 - ``--NN``: Indicates that the analysis will use a traditional Neural Network approach, as opposed to a Functional Neural Network (FNN) or other methods available in the software.
 
-- ``--layer 28,2,1`` : Specifies the architecture of the neural network, consisting of 28 nodes in the input layer, 2 nodes in the hidden layer, and 1 node in the output layer. **Important:** The number of nodes in the input layer must correspond to the number of genetic variants.
+- ``--layer 50,20,1`` : Specifies the architecture of the neural network, consisting of 28 nodes in the input layer, 2 nodes in the hidden layer, and 1 node in the output layer. **Important:** The number of nodes in the input layer must correspond to the number of genetic variants.
 
 Additional Information
 ^^^^^^^^^^^^^^^^^^^^^^
