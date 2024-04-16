@@ -115,9 +115,9 @@ The KNN software provides a comprehensive suite of tools for statistical genetic
 
 **Example**::
 
-$ ./KNN --bfile ../example/gene --phe ../example/y.txt  --FNN --layer 28,2,1  --basis 0 --optim 0 --epoch 3000 --lambda 0 --lr  0.001 --ratio 0.8
+$ ./KNN --bfile ../example/sample --phe ../example/y.txt  --FNN --layer 28,2,1  --basis 0 --optim 0 --epoch 3000 --lambda 0 --lr  0.001 --ratio 0.8
 
-- ``--bfile ../../train/gene`` : Specifies the binary input files (.bed, .bim, .fam) located in the ``../../train/gene`` directory.
+- ``--bfile ../../train/sample`` : Specifies the binary input files (.bed, .bim, .fam) located in the ``../../train/gene`` directory.
 
 - ``--phe ../../train/y.txt`` : Points to the phenotype data file located in the ``../../train`` directory.
 
@@ -147,7 +147,7 @@ The KNN software also offers capabilities for performing analyses with Tradition
 
 Here's an example::
 
-$ ./KNN --bfile ../example/gene --phe ../example/y.txt  --NN --layer 28,2,1   --optim 0 --epoch 3000 --lambda 0 --lr  0.001 --ratio 0.8
+$ ./KNN --bfile ../example/sample --phe ../example/y.txt  --NN --layer 28,2,1   --optim 0 --epoch 3000 --lambda 0 --lr  0.001 --ratio 0.8
 
 - ``--NN``: Indicates that the analysis will use a traditional Neural Network approach, as opposed to a Functional Neural Network (FNN) or other methods available in the software.
 
