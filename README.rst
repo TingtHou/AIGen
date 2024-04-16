@@ -13,9 +13,9 @@ Precompiled Package: We offer a ready-to-use, precompiled package of AIGen that 
 
 Linux:
 ^^^^^^
-Executable File: A precompiled executable is available which depends on the libtorch library. Due to potential compatibility issues, we highly recommend building the software from source if you experience any difficulties.
+Executable File: A precompiled executable is available which depends on the libtorch library. This Linux version doesn't require other dependencies. So we highly recommend use this version
 
-For users who prefer or require manual compilation, detailed instructions are provided to build AIGen from source. This approach helps ensure the best compatibility with your system's specific configuration.
+For users who prefer or require manual compilation, detailed instructions are provided to build AIGen from the source. This approach helps ensure the best compatibility with your system's specific configuration.
 
 Building on Linux
 -----------------
