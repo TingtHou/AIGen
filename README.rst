@@ -40,17 +40,17 @@ LibTorch library
 ^^^^^^^^^^^^^^^^^^^
 Libtorch is the PyTorch C++ frontend which is a pure C++ interface to the PyTorch machine learning framework. This library can be installed using the following command::
 
-   $ wget https://download.pytorch.org/libtorch/nightly/cpu/libtorch-shared-with-deps-latest.zip
-   $ unzip libtorch-shared-with-deps-latest.zip
+   wget https://download.pytorch.org/libtorch/nightly/cpu/libtorch-shared-with-deps-latest.zip
+   unzip libtorch-shared-with-deps-latest.zip
 
 Building from source
 ^^^^^^^^^^^^^^^^^^^^
 then::
 
-    $ mkdir build
-    $ cd build
-    $ cmake -DCMAKE_PREFIX_PATH=/absolute/path/to/libtorch ..
-    $ cmake --build . --config Release
+    mkdir build
+    cd build
+    cmake -DCMAKE_PREFIX_PATH=/absolute/path/to/libtorch ..
+    cmake --build . --config Release
 
 
 Usage
@@ -64,7 +64,7 @@ Building kernel matrix
 
 The software accepts input data in either binary or text format. Use the "--bfile" option for binary data and "--file" option for text data. Additionally, the "--make-kernel" and "--make-bin" options enable the generation of a kernel matrix, which is saved in binary file format compatible with GCTA (*.grm.bin, *.grm.id)::
 
-$ ./AIGen --bfile ./example/sample --make-kernel 2 --make-bin ./example/product
+ ./AIGen --bfile ./example/sample --make-kernel 2 --make-bin ./example/product
 
 
 This command will read PLINK binary files (sample.bim, sample.bed, and sample.fam) located in the "example" folder, generating a product kernel matrix. The output, in binary format, is saved as product.grm.bin and product.grm.id within the same "example" folder.
@@ -82,7 +82,7 @@ Estimation and Prediction
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 After generating kernel matrix, the variance component in the KNN model could be estimated using iterative IMINQUE with following command::
 
-$ ./AIGen --kernel ./example/kernel1 --phe ./example/phenW.1.phen  --qcovar ./example/Covs.txt --KNN --iterate 100 --tolerance 1e-5 --out ./result/out
+ ./AIGen --kernel ./example/kernel1 --phe ./example/phenW.1.phen  --qcovar ./example/Covs.txt --KNN --iterate 100 --tolerance 1e-5 --out ./result/out
 
 **Command Options** :
 
@@ -96,14 +96,14 @@ $ ./AIGen --kernel ./example/kernel1 --phe ./example/phenW.1.phen  --qcovar ./ex
 
 To use multiple kernel matrices in the analysis, the ``--mkernel`` option is available. This option allows specifying a file that contains the paths to multiple kernel matrix files. The following command is a example::
 
-$ ./AIGen --mkernel ./example/mltgrm --phe ./example/phenW.1.phen  --qcovar ./example/Covs.txt --KNN --iterate 100 --tolerance 1e-5 --out ./result/out
+ ./AIGen --mkernel ./example/mltgrm --phe ./example/phenW.1.phen  --qcovar ./example/Covs.txt --KNN --iterate 100 --tolerance 1e-5 --out ./result/out
 
 Here, the file ``./example/mltgrm`` should list the paths to the individual kernel matrix files for use in the analysis.
 
 
 This software allows for phenotype prediction using the --predict option::
 
-$ ./AIGen --mkernel ./example/mltgrm --phe ./example/phenW.1.phen  --qcovar ./example/Covs.txt --KNN --iterate 100 --tolerance 1e-5 --out ./result/out --predict 0
+ ./AIGen --mkernel ./example/mltgrm --phe ./example/phenW.1.phen  --qcovar ./example/Covs.txt --KNN --iterate 100 --tolerance 1e-5 --out ./result/out --predict 0
 
 In this context, **"1"** signifies the Leave-One-Out prediction method, whereas **"0"** denotes the use of BLUP (Best Linear Unbiased Prediction).
 
@@ -115,7 +115,7 @@ The KNN software provides a comprehensive suite of tools for statistical genetic
 
 **Example**::
 
-$ ./AIGen --bfile ./example/sample --phe ./example/y.txt  --FNN --layer 28,2,1  --basis 0 --optim 0 --epoch 3000 --lambda 0 --lr  0.001 --ratio 0.8
+ ./AIGen --bfile ./example/sample --phe ./example/y.txt  --FNN --layer 28,2,1  --basis 0 --optim 0 --epoch 3000 --lambda 0 --lr  0.001 --ratio 0.8
 
 - ``--bfile ../../train/sample`` : Specifies the binary input files (.bed, .bim, .fam) located in the ``../../train/gene`` directory.
 
@@ -147,7 +147,7 @@ The KNN software also offers capabilities for performing analyses with Tradition
 
 Here's an example::
 
-$ ./AIGen --bfile ./example/sample --phe ./example/y.txt  --NN --layer 50,20,1   --optim 0 --epoch 3000 --lambda 0 --lr  0.001 --ratio 0.8
+ ./AIGen --bfile ./example/sample --phe ./example/y.txt  --NN --layer 50,20,1   --optim 0 --epoch 3000 --lambda 0 --lr  0.001 --ratio 0.8
 
 - ``--NN``: Indicates that the analysis will use a traditional Neural Network approach, as opposed to a Functional Neural Network (FNN) or other methods available in the software.
 
