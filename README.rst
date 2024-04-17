@@ -22,19 +22,19 @@ Building on Linux
 
 On Debian/Ubuntu you will need to install the dependencies with (Fedora flavors can use a similar command)::
 
-    $ sudo apt install gcc g++ make cmake libboost-all-dev libeigen3-dev
+     sudo apt install gcc g++ make cmake libboost-all-dev libeigen3-dev
 
 MKL library
 ^^^^^^^^^^^^^^^^^^^
 In addition to those dependencies, the oneMKL package will be required using the following command::
 
-    $ sudo apt update
-    $ sudo apt install -y gpg-agent wget 
-    $ wget -O- https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB | gpg --dearmor | sudo tee /usr/share/keyrings/oneapi-archive-keyring.gpg > /dev/null
-    $ echo "deb [signed-by=/usr/share/keyrings/oneapi-archive-keyring.gpg] https://apt.repos.intel.com/oneapi all main" | sudo tee /etc/apt/sources.list.d/oneAPI.list
-    $ sudo apt update
-    $ sudo apt install intel-oneapi-mkl
-    $ sudo apt install intel-oneapi-mkl-devel
+     sudo apt update
+     sudo apt install -y gpg-agent wget 
+     wget -O- https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB | gpg --dearmor | sudo tee /usr/share/keyrings/oneapi-archive-keyring.gpg > /dev/null
+     echo "deb [signed-by=/usr/share/keyrings/oneapi-archive-keyring.gpg] https://apt.repos.intel.com/oneapi all main" | sudo tee /etc/apt/sources.list.d/oneAPI.list
+     sudo apt update
+     sudo apt install intel-oneapi-mkl
+     sudo apt install intel-oneapi-mkl-devel
 
 LibTorch library
 ^^^^^^^^^^^^^^^^^^^
