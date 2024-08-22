@@ -5,11 +5,11 @@ AIGen is an artificial intelligence software for complex genetic data analysis. 
 Downloads:
 ==========
 
-> Windows :ref:'https://github.com/TingtHou/AIGen/releases/download/v1.1.0/AIGen_windows_x84_64.zip'
++ Windows: 'https://github.com/TingtHou/AIGen/releases/download/v1.1.0/AIGen_windows_x84_64.zip'
 
-[Linux](https://github.com/TingtHou/AIGen/releases/download/v1.1.0/AIGen_linux_x86_64.zip)
++ Linux: https://github.com/TingtHou/AIGen/releases/download/v1.1.0/AIGen_linux_x86_64.zip)
 
-[Sample Data](https://github.com/TingtHou/AIGen/releases/download/v1.1.0/example.zip)
++ Sample Data: https://github.com/TingtHou/AIGen/releases/download/v1.1.0/example.zip
 
 Build AIGen from source
 =======================
